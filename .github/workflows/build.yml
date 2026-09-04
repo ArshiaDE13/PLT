@@ -1,0 +1,86 @@
+name: Build PythonTutor (Windows + Linux)
+
+# Builds BOTH versions automatically, each on its own operating system:
+#   windows-latest -> PythonTutor.exe   (runs on Windows, no Python needed)
+#   ubuntu-latest  -> PythonTutor       (runs on Linux,  no Python needed)
+# PyInstaller cannot cross-compile, so each build runs natively in the cloud.
+#
+# Triggers:
+#   - every push to main/master (artifacts only)
+#   - pushing a tag like v1.0  (also creates a GitHub Release with both files)
+#   - manually from the Actions tab ("Run workflow")
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: PythonTutor-Windows
+            file: PythonTutor.exe
+          - os: ubuntu-latest
+            artifact: PythonTutor-Linux
+            file: PythonTutor
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the build tool
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Self-test the source (content + all 110 quiz checkers)
+        run: python app.py --selftest
+
+      - name: Build the standalone app with PyInstaller
+        run: python -m PyInstaller --noconfirm --clean python_tutor.spec
+
+      - name: Upload ${{ matrix.artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.file }}
+          if-no-files-found: error
+
+  release:
+    name: Package GitHub Release (runs only on tags)
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: PythonTutor-Windows
+          path: win
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: PythonTutor-Linux
+          path: linux
+
+      - name: Zip the Windows exe, tar the Linux binary
+        run: |
+          cd win && zip -r ../PythonTutor-Windows.zip PythonTutor.exe && cd ..
+          cd linux && tar -czf ../PythonTutor-Linux.tar.gz PythonTutor && cd ..
+          ls -lh ../PythonTutor-Windows.zip ../PythonTutor-Linux.tar.gz
+
+      - name: Create the GitHub Release with both files
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            PythonTutor-Windows.zip
+            PythonTutor-Linux.tar.gz
+          generate_release_notes: true

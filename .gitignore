@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# PyInstaller build environment & outputs
+.build-venv/
+build/
+dist/
+
+# Local helper artifacts
+stage_zip.py
+dist_README.txt
+verify_exe.py
+_diagtest.py
+_jcheck.py

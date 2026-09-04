@@ -1,0 +1,56 @@
+name: Deploy web app to GitHub Pages
+
+# Deploys the course as a PURE STATIC WEB APP - no Python, no server, no
+# installer on the visitor's machine. The workflow:
+#   1. regenerates static/data.js (the whole course bundled for the browser)
+#   2. runs the content/quiz self-tests as a gate
+#   3. publishes the static/ folder to GitHub Pages
+#
+# One-time prerequisite in the repo: Settings -> Pages -> Source ->
+# "GitHub Actions". After that, every push to main updates the live site
+# at https://<user>.github.io/<repo>/ (also triggerable manually).
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate the static course bundle (static/data.js)
+        run: python build_static.py
+
+      - name: Gate - content + quiz self-tests
+        run: python app.py --selftest
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the static site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: static
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

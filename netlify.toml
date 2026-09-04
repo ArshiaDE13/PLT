@@ -1,0 +1,17 @@
+# Netlify deployment for the pure-browser Python Tutor course.
+#
+# Two ways to use this:
+#   1. Git integration  - connect the repo, Netlify runs the build command
+#      below (regenerates static/data.js) and publishes the `static/` folder.
+#   2. Drag-and-drop    - upload the `static/` folder to app.netlify.com/drop;
+#      no config file needed at all (data.js is committed, so the site is
+#      fully static already).
+#
+# Result: a live link like https://your-site.netlify.app that anyone can
+# open with zero installation. Quiz checking runs in the browser; the
+# "Try it" playground loads real Python 3.14 (Pyodide, WebAssembly) from
+# a CDN on the first Run click.
+
+[build]
+  command = "python build_static.py"
+  publish = "static"
