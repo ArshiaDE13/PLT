@@ -27,6 +27,19 @@ files, so anyone can open it from a live link and start learning.
   & execution (`global`/`nonlocal`, frames, tracebacks), expressions
   & operator precedence, and the import system (`sys.modules`,
   packages, `__main__`).
+- **w3schools-style sidebar navigation** — every chapter expands into
+  its own sub-list: one entry per lesson plus a **Quiz** entry at the
+  end (with an answered-count badge). Exactly one chapter is expanded
+  at a time and the open group follows whatever you are reading;
+  clicking the header of the chapter you're on collapses the list.
+- **🧪 Playground** — a dedicated IDE-style window (button in the
+  sidebar, next to the progress box) with a syntax-highlighted
+  `main.py` editor (line numbers, auto-indent, Tab/Shift+Tab), a run
+  console with per-run output blocks and timing, 7 ready-made examples
+  (f-strings, FizzBuzz, Fibonacci, comprehensions, a class, JSON, an
+  honest traceback), autosave to the browser, and the same
+  English/فارسی switch as the course. Code is written once, saved
+  between sessions, and runs on the same in-browser Python engine.
 - **Visual diagrams** — every major topic has a drawn-to-order SVG image
   (string indexing, control flow, exception hierarchy, scopes, float
   representation, venv isolation, and more). No image files needed.
@@ -199,7 +212,9 @@ python-tutor/
 ├── fa_tutorial.py    merges the Tutorial Persian maps into FA_CONTENT
 ├── checker.py        quiz answer checking + sandboxed code runner (dev)
 ├── diagrams.py       SVG diagram generators (the "images")
-├── static/           ⬅ THE WEB APP: index.html, style.css, app.js, data.js
+├── static/           ⬅ THE WEB APP: index.html, style.css, app.js,
+│                       pyrunner.js (shared Python engine), data.js,
+│                       playground.html/css/js (the 🧪 Playground window)
 ├── .github/          workflows: pages.yml (web deploy) + build.yml (legacy exe)
 ├── netlify.toml      Netlify config for Git deploys
 ├── build_exe.bat     legacy Windows build script → dist\PythonTutor.exe

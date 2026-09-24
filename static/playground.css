@@ -1,0 +1,303 @@
+/* Python Playground — IDE window styles.
+   Loads on top of style.css (shared palette, buttons, lang-switch). */
+
+:root {
+  --pg-editor-bg: #101c28;
+  --pg-editor-ink: #dbe7f3;
+  --pg-console-bg: #0b1420;
+  --pg-gutter-ink: #4d6478;
+  --pg-chrome: #16364d;
+  --pg-line: rgba(255, 255, 255, 0.09);
+}
+
+/* syntax colours (dark editor theme) */
+.tk-k { color: #c792ea; }              /* keywords       */
+.tk-s { color: #a5d68d; }              /* strings        */
+.tk-c { color: #5d7a90; font-style: italic; } /* comments */
+.tk-n { color: #f2bd60; }              /* numbers        */
+.tk-b { color: #7ec8e3; }              /* builtins       */
+.tk-d { color: #f2a2b8; }              /* decorators     */
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  overflow: hidden;
+}
+html[lang="fa"] body {
+  font-family: "Vazirmatn", "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+#pg {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ------------------------------ top bar ------------------------------ */
+
+.pg-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, #2c4a6b, #1f3554);
+  color: #e6eef7;
+  flex-shrink: 0;
+}
+.pg-brand { display: flex; align-items: center; gap: 10px; }
+.pg-logo { font-size: 26px; }
+.pg-top h1 { margin: 0; font-size: 17px; }
+.pg-sub { margin: 1px 0 0; font-size: 11.5px; color: #a9c3de; }
+
+.lang-switch.on-light {
+  background: rgba(255, 255, 255, .14);
+  border-color: rgba(255, 255, 255, .22);
+}
+.lang-switch.on-light button { color: #d7e5f2; }
+.lang-switch.on-light button:hover { color: #fff; }
+.lang-switch.on-light button.active {
+  background: rgba(255, 255, 255, .94);
+  color: #1f3554;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+}
+
+/* ----------------------------- toolbar ------------------------------- */
+
+.pg-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #eef3f9;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.pg-run-btn {
+  min-width: 108px;
+  background: #1f9d55;
+}
+.pg-run-btn:hover { background: #177a42; box-shadow: 0 6px 16px rgba(31, 157, 85, .35); }
+.pg-run-btn:disabled { opacity: .6; cursor: wait; }
+
+.pg-select {
+  max-width: 230px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+.pg-select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(55, 118, 171, .15); }
+
+.pg-save {
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.pg-save.show { opacity: 1; }
+.pg-spacer { flex: 1; }
+
+.pg-toolbar .btn.secondary { font-size: 13px; padding: 8px 14px; }
+
+/* ---------------------------- main split ------------------------------ */
+
+.pg-main {
+  flex: 1;
+  display: grid;
+  grid-template-rows: minmax(0, 1.4fr) minmax(0, 1fr);
+  min-height: 0;
+}
+
+/* ------------------------------ editor -------------------------------- */
+
+.pg-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--pg-editor-bg);
+}
+.pg-filebar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  background: var(--pg-chrome);
+  color: #cfe2f3;
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
+.pg-fileico { font-size: 12px; }
+.pg-filename { font-family: Consolas, Menlo, monospace; font-weight: 600; }
+.pg-filetag {
+  margin-inline-start: auto;
+  font-size: 10.5px;
+  color: #ffd43b;
+  background: rgba(255, 212, 59, .12);
+  border: 1px solid rgba(255, 212, 59, .25);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.pg-code-area {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  direction: ltr; /* the editor itself is always LTR code */
+}
+.pg-gutter {
+  padding: 12px 0;
+  width: 46px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, .03);
+  border-right: 1px solid var(--pg-line);
+  color: var(--pg-gutter-ink);
+  font-family: Consolas, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: right;
+  overflow: hidden;
+  user-select: none;
+}
+.pg-gutter div { padding-inline-end: 10px; }
+
+.pg-stack { position: relative; flex: 1; min-width: 0; }
+.pg-hl, .pg-ta {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 12px 14px;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  tab-size: 4;
+  white-space: pre;
+  overflow: auto;
+  border: none;
+  word-wrap: normal;
+  overflow-wrap: normal;
+}
+.pg-hl {
+  pointer-events: none;
+  color: var(--pg-editor-ink);
+  background: transparent;
+  z-index: 1;
+}
+.pg-hl code { font: inherit; display: block; }
+.pg-ta {
+  z-index: 2;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: #ffd43b;
+}
+.pg-ta::selection { background: rgba(126, 200, 227, .28); color: transparent; }
+
+/* ------------------------------ console ------------------------------- */
+
+.pg-console {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 2px solid var(--pg-line);
+  background: var(--pg-console-bg);
+}
+.pg-console-head {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, .04);
+  color: #9db8cf;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  flex-shrink: 0;
+}
+.pg-console-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 13px;
+  direction: ltr;
+  text-align: left;
+}
+.pg-console-body::-webkit-scrollbar,
+.pg-hl::-webkit-scrollbar,
+.pg-ta::-webkit-scrollbar { width: 9px; height: 9px; }
+.pg-console-body::-webkit-scrollbar-thumb,
+.pg-hl::-webkit-scrollbar-thumb,
+.pg-ta::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .14); border-radius: 6px; }
+
+.pg-hint { color: #5d7a90; user-select: none; }
+
+.pg-run-block {
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.pg-run-head {
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, .05);
+  color: #9db8cf;
+  font-size: 11px;
+}
+.pg-run-out {
+  margin: 0;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #c9e6c9;
+  min-height: 18px;
+}
+.pg-run-out.loading { color: #9db8cf; font-style: italic; }
+
+.pg-run-status {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  border-top: 1px solid rgba(255, 255, 255, .06);
+}
+.pg-run-status.ok { color: #7fd6a0; }
+.pg-run-status.err { color: #f3b3ae; }
+.pg-run-block.err .pg-run-out { color: #f3b3ae; }
+
+/* ---------------------------- status bar ------------------------------ */
+
+.pg-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 5px 14px;
+  background: var(--pg-chrome);
+  color: #a9c3de;
+  font-size: 11.5px;
+  flex-shrink: 0;
+}
+.pg-shortcut { opacity: .8; }
+.pg-engine { font-weight: 600; }
+.pg-engine.ready { color: #7fd6a0; }
+.pg-engine.loading { color: #ffd43b; }
+.pg-engine.idle { color: #7d9ab8; }
+
+/* language-switch veil (same feel as the main app) */
+body.switching { pointer-events: none; }
+body.switching #pg { opacity: 0; filter: blur(4px); transition: .18s ease; }
+
+/* narrow windows: stack the console lower and hide the subtitle */
+@media (max-height: 640px) {
+  .pg-sub { display: none; }
+  .pg-main { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+}

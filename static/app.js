@@ -91,6 +91,10 @@ const STR = {
       "found next to <code>app.js</code>. Regenerate it with " +
       "<code>python build_static.py</code> and redeploy.",
     lang_aria: "Language",
+    quiz_label: "Quiz",
+    playground_btn: "🧪 Playground",
+    playground_blocked: "Popup blocked — allow popups for this site to " +
+      "open the playground window.",
   },
 
   fa: {
@@ -160,6 +164,10 @@ const STR = {
       "<code>app.js</code> پیدا نشد. آن را با <code>python build_static.py</code> " +
       "بازتولید کن و دوباره منتشر کن.",
     lang_aria: "زبان",
+    quiz_label: "آزمون",
+    playground_btn: "🧪 محیط تمرین",
+    playground_blocked: "باز کردن پنجره ممکن نشد — نمایش popup را برای " +
+      "این سایت مجاز کن.",
   },
 };
 
@@ -364,126 +372,26 @@ function checkQuestion(q, answer) {
 }
 
 /* ========================== in-browser Python ========================== */
-/* The "Try it yourself" playground runs REAL Python 3.14 in the browser:
-   Pyodide (CPython compiled to WebAssembly) executes the code inside a
-   Web Worker, so a stuck program (infinite loop, input()) is killed after
-   RUN_TIMEOUT_MS instead of freezing the page. The engine (~10 MB) is
-   fetched from a CDN on the first Run click, then cached by the browser. */
-
-const PYODIDE_VERSION = "v314.0.6";
-const PYODIDE_CDN = "https://cdn.jsdelivr.net/pyodide/" + PYODIDE_VERSION +
-  "/full/";
-const RUN_TIMEOUT_MS = 10000;
-const LOAD_TIMEOUT_MS = 60000;
-
-let pyWorker = null;
-let pyLoadPromise = null;
-let pyEngineReady = false;
-
-function pyWorkerSource() {
-  return [
-    'import { loadPyodide } from "' + PYODIDE_CDN + 'pyodide.mjs";',
-    "let pyodide = null;",
-    "self.onmessage = async (e) => {",
-    "  try {",
-    "    if (e.data.msg === 'load') {",
-    "      pyodide = await loadPyodide({ indexURL: '" + PYODIDE_CDN + "' });",
-    "      self.postMessage({ msg: 'loaded' });",
-    "    } else if (e.data.msg === 'run') {",
-    "      let out = '';",
-    "      pyodide.setStdout({ batched: (s) => { out += s + '\\n'; } });",
-    "      try {",
-    "        await pyodide.runPythonAsync(e.data.code);",
-    "        self.postMessage({ msg: 'done', ok: true, output: out.replace(/\\n+$/, '') });",
-    "      } catch (err) {",
-    "        self.postMessage({ msg: 'done', ok: false, output: String((err && err.message) || err) });",
-    "      }",
-    "    }",
-    "  } catch (err) {",
-    "    self.postMessage({ msg: 'loadError', error: String((err && err.message) || err) });",
-    "  }",
-    "};",
-  ].join("\n");
-}
-
-function makePyWorker() {
-  // Pyodide 314.x only runs inside a MODULE worker (ESM); the blob itself
-  // must still be a plain JS MIME type.
-  const url = URL.createObjectURL(
-    new Blob([pyWorkerSource()], { type: "text/javascript" }));
-  return new Worker(url, { type: "module" });
-}
-
-function askWorker(worker, msg, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error("timeout"));
-    }, timeoutMs);
-    function onMsg(e) { cleanup(); resolve(e.data); }
-    function onErr(err) { cleanup(); reject(err); }
-    function cleanup() {
-      clearTimeout(timer);
-      worker.removeEventListener("message", onMsg);
-      worker.removeEventListener("error", onErr);
-    }
-    worker.addEventListener("message", onMsg);
-    worker.addEventListener("error", onErr);
-    worker.postMessage(msg);
-  });
-}
-
-async function getPyWorker() {
-  if (pyLoadPromise) return pyLoadPromise;
-  pyLoadPromise = (async () => {
-    const w = makePyWorker();
-    pyWorker = w;
-    const res = await askWorker(w, { msg: "load" }, LOAD_TIMEOUT_MS);
-    if (res.msg !== "loaded") {
-      w.terminate();
-      pyWorker = null;
-      pyLoadPromise = null;
-      throw new Error(res.error || "the Python engine failed to start");
-    }
-    pyEngineReady = true;
-    return w;
-  })();
-  return pyLoadPromise;
-}
-
-function resetPyEngine() {
-  if (pyWorker) {
-    try { pyWorker.terminate(); } catch (e) { /* non-fatal */ }
-    pyWorker = null;
-  }
-  pyLoadPromise = null;
-  pyEngineReady = false;
-}
+/* The "Try it yourself" playground runs REAL Python 3.14 in the browser.
+   The engine itself (Pyodide in a Web Worker with a kill switch) lives in
+   pyrunner.js and is shared with the Playground window; this thin wrapper
+   only maps its error codes to localized messages. */
 
 async function apiRun(code) {
-  if (!code || !code.trim()) return { ok: true, output: "" };
-  let worker;
-  try {
-    worker = await getPyWorker();
-  } catch (e) {
-    resetPyEngine();
+  const res = await PyRunner.run(code);
+  if (!res.err) return { ok: res.ok, output: res.output };
+  if (res.err === "load") {
     return {
       ok: false,
       output: t("engine_fail", {
-        err: (e && e.message) ? e.message : "network error",
+        err: res.error || "network error",
       }),
     };
   }
-  try {
-    const res = await askWorker(worker, { msg: "run", code }, RUN_TIMEOUT_MS);
-    return { ok: !!res.ok, output: res.output || "" };
-  } catch (e) {
-    resetPyEngine(); // the worker may have been killed by the timeout
-    return {
-      ok: false,
-      output: t("engine_timeout", { sec: RUN_TIMEOUT_MS / 1000 }),
-    };
-  }
+  return {
+    ok: false,
+    output: t("engine_timeout", { sec: PyRunner.RUN_TIMEOUT_MS / 1000 }),
+  };
 }
 
 /* ============================== sidebar ================================ */
@@ -496,6 +404,18 @@ const CATEGORIES = [
   { key: "cat_howto",      emoji: "\u{1F9ED}", start: 24, end: 27 },
   { key: "cat_reference",  emoji: "\u{1F4DC}", start: 28, end: 31 },
 ];
+
+/* Chevron shown at the end of every chapter row; points at the inline
+   start edge when closed and rotates down when the group is open. */
+const CHEV_SVG = '<svg width="10" height="10" viewBox="0 0 10 10">' +
+  '<path d="M2.5 1.5 L7.5 5 L2.5 8.5" fill="none" stroke="currentColor" ' +
+  'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function faLessonTitle(lesson) {
+  return (lang === "fa" && lesson && lesson.title_fa)
+    ? lesson.title_fa
+    : lesson.title;
+}
 
 function renderSidebar() {
   const list = $("chapter-list");
@@ -511,19 +431,7 @@ function renderSidebar() {
     for (let i = cat.start - 1; i < cat.end; i++) {
       const ch = chapters[i];
       if (!ch) continue;
-      const done = chapterDone(ch);
-      const finished = quizAnsweredCount(ch) >= ch.quiz.length;
-      const btn = document.createElement("button");
-      btn.className = "chapter-item" +
-        (i === state.chapter ? " active" : "") +
-        (finished ? " finished" : "");
-      if (firstBuild) btn.style.animationDelay = (0.05 + i * 0.02) + "s";
-      btn.innerHTML =
-        '<span class="num">' + fmtNum(i + 1) + "</span>" +
-        "<span>" + esc(faChapterTitle(ch)) + "</span>" +
-        '<span class="dot">' + (done ? "\u2714" : "") + "</span>";
-      btn.addEventListener("click", () => openChapter(i));
-      list.appendChild(btn);
+      list.append(...renderChapterGroup(ch, i, firstBuild));
     }
   }
   if (firstBuild) {
@@ -550,6 +458,74 @@ function renderSidebar() {
   $("overall-bar").style.width = (100 * mastered / totalQ) + "%";
 }
 
+/* A chapter header row plus its collapsible sub-list: one item per lesson
+   and a Quiz item at the end (w3schools-style section navigation). */
+function renderChapterGroup(ch, i, firstBuild) {
+  const done = chapterDone(ch);
+  const finished = quizAnsweredCount(ch) >= ch.quiz.length;
+  const open = sidebarOpenChapter === i;
+  const activeLessonIdx = i === state.chapter && state.step.kind === "lesson"
+    ? state.step.idx : -1;
+  const quizActive = i === state.chapter && state.step.kind === "quiz";
+
+  const btn = document.createElement("button");
+  btn.className = "chapter-item" +
+    (i === state.chapter ? " active" : "") +
+    (finished ? " finished" : "") +
+    (open ? " open" : "");
+  btn.dataset.ch = i;
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (firstBuild) btn.style.animationDelay = (0.05 + i * 0.02) + "s";
+  btn.innerHTML =
+    '<span class="num">' + fmtNum(i + 1) + "</span>" +
+    '<span class="ch-title">' + esc(faChapterTitle(ch)) + "</span>" +
+    '<span class="dot">' + (done ? "\u2714" : "") + "</span>" +
+    '<span class="chev" aria-hidden="true">' + CHEV_SVG + "</span>";
+  btn.addEventListener("click", () => chapterHeaderClick(i));
+
+  const inner = document.createElement("div");
+  inner.className = "sublist-inner";
+  ch.lessons.forEach((lesson, j) => {
+    const s = document.createElement("button");
+    s.className = "sub-item" + (j === activeLessonIdx ? " active" : "");
+    s.textContent = faLessonTitle(lesson);
+    s.addEventListener("click", () => goToStep(i, "lesson", j));
+    inner.appendChild(s);
+  });
+
+  const answered = quizAnsweredCount(ch);
+  const badge = done
+    ? "\u2714"
+    : (answered ? fmtNum(answered) + "/" + fmtNum(ch.quiz.length) : "");
+  const qz = document.createElement("button");
+  qz.className = "sub-item quiz" + (quizActive ? " active" : "");
+  qz.innerHTML = '<span class="quiz-ico">\u{1F4DD}</span>' +
+    "<span>" + esc(t("quiz_label")) + "</span>" +
+    '<span class="quiz-badge">' + badge + "</span>";
+  qz.addEventListener("click", () => goToStep(i, "quiz", 0));
+  inner.appendChild(qz);
+
+  const sub = document.createElement("div");
+  sub.className = "sublist" + (open ? " open" : "");
+  sub.appendChild(inner);
+  return [btn, sub];
+}
+
+/* Keep the open/closed state of every group in the existing DOM in sync
+   with sidebarOpenChapter (without a rebuild, so CSS transitions play). */
+function syncSublists() {
+  document.querySelectorAll("#chapter-list .chapter-item").forEach((btn) => {
+    const i = +btn.dataset.ch;
+    const open = sidebarOpenChapter === i;
+    btn.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    const sub = btn.nextElementSibling;
+    if (sub && sub.classList.contains("sublist")) {
+      sub.classList.toggle("open", open);
+    }
+  });
+}
+
 function esc(s) {
   const d = document.createElement("div");
   d.textContent = s;
@@ -558,16 +534,39 @@ function esc(s) {
 
 /* ============================== navigation ============================= */
 
-function openChapter(i) {
-  state.chapter = i;
-  state.step = { kind: "lesson", idx: 0 };
+/* w3schools-style accordion: exactly one chapter group is expanded at a
+   time; it always follows the chapter being read. */
+let sidebarOpenChapter = 0;
+
+function goToStep(chIdx, kind, stepIdx) {
+  state.chapter = chIdx;
+  state.step = { kind, idx: stepIdx };
+  sidebarOpenChapter = chIdx;
   renderSidebar();
   renderView();
   $("main").scrollTop = 0;
 }
 
+function openChapter(i) {
+  goToStep(i, "lesson", 0);
+}
+
+/* Clicking a chapter header: navigate to the chapter (and open its
+   sub-list); clicking the header of the chapter you are already reading
+   just collapses the sub-list. */
+function chapterHeaderClick(i) {
+  if (state.chapter === i && sidebarOpenChapter === i) {
+    sidebarOpenChapter = null;
+    syncSublists();
+  } else {
+    openChapter(i);
+  }
+}
+
 function openStep(kind, idx) {
   state.step = { kind, idx };
+  sidebarOpenChapter = state.chapter;
+  renderSidebar();
   renderView();
   $("main").scrollTop = 0;
 }
@@ -699,7 +698,7 @@ function renderTryIt() {
   out.className = "run-output";
   runBtn.addEventListener("click", async () => {
     out.className = "run-output show";
-    out.textContent = pyEngineReady
+    out.textContent = PyRunner.status === "ready"
       ? t("running")
       : t("engine_loading");
     runBtn.disabled = true;
@@ -1025,6 +1024,16 @@ function renderQuestion(ch, q, i) {
   return box;
 }
 
+/* ============================== playground ============================= */
+
+/* The Playground is a separate page opened in its own browser window, so
+   the course stays where it is while you experiment with real Python. */
+function openPlayground() {
+  const w = window.open("playground.html", "pytutor-playground",
+    "popup=yes,width=1180,height=780");
+  if (!w) toast(t("playground_blocked"));
+}
+
 /* ============================== toast ================================== */
 
 let toastTimer = null;
@@ -1106,9 +1115,11 @@ function boot() {
   setupNameUi();
   ensureLangPills();
   applyStaticText();
+  $("open-playground").addEventListener("click", openPlayground);
   if (window.COURSE_DATA && Array.isArray(window.COURSE_DATA.chapters) &&
       window.COURSE_DATA.chapters.length) {
     chapters = window.COURSE_DATA.chapters;
+    sidebarOpenChapter = state.chapter;
   } else {
     $("view").innerHTML = "<div class='card'><h2>" +
       esc(t("load_error_title")) + "</h2><p>" +

@@ -66,6 +66,16 @@ class TutorHandler(BaseHTTPRequestHandler):
             self._serve_file("style.css", ".css")
         elif path == "/app.js":
             self._serve_file("app.js", ".js")
+        elif path == "/pyrunner.js":
+            self._serve_file("pyrunner.js", ".js")
+        elif path == "/data.js":
+            self._serve_file("data.js", ".js")
+        elif path == "/playground" or path == "/playground.html":
+            self._serve_file("playground.html", ".html")
+        elif path == "/playground.css":
+            self._serve_file("playground.css", ".css")
+        elif path == "/playground.js":
+            self._serve_file("playground.js", ".js")
         elif path == "/api/content":
             self._send(200, CONTENT_JSON, MIME[".json"])
         elif path == "/favicon.ico":

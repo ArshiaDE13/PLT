@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🐍 Python Playground</title>
+<script>
+/* Restore the saved language + text direction before first paint (no flash). */
+(function () {
+  try {
+    var l = localStorage.getItem('pytutor-lang-v1');
+    if (l !== 'fa' && l !== 'en') {
+      l = (navigator.language || '').toLowerCase().indexOf('fa') === 0 ? 'fa' : 'en';
+    }
+    var d = document.documentElement;
+    d.lang = l;
+    if (l === 'fa') { d.setAttribute('dir', 'rtl'); } else { d.removeAttribute('dir'); }
+  } catch (e) {}
+})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐍%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260924">
+<link rel="stylesheet" href="playground.css?v=20260924">
+</head>
+<body>
+<div id="pg">
+  <header class="pg-top">
+    <div class="pg-brand">
+      <span class="pg-logo">🐍</span>
+      <div>
+        <h1 data-i18n="pg_title"></h1>
+        <p class="pg-sub" data-i18n="pg_sub"></p>
+      </div>
+    </div>
+    <div class="lang-switch on-light" id="lang-pg" role="group" aria-label="Language"></div>
+  </header>
+
+  <div class="pg-toolbar">
+    <button id="pg-run" class="btn pg-run-btn"></button>
+    <select id="pg-examples" class="pg-select" data-i18n-title="pg_examples"></select>
+    <button id="pg-reset" class="btn secondary" data-i18n="pg_reset"></button>
+    <span class="pg-spacer"></span>
+    <span id="pg-save" class="pg-save"></span>
+    <button id="pg-clear" class="btn secondary" data-i18n="pg_clear"></button>
+    <button id="pg-close" class="btn secondary" data-i18n="pg_close"></button>
+  </div>
+
+  <div class="pg-main">
+    <section class="pg-editor">
+      <div class="pg-filebar">
+        <span class="pg-fileico">📄</span><span class="pg-filename">main.py</span>
+        <span class="pg-filetag">Python 3.14</span>
+      </div>
+      <div class="pg-code-area">
+        <div class="pg-gutter" id="pg-gutter" aria-hidden="true"><div>1</div></div>
+        <div class="pg-stack">
+          <pre class="pg-hl" id="pg-hl" aria-hidden="true"><code></code></pre>
+          <textarea id="pg-code" class="pg-ta" wrap="off" spellcheck="false"
+                    autocomplete="off" autocapitalize="off" autocorrect="off"
+                    aria-label="Python code editor"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="pg-console">
+      <div class="pg-console-head">
+        <span class="pg-console-title" data-i18n="pg_output"></span>
+      </div>
+      <div class="pg-console-body" id="pg-console"></div>
+    </section>
+  </div>
+
+  <footer class="pg-statusbar">
+    <span id="pg-pos">Ln 1, Col 1</span>
+    <span class="pg-spacer"></span>
+    <span class="pg-shortcut" data-i18n="pg_shortcut"></span>
+    <span id="pg-engine"></span>
+  </footer>
+</div>
+<script src="pyrunner.js?v=20260924"></script>
+<script src="playground.js?v=20260924"></script>
+</body>
+</html>
