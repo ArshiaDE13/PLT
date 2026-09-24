@@ -1137,13 +1137,13 @@ function hexInner(text, c1, c2, uid, fontSize) {
 }
 
 function shieldInner(text, c1, c2, uid) {
-  // spans nearly the full viewBox so the shield reads as big as the
-  // hexagon/square icons
+  // spans nearly the full viewBox and sits optically centred, so the
+  // shield reads as large as the hexagon/square icons
   return gradDefs(uid, c1, c2) +
-    '<path d="M17 8h66l-6 60L50 80l-27-12z" fill="url(#sg-' + uid + ')"/>' +
-    '<text x="50" y="40" text-anchor="middle" dominant-baseline="middle" ' +
+    '<path d="M12 4h76l-7 66L50 92l-31-22z" fill="url(#sg-' + uid + ')"/>' +
+    '<text x="50" y="37" text-anchor="middle" dominant-baseline="middle" ' +
     'font-family="Segoe UI, Arial, sans-serif" font-weight="800" ' +
-    'font-size="36" fill="#fff">' + text + "</text>";
+    'font-size="40" fill="#fff">' + text + "</text>";
 }
 
 function jsInner() {
@@ -1156,27 +1156,27 @@ function jsInner() {
 const SUBJECTS = [
   { id: "python", en: "Python", fa: "پایتون",
     c1: "#3776ab", c2: "#ffd43b",
-    blob: { r: [122, 116, 120, 124, 116, 120, 122, 116], rot: 0.12 },
+    blob: { r: [130, 124, 128, 132, 124, 128, 130, 124], rot: 0.12 },
     inner: pyInner, soon: false },
   { id: "c", en: "C", fa: "C",
     c1: "#03599c", c2: "#4f8cc9",
-    blob: { r: [128, 112, 128, 112, 128, 112, 128, 112], rot: Math.PI / 8 },
+    blob: { r: [136, 120, 136, 120, 136, 120, 136, 120], rot: Math.PI / 8 },
     inner: (u) => hexInner("C", "#03599c", "#4f8cc9", u, 40), soon: true },
   { id: "cpp", en: "C++", fa: "C++",
     c1: "#004482", c2: "#5f94d2",
-    blob: { r: [132, 108, 130, 110, 132, 108, 130, 110], rot: Math.PI / 8 },
+    blob: { r: [140, 116, 138, 118, 140, 116, 138, 118], rot: Math.PI / 8 },
     inner: (u) => hexInner("C++", "#004482", "#5f94d2", u, 28), soon: true },
   { id: "html", en: "HTML", fa: "HTML",
     c1: "#e44d26", c2: "#f16529",
-    blob: { r: [112, 118, 122, 128, 136, 122, 112, 108], rot: -Math.PI / 2 },
+    blob: { r: [120, 126, 130, 136, 144, 130, 120, 116], rot: -Math.PI / 2 },
     inner: (u) => shieldInner("5", "#e44d26", "#f16529", u), soon: true },
   { id: "css", en: "CSS", fa: "CSS",
     c1: "#1572b6", c2: "#33a9dc",
-    blob: { r: [114, 118, 122, 124, 132, 122, 118, 114], rot: -Math.PI / 2 },
+    blob: { r: [122, 126, 130, 132, 140, 130, 126, 122], rot: -Math.PI / 2 },
     inner: (u) => shieldInner("3", "#1572b6", "#33a9dc", u), soon: true },
   { id: "js", en: "JavaScript", fa: "جاوااسکریپت",
     c1: "#e9d823", c2: "#f7df1e",
-    blob: { r: [130, 112, 130, 112, 130, 112, 130, 112], rot: Math.PI / 4 },
+    blob: { r: [138, 120, 138, 120, 138, 120, 138, 120], rot: Math.PI / 4 },
     inner: jsInner, soon: true },
 ];
 
@@ -1268,7 +1268,7 @@ function blobTag(s) {
 function blobIconSvg(s, uid) {
   // nested <svg> places the 100×100 icon inside the 360×360 blob viewBox,
   // centred slightly above the blob's middle (name/tag sit below it)
-  return '<svg viewBox="0 0 100 100" x="105" y="72" width="150" height="150" ' +
+  return '<svg viewBox="0 0 100 100" x="105" y="66" width="150" height="150" ' +
     'style="direction:ltr" aria-hidden="true">' + s.inner(uid) + "</svg>";
 }
 

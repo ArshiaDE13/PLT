@@ -804,7 +804,7 @@ textarea.codebox:focus { border-color: var(--blue); }
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 76%;
+  width: 82%;
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 18px 44px rgba(0, 0, 0, .38));
@@ -815,7 +815,7 @@ textarea.codebox:focus { border-color: var(--blue); }
 .blob-content {
   position: absolute;
   left: 50%;
-  top: calc(50% + 52px);
+  top: calc(50% + 46px);
   transform: translateX(-50%);
   width: 70%;
   text-align: center;
@@ -841,7 +841,7 @@ textarea.codebox:focus { border-color: var(--blue); }
 
 /* gooey shape-shift: old icon melts into the centre, new one grows out;
    both stay opaque and merge through the #goo-fx filter — no crossfade */
-#icon-stage > g { transform-box: view-box; transform-origin: 180px 147px; }
+#icon-stage > g { transform-box: view-box; transform-origin: 180px 141px; }
 .icon-melt { animation: iconMelt .58s cubic-bezier(.55, .06, .68, .19) forwards; }
 .icon-grow { animation: iconGrow .66s cubic-bezier(.34, 1.45, .44, 1) .27s both; }
 @keyframes iconMelt {
