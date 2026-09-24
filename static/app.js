@@ -1345,7 +1345,8 @@ function renderChooser() {
   orbit.querySelectorAll(".lang-node").forEach((n) => n.remove());
   const wrap = orbit.closest(".orbit-wrap");
   const W = (wrap && wrap.clientWidth) || 560;
-  const R = W / 2 - 42;
+  const R = W / 2 - 28; // keep a clear gap between ring and blob edge
+  const nodeR = Math.max(46, Math.round(W * 0.13));
   SUBJECTS.forEach((s, i) => {
     const ang = -Math.PI / 2 + i * (2 * Math.PI / SUBJECTS.length);
     const x = W / 2 + R * Math.cos(ang);
@@ -1358,7 +1359,8 @@ function renderChooser() {
     node.style.top = (100 * y / W) + "%";
     node.style.setProperty("--c", s.c1);
     node.innerHTML =
-      '<span class="node-circle">' + svgIcon(s.inner("n" + i)) +
+      '<span class="node-circle" style="width:' + nodeR + 'px;height:' + nodeR + 'px">' +
+      svgIcon(s.inner("n" + i)) +
       (s.soon ? '<span class="soon-chip">' + esc(t("soon_chip")) + "</span>" : "") +
       "</span>" +
       '<span class="node-label">' + esc(subjName(s)) + "</span>";
