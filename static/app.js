@@ -1267,8 +1267,9 @@ function blobTag(s) {
 
 function blobIconSvg(s, uid) {
   // nested <svg> places the 100×100 icon inside the 360×360 blob viewBox,
-  // centred slightly above the blob's middle (name/tag sit below it)
-  return '<svg viewBox="0 0 100 100" x="105" y="66" width="150" height="150" ' +
+  // centred slightly above the blob's middle (name/tag sit below it);
+  // sized so even the wide-topped shields stay inside the blob edge
+  return '<svg viewBox="0 0 100 100" x="114" y="75" width="132" height="132" ' +
     'style="direction:ltr" aria-hidden="true">' + s.inner(uid) + "</svg>";
 }
 
