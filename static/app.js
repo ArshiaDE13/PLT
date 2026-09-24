@@ -95,6 +95,20 @@ const STR = {
     playground_btn: "🧪 Playground",
     playground_blocked: "Popup blocked — allow popups for this site to " +
       "open the playground window.",
+    subject_title: "What do you want to learn?",
+    subject_sub: "Pick a language — hover the circles to preview it in the " +
+      "big one, click to choose.",
+    subject_hint: "more tutors are on the way 🚧",
+    start_with: "Start learning {name}",
+    continue_with: "Continue with {name}",
+    coming_soon_btn: "{name} — coming soon",
+    coming_soon_tag: "under construction 🚧",
+    ready_tag: "{chapters} chapters · {questions} questions · ready now",
+    soon_toast: "{name} Tutor is on the way! Python is ready for now.",
+    subject_started: "🐍 {subj} is ready — let's go, {name}!",
+    soon_chip: "soon",
+    change_language: "🔄 Change language",
+    brand_python_sub: "from the official Python 3.14 docs",
   },
 
   fa: {
@@ -168,6 +182,20 @@ const STR = {
     playground_btn: "🧪 محیط تمرین",
     playground_blocked: "باز کردن پنجره ممکن نشد — نمایش popup را برای " +
       "این سایت مجاز کن.",
+    subject_title: "می‌خواهی چه چیزی یاد بگیری؟",
+    subject_sub: "یک زبان را انتخاب کن — برای پیش‌نمایش، ماوس را روی " +
+      "دایره‌ها ببر و برای انتخاب، کلیک کن.",
+    subject_hint: "آموزش‌های بیشتری در راه‌اند 🚧",
+    start_with: "شروع یادگیری {name}",
+    continue_with: "ادامهٔ {name}",
+    coming_soon_btn: "{name} — به‌زودی",
+    coming_soon_tag: "در حال ساخت 🚧",
+    ready_tag: "{chapters} فصل · {questions} سوال · آمادهٔ شروع",
+    soon_toast: "آموزش {name} در راه است! فعلاً پایتون آماده است.",
+    subject_started: "🐍 {subj} آماده است — بزن بریم، {name}!",
+    soon_chip: "به‌زودی",
+    change_language: "🔄 تغییر زبان",
+    brand_python_sub: "برگرفته از مستندات رسمی پایتون ۳٫۱۴",
   },
 };
 
@@ -251,8 +279,14 @@ function applyLang(next) {
   else root.removeAttribute("dir");
   applyStaticText();
   updateLangPills();
-  renderSidebar();
-  renderView(true);
+  if ($("subject").classList.contains("show")) {
+    renderChooser();
+    setPreview(previewSubject, false);
+    updateStartButton();
+  } else if (courseActive) {
+    renderSidebar();
+    renderView(true);
+  }
 }
 
 /* ======================= Persian course content ======================== */
@@ -1063,6 +1097,320 @@ function updateQuizStatus() {
   }
 }
 
+/* ============================== subjects =============================== */
+/* The main menu lets the learner pick WHICH language to learn. Six tutors
+   have room here; only Python ships content for now — the others preview
+   in the orbital menu and answer with a friendly "coming soon". */
+
+const SUBJECT_KEY = "pytutor-subject-v1";
+let courseActive = false;        // the course view is on screen
+let activeSubject = "python";    // subject of the loaded course (python only)
+let chooserChosen = "python";    // selection inside the chooser overlay
+let previewSubject = "python";   // what the big circle is morphing/showing
+
+/* --- vector icons (hand-drawn, 100×100 viewBox, no image files) -------- */
+
+const PY_ICON_PATH = "M54.9 4.5c-4.2-.02-8 .37-11.4 1.1-9.3 2-11 6.2-11 13.9v9h22v3h-22-8.3c-6.4 0-12 3.9-13.8 11.3-2 8.4-2.1 13.7 0 22.5 1.6 6.6 5.3 11.3 11.7 11.3h7.6v-10.8c0-7.4 6.4-13.9 13.8-13.9h22c6.1 0 11-5 11-11.2v-21c0-6-5-10.5-11-11.5-4.5-.75-9.2-1.1-13.4-1.1zM42 11.6c2.6 0 4.7 2.1 4.7 4.7 0 2.6-2.1 4.7-4.7 4.7-2.6 0-4.7-2.1-4.7-4.7 0-2.6 2.1-4.7 4.7-4.7z";
+
+function svgIcon(inner) {
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">' + inner + "</svg>";
+}
+
+function iconPython() {
+  return svgIcon(
+    '<path d="' + PY_ICON_PATH + '" fill="#3776ab"/>' +
+    '<path d="' + PY_ICON_PATH + '" fill="#ffd43b" transform="rotate(180 50 50)"/>' +
+    '<circle cx="42" cy="16.3" r="4.7" fill="#fff"/>' +
+    '<circle cx="58" cy="83.7" r="4.7" fill="#fff"/>');
+}
+
+function iconHex(text, c1, c2, uid, fontSize) {
+  return svgIcon(
+    '<defs><linearGradient id="sg-' + uid + '" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="' + c1 + '"/>' +
+    '<stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
+    '<path d="M32 5h36l27 45-27 45H32L5 50z" fill="url(#sg-' + uid + ')"/>' +
+    '<text x="50" y="56" text-anchor="middle" dominant-baseline="middle" ' +
+    'font-family="Segoe UI, Arial, sans-serif" font-weight="800" ' +
+    'font-size="' + fontSize + '" fill="#fff">' + text + "</text>");
+}
+
+function iconShield(text, c1, c2, uid) {
+  return svgIcon(
+    '<defs><linearGradient id="sg-' + uid + '" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="' + c1 + '"/>' +
+    '<stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
+    '<path d="M24 6h52l-4.7 51L50 65l-21.3-8z" fill="url(#sg-' + uid + ')"/>' +
+    '<text x="50" y="37" text-anchor="middle" dominant-baseline="middle" ' +
+    'font-family="Segoe UI, Arial, sans-serif" font-weight="800" ' +
+    'font-size="30" fill="#fff">' + text + "</text>");
+}
+
+function iconJS() {
+  return svgIcon(
+    '<rect x="14" y="14" width="72" height="72" rx="12" fill="#f7df1e"/>' +
+    '<text x="52" y="55" text-anchor="middle" dominant-baseline="middle" ' +
+    'font-family="Segoe UI, Arial, sans-serif" font-weight="800" ' +
+    'font-size="30" fill="#263238">JS</text>');
+}
+
+const SUBJECTS = [
+  { id: "python", en: "Python", fa: "پایتون",
+    c1: "#3776ab", c2: "#ffd43b",
+    blob: { r: [122, 116, 120, 124, 116, 120, 122, 116], rot: 0.12 },
+    icon: iconPython, soon: false },
+  { id: "c", en: "C", fa: "C",
+    c1: "#03599c", c2: "#4f8cc9",
+    blob: { r: [128, 112, 128, 112, 128, 112, 128, 112], rot: Math.PI / 8 },
+    icon: (u) => iconHex("C", "#03599c", "#4f8cc9", u, 40), soon: true },
+  { id: "cpp", en: "C++", fa: "C++",
+    c1: "#004482", c2: "#5f94d2",
+    blob: { r: [132, 108, 130, 110, 132, 108, 130, 110], rot: Math.PI / 8 },
+    icon: (u) => iconHex("C++", "#004482", "#5f94d2", u, 28), soon: true },
+  { id: "html", en: "HTML", fa: "HTML",
+    c1: "#e44d26", c2: "#f16529",
+    blob: { r: [112, 118, 122, 128, 136, 122, 112, 108], rot: -Math.PI / 2 },
+    icon: (u) => iconShield("5", "#e44d26", "#f16529", u), soon: true },
+  { id: "css", en: "CSS", fa: "CSS",
+    c1: "#1572b6", c2: "#33a9dc",
+    blob: { r: [114, 118, 122, 124, 132, 122, 118, 114], rot: -Math.PI / 2 },
+    icon: (u) => iconShield("3", "#1572b6", "#33a9dc", u), soon: true },
+  { id: "js", en: "JavaScript", fa: "جاوااسکریپت",
+    c1: "#e9d823", c2: "#f7df1e",
+    blob: { r: [130, 112, 130, 112, 130, 112, 130, 112], rot: Math.PI / 4 },
+    icon: iconJS, soon: true },
+];
+
+function subjectById(id) {
+  return SUBJECTS.find((s) => s.id === id) || SUBJECTS[0];
+}
+function subjName(s) {
+  return (lang === "fa" && s.fa) ? s.fa : s.en;
+}
+function getSavedSubject() {
+  try { return localStorage.getItem(SUBJECT_KEY) || ""; } catch (e) { return ""; }
+}
+function saveSubject(id) {
+  try { localStorage.setItem(SUBJECT_KEY, id); } catch (e) { /* non-fatal */ }
+}
+
+/* --- the big circle: a living blob whose SHAPE morphs per language ----- */
+/* The blob is a closed 8-point Catmull-Rom path; every language owns its
+   own radius signature (round like Python, hexed like C, shielded like
+   HTML…). Each frame the current radii/rotation/colors ease toward the
+   previewed language, so switching icons genuinely morphs the shape. */
+
+function hexToRgb(h) {
+  const n = parseInt(h.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function lerp(a, b, k) { return a + (b - a) * k; }
+function rgbCss(c) { return "rgb(" + c.map((v) => Math.round(v)).join(",") + ")"; }
+
+const blobState = {
+  cur: SUBJECTS[0].blob.r.slice(),
+  tgt: SUBJECTS[0].blob.r.slice(),
+  rot: SUBJECTS[0].blob.rot,
+  tgtRot: SUBJECTS[0].blob.rot,
+  c1: hexToRgb(SUBJECTS[0].c1), c2: hexToRgb(SUBJECTS[0].c2),
+  t1: hexToRgb(SUBJECTS[0].c1), t2: hexToRgb(SUBJECTS[0].c2),
+  raf: 0,
+};
+
+function blobPoints(radii, rot, t) {
+  const cx = 180, cy = 180, pts = [];
+  for (let i = 0; i < 8; i++) {
+    const a = rot + i * (Math.PI / 4);
+    const r = radii[i] + Math.sin(t / 900 + i * 1.7) * 2.6;
+    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+  }
+  let d = "M" + pts[0][0].toFixed(1) + " " + pts[0][1].toFixed(1);
+  for (let i = 0; i < 8; i++) {
+    const p0 = pts[(i + 7) % 8], p1 = pts[i], p2 = pts[(i + 1) % 8], p3 = pts[(i + 2) % 8];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += "C" + c1[0].toFixed(1) + " " + c1[1].toFixed(1) + " " +
+         c2[0].toFixed(1) + " " + c2[1].toFixed(1) + " " +
+         p2[0].toFixed(1) + " " + p2[1].toFixed(1);
+  }
+  return d + "Z";
+}
+
+function blobTick(t) {
+  const b = blobState, k = 0.085;
+  for (let i = 0; i < 8; i++) b.cur[i] = lerp(b.cur[i], b.tgt[i], k);
+  b.rot = lerp(b.rot, b.tgtRot, k);
+  for (let i = 0; i < 3; i++) {
+    b.c1[i] = lerp(b.c1[i], b.t1[i], k);
+    b.c2[i] = lerp(b.c2[i], b.t2[i], k);
+  }
+  const path = $("blob-path");
+  if (!path) { blobState.raf = 0; return; }
+  path.setAttribute("d", blobPoints(b.cur, b.rot, t));
+  $("blob-stop1").setAttribute("stop-color", rgbCss(b.c1));
+  $("blob-stop2").setAttribute("stop-color", rgbCss(b.c2));
+  blobState.raf = requestAnimationFrame(blobTick);
+}
+
+function totalQuestions() {
+  return chapters.reduce((n, ch) => n + ch.quiz.length, 0);
+}
+
+function blobTag(s) {
+  if (!s.soon) {
+    return t("ready_tag", {
+      chapters: fmtNum(chapters.length),
+      questions: fmtNum(totalQuestions()),
+    });
+  }
+  return t("coming_soon_tag");
+}
+
+function blobInner(s) {
+  return '<div class="blob-icon">' + s.icon("bc") + "</div>" +
+    '<h3 class="blob-name">' + esc(subjName(s)) + "</h3>" +
+    '<p class="blob-tag">' + esc(blobTag(s)) + "</p>";
+}
+
+/* shape-shift swap: the old icon squashes+blurs away, the new one
+   springs in — read as a liquid morph between the two logos */
+let morphTimer = null;
+function setBlobContent(s, animate) {
+  const slot = $("blob-content");
+  if (!slot) return;
+  if (!animate) { slot.innerHTML = blobInner(s); return; }
+  const out = document.createElement("div");
+  out.className = "blob-inner morph-out";
+  out.innerHTML = slot.innerHTML;
+  const inn = document.createElement("div");
+  inn.className = "blob-inner morph-in";
+  inn.innerHTML = blobInner(s);
+  slot.innerHTML = "";
+  slot.appendChild(out);
+  slot.appendChild(inn);
+  clearTimeout(morphTimer);
+  morphTimer = setTimeout(() => {
+    if (previewSubject === s.id) slot.innerHTML = blobInner(s);
+  }, 440);
+}
+
+function setPreview(id, animate) {
+  const s = subjectById(id);
+  previewSubject = id;
+  blobState.tgt = s.blob.r.slice();
+  blobState.tgtRot = s.blob.rot;
+  blobState.t1 = hexToRgb(s.c1);
+  blobState.t2 = hexToRgb(s.c2);
+  setBlobContent(s, animate);
+}
+
+function updateNodeActive() {
+  document.querySelectorAll("#orbit .lang-node").forEach((n) => {
+    n.classList.toggle("active", n.dataset.id === chooserChosen);
+  });
+}
+
+function updateStartButton() {
+  const btn = $("subject-start");
+  const s = subjectById(chooserChosen);
+  if (!s.soon) {
+    btn.disabled = false;
+    btn.textContent = (courseActive && activeSubject === s.id)
+      ? t("continue_with", { name: subjName(s) })
+      : t("start_with", { name: subjName(s) });
+    btn.style.setProperty("--sc1", s.c1);
+    btn.style.setProperty("--sc2", s.c2);
+  } else {
+    btn.disabled = true;
+    btn.textContent = t("coming_soon_btn", { name: subjName(s) });
+    btn.style.setProperty("--sc1", "#46586a");
+    btn.style.setProperty("--sc2", "#37475a");
+  }
+}
+
+function renderChooser() {
+  const orbit = $("orbit");
+  orbit.querySelectorAll(".lang-node").forEach((n) => n.remove());
+  const wrap = orbit.closest(".orbit-wrap");
+  const W = (wrap && wrap.clientWidth) || 560;
+  const R = W / 2 - 42;
+  SUBJECTS.forEach((s, i) => {
+    const ang = -Math.PI / 2 + i * (2 * Math.PI / SUBJECTS.length);
+    const x = W / 2 + R * Math.cos(ang);
+    const y = W / 2 + R * Math.sin(ang);
+    const node = document.createElement("button");
+    node.type = "button";
+    node.className = "lang-node" + (s.soon ? " soon" : "");
+    node.dataset.id = s.id;
+    node.style.left = (100 * x / W) + "%";
+    node.style.top = (100 * y / W) + "%";
+    node.style.setProperty("--c", s.c1);
+    node.innerHTML =
+      '<span class="node-circle">' + s.icon("n" + i) +
+      (s.soon ? '<span class="soon-chip">' + esc(t("soon_chip")) + "</span>" : "") +
+      "</span>" +
+      '<span class="node-label">' + esc(subjName(s)) + "</span>";
+    node.addEventListener("mouseenter", () => setPreview(s.id, true));
+    node.addEventListener("click", () => chooseSubject(s.id));
+    orbit.appendChild(node);
+  });
+  updateNodeActive();
+}
+
+function chooseSubject(id) {
+  const s = subjectById(id);
+  chooserChosen = id;
+  updateNodeActive();
+  updateStartButton();
+  setPreview(id, true);
+  if (s.soon) toast(t("soon_toast", { name: subjName(s) }));
+}
+
+function openChooser() {
+  chooserChosen = courseActive ? activeSubject
+    : (getSavedSubject() === "python" ? "python" : "python");
+  renderChooser();
+  setPreview(chooserChosen, false);
+  updateStartButton();
+  openWelcomeOverlay($("subject"));
+  if (!blobState.raf) blobState.raf = requestAnimationFrame(blobTick);
+}
+
+function closeChooser() {
+  $("subject").classList.remove("show", "entering");
+  if (blobState.raf) {
+    cancelAnimationFrame(blobState.raf);
+    blobState.raf = 0;
+  }
+}
+
+function subjectStart() {
+  const s = subjectById(chooserChosen);
+  if (s.soon) {
+    toast(t("soon_toast", { name: subjName(s) }));
+    return;
+  }
+  saveSubject(s.id);
+  const firstTime = !courseActive;
+  activeSubject = s.id;
+  closeChooser();
+  enterCourse(firstTime);
+}
+
+function enterCourse(greet) {
+  courseActive = true;
+  $("welcome").classList.remove("show", "entering");
+  closeChooser();
+  renderSidebar();
+  renderView();
+  if (greet) {
+    toast(t("subject_started", {
+      subj: subjName(subjectById(activeSubject)),
+      name: displayName(),
+    }));
+  }
+}
+
 /* ============================== welcome ================================ */
 
 function openWelcomeOverlay(overlay) {
@@ -1089,9 +1437,12 @@ function showWelcome() {
     overlay.classList.remove("show");
     overlay.classList.remove("entering");
     input.value = "";
-    renderSidebar();
-    renderView();
-    toast(t("welcome_toast", { name: n }));
+    if (getSavedSubject() === "python") {
+      enterCourse(false);
+      toast(t("welcome_toast", { name: n }));
+    } else {
+      openChooser();
+    }
   };
   start.addEventListener("click", doStart);
   input.addEventListener("keydown", (e) => {
@@ -1106,6 +1457,11 @@ function setupNameUi() {
     input.value = getUserName();
     openWelcomeOverlay($("welcome"));
     setTimeout(() => { input.focus(); input.select(); }, 300);
+  });
+  $("change-language").addEventListener("click", openChooser);
+  $("subject-start").addEventListener("click", subjectStart);
+  $("orbit").addEventListener("mouseleave", () => {
+    setPreview(chooserChosen, true);
   });
 }
 
@@ -1128,10 +1484,11 @@ function boot() {
   }
   if (!getUserName().trim()) {
     showWelcome();
-  } else {
-    renderSidebar();
-    renderView();
+  } else if (getSavedSubject() === "python") {
+    enterCourse(false);
     toast(t("welcome_back", { name: displayName() }));
+  } else {
+    openChooser();
   }
 }
 

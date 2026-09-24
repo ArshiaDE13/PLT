@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260924">
+<link rel="stylesheet" href="style.css?v=20260924b">
 </head>
 <body>
 <div id="welcome">
@@ -52,6 +52,40 @@
     <p class="welcome-hint" data-i18n="welcome_hint"></p>
   </div>
 </div>
+<div id="subject">
+  <div class="orb o1"></div>
+  <div class="orb o3"></div>
+  <div class="orb o4"></div>
+  <span class="sparkle s1">✦</span>
+  <span class="sparkle s2">✧</span>
+  <span class="sparkle s3">✦</span>
+  <div class="lang-switch" id="lang-subject" role="group" aria-label="Language"></div>
+  <div class="subject-stage">
+    <h2 class="subject-title" data-i18n="subject_title"></h2>
+    <p class="subject-sub" data-i18n="subject_sub"></p>
+    <div class="orbit-wrap">
+      <div class="orbit" id="orbit">
+        <div class="orbit-dot d1"></div>
+        <div class="orbit-dot d2"></div>
+        <div class="orbit-dot d3"></div>
+        <svg id="blob-svg" viewBox="0 0 360 360" aria-hidden="true">
+          <defs>
+            <radialGradient id="blob-grad" cx="35%" cy="28%" r="85%">
+              <stop id="blob-stop1" offset="0%"></stop>
+              <stop id="blob-stop2" offset="100%"></stop>
+            </radialGradient>
+          </defs>
+          <path id="blob-path" fill="url(#blob-grad)"></path>
+        </svg>
+        <div class="blob-content" id="blob-content"></div>
+      </div>
+    </div>
+    <div class="subject-info">
+      <button id="subject-start" class="btn btn-lg subject-start"></button>
+      <p class="subject-hint" data-i18n="subject_hint"></p>
+    </div>
+  </div>
+</div>
 <div id="app">
   <aside id="sidebar">
     <div class="brand">
@@ -70,6 +104,7 @@
     </div>
     <button id="open-playground" class="playground-btn" data-i18n="playground_btn"></button>
     <nav id="chapter-list"></nav>
+    <button id="change-language" class="change-name" data-i18n="change_language"></button>
     <button id="change-name" class="change-name" data-i18n="change_name"></button>
   </aside>
   <main id="main">
@@ -77,8 +112,8 @@
   </main>
 </div>
 <div id="toast"></div>
-<script src="data.js?v=20260924"></script>
-<script src="pyrunner.js?v=20260924"></script>
-<script src="app.js?v=20260924"></script>
+<script src="data.js?v=20260924b"></script>
+<script src="pyrunner.js?v=20260924b"></script>
+<script src="app.js?v=20260924b"></script>
 </body>
 </html>

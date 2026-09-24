@@ -27,6 +27,16 @@ files, so anyone can open it from a live link and start learning.
   & execution (`global`/`nonlocal`, frames, tracebacks), expressions
   & operator precedence, and the import system (`sys.modules`,
   packages, `__main__`).
+- **Main menu with 6 tutors** — after the name prompt, a full-screen
+  language picker asks *what do you want to learn?*: a big living blob
+  circled by six language nodes (**Python, C, C++, HTML, CSS,
+  JavaScript**). Hovering a node morphs the blob into that language's
+  own shape, gradient and icon (a real SVG path morph driven by a
+  requestAnimationFrame loop), clicking chooses it. Only the **Python
+  tutor** has content for now — the other five answer with a friendly
+  "coming soon" — but the whole flow (name → menu → course, a
+  "🔄 Change language" button in the sidebar, per-language icons and
+  colors) is built so new tutors drop straight in.
 - **w3schools-style sidebar navigation** — every chapter expands into
   its own sub-list: one entry per lesson plus a **Quiz** entry at the
   end (with an answered-count badge). Exactly one chapter is expanded

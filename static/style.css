@@ -738,6 +738,257 @@ textarea.codebox:focus { border-color: var(--blue); }
 }
 .shake { animation: shake .18s linear 2; border-color: var(--red) !important; }
 
+/* ---------- subject chooser (main menu) ---------- */
+#subject {
+  position: fixed;
+  inset: 0;
+  z-index: 990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(-45deg, #0e1f2c, #16364d, #1d4d6b, #2a5a82);
+  background-size: 400% 400%;
+  animation: gradientShift 16s ease infinite;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .6s var(--ease-smooth), visibility .6s,
+              filter .5s var(--ease-smooth), transform .5s var(--ease-smooth);
+}
+#subject.show { opacity: 1; visibility: visible; pointer-events: auto; }
+#subject.show ~ #app { filter: blur(3px); transform: scale(.997); }
+
+#lang-subject {
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 14px;
+  z-index: 2;
+}
+
+.subject-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: min(94vw, 760px);
+}
+#subject.entering .subject-stage > * { animation: fadeUp .55s var(--ease-out) backwards; }
+.subject-stage > *:nth-child(1) { animation-delay: .06s; }
+.subject-stage > *:nth-child(2) { animation-delay: .14s; }
+.subject-stage > *:nth-child(3) { animation-delay: .22s; }
+.subject-stage > *:nth-child(4) { animation-delay: .3s; }
+
+.subject-title {
+  margin: 0;
+  font-size: 30px;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .35);
+}
+.subject-sub {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  color: #cfe2f3;
+  text-align: center;
+}
+
+/* the orbital ring */
+.orbit-wrap {
+  position: relative;
+  width: min(74vmin, 540px);
+  aspect-ratio: 1;
+}
+.orbit { position: absolute; inset: 0; }
+
+#blob-svg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 18px 44px rgba(0, 0, 0, .38));
+}
+
+/* icon + name live in an HTML layer above the blob */
+.blob-content {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 58%;
+  text-align: center;
+  pointer-events: none;
+}
+.blob-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.blob-icon svg {
+  width: 96px;
+  height: 96px;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .35));
+}
+.blob-name {
+  margin: 8px 0 0;
+  font-size: 26px;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .45);
+  direction: ltr; /* "C++" must not flip on RTL pages; Persian renders fine */
+}
+.blob-tag {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, .88);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .4);
+}
+.morph-out { animation: iconOut .3s ease-in forwards; }
+.morph-in { animation: iconIn .46s var(--ease-spring); }
+@keyframes iconOut {
+  to { transform: scale(.08) rotate(60deg); opacity: 0; filter: blur(6px); }
+}
+@keyframes iconIn {
+  from { transform: scale(1.8) rotate(-50deg); opacity: 0; filter: blur(6px); }
+  to   { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+}
+
+/* the six language nodes around the ring */
+.lang-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.node-circle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid transparent;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
+  transition: transform .25s var(--ease-spring), border-color .25s var(--ease-smooth),
+              box-shadow .25s var(--ease-smooth);
+}
+.node-circle svg { width: 44px; height: 44px; display: block; }
+.lang-node:hover .node-circle {
+  transform: translateY(-7px) scale(1.12);
+  border-color: var(--c);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, .4), 0 0 22px var(--c);
+}
+.lang-node.active .node-circle {
+  border-color: var(--c);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .3), 0 0 26px var(--c);
+}
+.lang-node.soon .node-circle { background: #f4f7fb; }
+.node-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e6eef7;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .5);
+  /* keep latin names like "C++" from bidi-reordering in RTL pages */
+  direction: ltr;
+}
+.soon-chip {
+  position: absolute;
+  top: -7px;
+  inset-inline-end: -12px;
+  background: #263238;
+  color: #ffd43b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+}
+
+/* decorative dots circling the ring */
+.orbit-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .5);
+  pointer-events: none;
+}
+.orbit-dot.d1 { animation: orbitSpin 26s linear infinite; }
+.orbit-dot.d2 {
+  width: 7px; height: 7px; margin: -3.5px;
+  background: rgba(255, 212, 59, .75);
+  animation: orbitSpin 36s linear infinite reverse;
+}
+.orbit-dot.d3 {
+  width: 5px; height: 5px; margin: -2.5px;
+  background: rgba(126, 200, 227, .85);
+  animation: orbitSpin 46s linear infinite;
+  animation-delay: -14s;
+}
+@keyframes orbitSpin {
+  from { transform: rotate(0deg) translateX(min(37vmin, 268px)); }
+  to   { transform: rotate(360deg) translateX(min(37vmin, 268px)); }
+}
+
+/* start button under the ring */
+.subject-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.subject-start {
+  min-width: 300px;
+  border: none;
+  background: linear-gradient(135deg, var(--sc1, var(--blue)), var(--sc2, var(--yellow)));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .3);
+}
+.subject-start:hover {
+  background: linear-gradient(135deg, var(--sc1, var(--blue-dark)), var(--sc2, var(--yellow)));
+  filter: brightness(1.07);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .38);
+}
+.subject-start:disabled {
+  background: linear-gradient(135deg, var(--sc1, #46586a), var(--sc2, #37475a));
+  color: #c3d2de;
+  cursor: not-allowed;
+  opacity: .85;
+  box-shadow: none;
+  transform: none;
+}
+.subject-hint { margin: 0; font-size: 12px; color: #a9c3de; }
+
+@media (max-height: 760px) {
+  .orbit-wrap { width: min(62vmin, 460px); }
+  .subject-title { font-size: 24px; }
+  .blob-icon svg { width: 78px; height: 78px; }
+  .blob-name { font-size: 21px; }
+}
+@media (max-width: 620px) {
+  .node-circle { width: 58px; height: 58px; }
+  .node-circle svg { width: 36px; height: 36px; }
+  .subject-start { min-width: 240px; }
+  .subject-sub { display: none; }
+}
+
+
 /* greeting + change name */
 .greeting {
   margin: 14px 2px 2px;
