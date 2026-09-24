@@ -810,51 +810,49 @@ textarea.codebox:focus { border-color: var(--blue); }
   filter: drop-shadow(0 18px 44px rgba(0, 0, 0, .38));
 }
 
-/* icon + name live in an HTML layer above the blob */
+/* language name sits inside the blob, under the icon (icon lives in the
+   SVG's goo-filtered stage above this layer) */
 .blob-content {
   position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 58%;
+  top: calc(50% + 52px);
+  transform: translateX(-50%);
+  width: 70%;
   text-align: center;
   pointer-events: none;
 }
-.blob-inner {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
-.blob-icon svg {
-  width: 96px;
-  height: 96px;
-  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .35));
-}
 .blob-name {
-  margin: 8px 0 0;
-  font-size: 26px;
+  margin: 0;
+  font-size: 22px;
   color: #fff;
   text-shadow: 0 2px 12px rgba(0, 0, 0, .45);
   direction: ltr; /* "C++" must not flip on RTL pages; Persian renders fine */
 }
 .blob-tag {
-  margin: 2px 0 0;
-  font-size: 12px;
+  margin: 3px 0 0;
+  font-size: 11.5px;
   color: rgba(255, 255, 255, .88);
   text-shadow: 0 1px 8px rgba(0, 0, 0, .4);
 }
-.morph-out { animation: iconOut .3s ease-in forwards; }
-.morph-in { animation: iconIn .46s var(--ease-spring); }
-@keyframes iconOut {
-  to { transform: scale(.08) rotate(60deg); opacity: 0; filter: blur(6px); }
+.meta-swap { animation: metaIn .4s var(--ease-out); }
+@keyframes metaIn {
+  from { opacity: 0; transform: translateY(8px); }
 }
-@keyframes iconIn {
-  from { transform: scale(1.8) rotate(-50deg); opacity: 0; filter: blur(6px); }
-  to   { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+
+/* gooey shape-shift: old icon melts into the centre, new one grows out;
+   both stay opaque and merge through the #goo-fx filter — no crossfade */
+#icon-stage > g { transform-box: view-box; transform-origin: 180px 147px; }
+.icon-melt { animation: iconMelt .58s cubic-bezier(.55, .06, .68, .19) forwards; }
+.icon-grow { animation: iconGrow .66s cubic-bezier(.34, 1.45, .44, 1) .27s both; }
+@keyframes iconMelt {
+  0%   { transform: scale(1, 1) rotate(0deg); }
+  55%  { transform: scale(1.18, .55) rotate(-8deg); }
+  100% { transform: scale(.04, .04) rotate(-32deg); }
+}
+@keyframes iconGrow {
+  0%   { transform: scale(.04, .04) rotate(28deg); }
+  45%  { transform: scale(1.18, .55) rotate(7deg); }
+  100% { transform: scale(1, 1) rotate(0deg); }
 }
 
 /* the six language nodes around the ring */
@@ -959,6 +957,8 @@ textarea.codebox:focus { border-color: var(--blue); }
   border: none;
   background: linear-gradient(135deg, var(--sc1, var(--blue)), var(--sc2, var(--yellow)));
   box-shadow: 0 8px 22px rgba(0, 0, 0, .3);
+  /* let "C++ — به‌زودی" pick its base direction from the first strong char */
+  unicode-bidi: plaintext;
 }
 .subject-start:hover {
   background: linear-gradient(135deg, var(--sc1, var(--blue-dark)), var(--sc2, var(--yellow)));
@@ -978,8 +978,7 @@ textarea.codebox:focus { border-color: var(--blue); }
 @media (max-height: 760px) {
   .orbit-wrap { width: min(62vmin, 460px); }
   .subject-title { font-size: 24px; }
-  .blob-icon svg { width: 78px; height: 78px; }
-  .blob-name { font-size: 21px; }
+  .blob-name { font-size: 18px; }
 }
 @media (max-width: 620px) {
   .node-circle { width: 58px; height: 58px; }

@@ -107,8 +107,7 @@ const STR = {
     soon_toast: "{name} Tutor is on the way! Python is ready for now.",
     subject_started: "🐍 {subj} is ready — let's go, {name}!",
     soon_chip: "soon",
-    change_language: "🔄 Change language",
-    brand_python_sub: "from the official Python 3.14 docs",
+    home_btn: "🏠 Main menu",
   },
 
   fa: {
@@ -194,8 +193,7 @@ const STR = {
     soon_toast: "آموزش {name} در راه است! فعلاً پایتون آماده است.",
     subject_started: "🐍 {subj} آماده است — بزن بریم، {name}!",
     soon_chip: "به‌زودی",
-    change_language: "🔄 تغییر زبان",
-    brand_python_sub: "برگرفته از مستندات رسمی پایتون ۳٫۱۴",
+    home_btn: "🏠 منوی اصلی",
   },
 };
 
@@ -1113,72 +1111,73 @@ let previewSubject = "python";   // what the big circle is morphing/showing
 const PY_ICON_PATH = "M54.9 4.5c-4.2-.02-8 .37-11.4 1.1-9.3 2-11 6.2-11 13.9v9h22v3h-22-8.3c-6.4 0-12 3.9-13.8 11.3-2 8.4-2.1 13.7 0 22.5 1.6 6.6 5.3 11.3 11.7 11.3h7.6v-10.8c0-7.4 6.4-13.9 13.8-13.9h22c6.1 0 11-5 11-11.2v-21c0-6-5-10.5-11-11.5-4.5-.75-9.2-1.1-13.4-1.1zM42 11.6c2.6 0 4.7 2.1 4.7 4.7 0 2.6-2.1 4.7-4.7 4.7-2.6 0-4.7-2.1-4.7-4.7 0-2.6 2.1-4.7 4.7-4.7z";
 
 function svgIcon(inner) {
-  return '<svg viewBox="0 0 100 100" aria-hidden="true">' + inner + "</svg>";
+  return '<svg viewBox="0 0 100 100" aria-hidden="true" style="direction:ltr">' +
+    inner + "</svg>";
 }
 
-function iconPython() {
-  return svgIcon(
-    '<path d="' + PY_ICON_PATH + '" fill="#3776ab"/>' +
+function pyInner() {
+  return '<path d="' + PY_ICON_PATH + '" fill="#3776ab"/>' +
     '<path d="' + PY_ICON_PATH + '" fill="#ffd43b" transform="rotate(180 50 50)"/>' +
     '<circle cx="42" cy="16.3" r="4.7" fill="#fff"/>' +
-    '<circle cx="58" cy="83.7" r="4.7" fill="#fff"/>');
+    '<circle cx="58" cy="83.7" r="4.7" fill="#fff"/>';
 }
 
-function iconHex(text, c1, c2, uid, fontSize) {
-  return svgIcon(
-    '<defs><linearGradient id="sg-' + uid + '" x1="0" y1="0" x2="0" y2="1">' +
+function gradDefs(uid, c1, c2) {
+  return '<defs><linearGradient id="sg-' + uid + '" x1="0" y1="0" x2="0" y2="1">' +
     '<stop offset="0" stop-color="' + c1 + '"/>' +
-    '<stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
+    '<stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>';
+}
+
+function hexInner(text, c1, c2, uid, fontSize) {
+  return gradDefs(uid, c1, c2) +
     '<path d="M32 5h36l27 45-27 45H32L5 50z" fill="url(#sg-' + uid + ')"/>' +
     '<text x="50" y="56" text-anchor="middle" dominant-baseline="middle" ' +
     'font-family="Segoe UI, Arial, sans-serif" font-weight="800" ' +
-    'font-size="' + fontSize + '" fill="#fff">' + text + "</text>");
+    'font-size="' + fontSize + '" fill="#fff">' + text + "</text>";
 }
 
-function iconShield(text, c1, c2, uid) {
-  return svgIcon(
-    '<defs><linearGradient id="sg-' + uid + '" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0" stop-color="' + c1 + '"/>' +
-    '<stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs>' +
-    '<path d="M24 6h52l-4.7 51L50 65l-21.3-8z" fill="url(#sg-' + uid + ')"/>' +
-    '<text x="50" y="37" text-anchor="middle" dominant-baseline="middle" ' +
+function shieldInner(text, c1, c2, uid) {
+  // spans nearly the full viewBox so the shield reads as big as the
+  // hexagon/square icons
+  return gradDefs(uid, c1, c2) +
+    '<path d="M17 8h66l-6 60L50 80l-27-12z" fill="url(#sg-' + uid + ')"/>' +
+    '<text x="50" y="40" text-anchor="middle" dominant-baseline="middle" ' +
     'font-family="Segoe UI, Arial, sans-serif" font-weight="800" ' +
-    'font-size="30" fill="#fff">' + text + "</text>");
+    'font-size="36" fill="#fff">' + text + "</text>";
 }
 
-function iconJS() {
-  return svgIcon(
-    '<rect x="14" y="14" width="72" height="72" rx="12" fill="#f7df1e"/>' +
+function jsInner() {
+  return '<rect x="14" y="14" width="72" height="72" rx="12" fill="#f7df1e"/>' +
     '<text x="52" y="55" text-anchor="middle" dominant-baseline="middle" ' +
     'font-family="Segoe UI, Arial, sans-serif" font-weight="800" ' +
-    'font-size="30" fill="#263238">JS</text>');
+    'font-size="30" fill="#263238">JS</text>';
 }
 
 const SUBJECTS = [
   { id: "python", en: "Python", fa: "پایتون",
     c1: "#3776ab", c2: "#ffd43b",
     blob: { r: [122, 116, 120, 124, 116, 120, 122, 116], rot: 0.12 },
-    icon: iconPython, soon: false },
+    inner: pyInner, soon: false },
   { id: "c", en: "C", fa: "C",
     c1: "#03599c", c2: "#4f8cc9",
     blob: { r: [128, 112, 128, 112, 128, 112, 128, 112], rot: Math.PI / 8 },
-    icon: (u) => iconHex("C", "#03599c", "#4f8cc9", u, 40), soon: true },
+    inner: (u) => hexInner("C", "#03599c", "#4f8cc9", u, 40), soon: true },
   { id: "cpp", en: "C++", fa: "C++",
     c1: "#004482", c2: "#5f94d2",
     blob: { r: [132, 108, 130, 110, 132, 108, 130, 110], rot: Math.PI / 8 },
-    icon: (u) => iconHex("C++", "#004482", "#5f94d2", u, 28), soon: true },
+    inner: (u) => hexInner("C++", "#004482", "#5f94d2", u, 28), soon: true },
   { id: "html", en: "HTML", fa: "HTML",
     c1: "#e44d26", c2: "#f16529",
     blob: { r: [112, 118, 122, 128, 136, 122, 112, 108], rot: -Math.PI / 2 },
-    icon: (u) => iconShield("5", "#e44d26", "#f16529", u), soon: true },
+    inner: (u) => shieldInner("5", "#e44d26", "#f16529", u), soon: true },
   { id: "css", en: "CSS", fa: "CSS",
     c1: "#1572b6", c2: "#33a9dc",
     blob: { r: [114, 118, 122, 124, 132, 122, 118, 114], rot: -Math.PI / 2 },
-    icon: (u) => iconShield("3", "#1572b6", "#33a9dc", u), soon: true },
+    inner: (u) => shieldInner("3", "#1572b6", "#33a9dc", u), soon: true },
   { id: "js", en: "JavaScript", fa: "جاوااسکریپت",
     c1: "#e9d823", c2: "#f7df1e",
     blob: { r: [130, 112, 130, 112, 130, 112, 130, 112], rot: Math.PI / 4 },
-    icon: iconJS, soon: true },
+    inner: jsInner, soon: true },
 ];
 
 function subjectById(id) {
@@ -1237,7 +1236,7 @@ function blobPoints(radii, rot, t) {
 }
 
 function blobTick(t) {
-  const b = blobState, k = 0.085;
+  const b = blobState, k = 0.06; // slow enough to read as a real morph
   for (let i = 0; i < 8; i++) b.cur[i] = lerp(b.cur[i], b.tgt[i], k);
   b.rot = lerp(b.rot, b.tgtRot, k);
   for (let i = 0; i < 3; i++) {
@@ -1266,42 +1265,55 @@ function blobTag(s) {
   return t("coming_soon_tag");
 }
 
-function blobInner(s) {
-  return '<div class="blob-icon">' + s.icon("bc") + "</div>" +
-    '<h3 class="blob-name">' + esc(subjName(s)) + "</h3>" +
+function blobIconSvg(s, uid) {
+  // nested <svg> places the 100×100 icon inside the 360×360 blob viewBox,
+  // centred slightly above the blob's middle (name/tag sit below it)
+  return '<svg viewBox="0 0 100 100" x="105" y="72" width="150" height="150" ' +
+    'style="direction:ltr" aria-hidden="true">' + s.inner(uid) + "</svg>";
+}
+
+function blobMeta(s) {
+  return '<h3 class="blob-name">' + esc(subjName(s)) + "</h3>" +
     '<p class="blob-tag">' + esc(blobTag(s)) + "</p>";
 }
 
-/* shape-shift swap: the old icon squashes+blurs away, the new one
-   springs in — read as a liquid morph between the two logos */
+/* shape-shift: through a gooey SVG filter the old icon MELTS into the
+   centre while the new one GROWS out of it — both stay fully opaque, so
+   it reads as one liquid shape transforming, never a crossfade */
 let morphTimer = null;
-function setBlobContent(s, animate) {
-  const slot = $("blob-content");
-  if (!slot) return;
-  if (!animate) { slot.innerHTML = blobInner(s); return; }
-  const out = document.createElement("div");
-  out.className = "blob-inner morph-out";
-  out.innerHTML = slot.innerHTML;
-  const inn = document.createElement("div");
-  inn.className = "blob-inner morph-in";
-  inn.innerHTML = blobInner(s);
-  slot.innerHTML = "";
-  slot.appendChild(out);
-  slot.appendChild(inn);
+function setBlobContent(prev, s, animate) {
+  const stage = $("icon-stage");
+  const meta = $("blob-content");
+  if (!stage || !meta) return;
+  if (!animate) {
+    stage.innerHTML = "<g>" + blobIconSvg(s, "bc") + "</g>";
+    meta.innerHTML = blobMeta(s);
+    return;
+  }
+  stage.innerHTML =
+    '<g class="icon-melt" filter="url(#goo-fx)">' + blobIconSvg(prev, "bco") + "</g>" +
+    '<g class="icon-grow" filter="url(#goo-fx)">' + blobIconSvg(s, "bci") + "</g>";
+  meta.innerHTML = blobMeta(s);
+  meta.classList.remove("meta-swap");
+  void meta.offsetWidth;
+  meta.classList.add("meta-swap");
   clearTimeout(morphTimer);
   morphTimer = setTimeout(() => {
-    if (previewSubject === s.id) slot.innerHTML = blobInner(s);
-  }, 440);
+    if (previewSubject === s.id) {
+      stage.innerHTML = "<g>" + blobIconSvg(s, "bc") + "</g>";
+    }
+  }, 1000);
 }
 
 function setPreview(id, animate) {
+  const prev = subjectById(previewSubject);
   const s = subjectById(id);
   previewSubject = id;
   blobState.tgt = s.blob.r.slice();
   blobState.tgtRot = s.blob.rot;
   blobState.t1 = hexToRgb(s.c1);
   blobState.t2 = hexToRgb(s.c2);
-  setBlobContent(s, animate);
+  setBlobContent(prev, s, animate);
 }
 
 function updateNodeActive() {
@@ -1346,11 +1358,10 @@ function renderChooser() {
     node.style.top = (100 * y / W) + "%";
     node.style.setProperty("--c", s.c1);
     node.innerHTML =
-      '<span class="node-circle">' + s.icon("n" + i) +
+      '<span class="node-circle">' + svgIcon(s.inner("n" + i)) +
       (s.soon ? '<span class="soon-chip">' + esc(t("soon_chip")) + "</span>" : "") +
       "</span>" +
       '<span class="node-label">' + esc(subjName(s)) + "</span>";
-    node.addEventListener("mouseenter", () => setPreview(s.id, true));
     node.addEventListener("click", () => chooseSubject(s.id));
     orbit.appendChild(node);
   });
@@ -1367,8 +1378,7 @@ function chooseSubject(id) {
 }
 
 function openChooser() {
-  chooserChosen = courseActive ? activeSubject
-    : (getSavedSubject() === "python" ? "python" : "python");
+  chooserChosen = courseActive ? activeSubject : "python";
   renderChooser();
   setPreview(chooserChosen, false);
   updateStartButton();
@@ -1458,11 +1468,8 @@ function setupNameUi() {
     openWelcomeOverlay($("welcome"));
     setTimeout(() => { input.focus(); input.select(); }, 300);
   });
-  $("change-language").addEventListener("click", openChooser);
+  $("home-btn").addEventListener("click", openChooser);
   $("subject-start").addEventListener("click", subjectStart);
-  $("orbit").addEventListener("mouseleave", () => {
-    setPreview(chooserChosen, true);
-  });
 }
 
 /* ============================== boot =================================== */
