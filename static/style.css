@@ -1204,3 +1204,6 @@ html[data-subject="c"] .welcome-card h1,
 html[data-subject="c"] .welcome-card label {
   color: #03599c;
 }
+
+/* real vector icons in the brand slots (replacing emoji) */
+.brand-logo svg, .welcome-emoji svg { display: block; }

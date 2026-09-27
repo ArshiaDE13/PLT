@@ -26,7 +26,7 @@ let lang = currentLang();
 const STR = {
   en: {
     doc_title: "🐍 Python Tutor — Learn Python 3.14",
-    brand_name: "🐍 Python Tutor",
+    brand_name: "Python Tutor",
     brand_sub: "from the official Python 3.14 docs",
     welcome_sub: "Learn Python 3.14 from the official tutorial — at your own " +
       "pace. Read the lessons, study the diagrams, then prove your " +
@@ -45,6 +45,11 @@ const STR = {
     cat_library: "Library Reference",
     cat_howto: "HowTo",
     cat_reference: "Language Reference",
+    cat_c_foundations: "Foundations",
+    cat_c_memory: "Memory & Data",
+    cat_c_programs: "Program Building",
+    cat_c_deep: "Deep C",
+    cat_c_system: "System & Modern",
     chapter_complete: "🎉 Chapter {num} complete, {name}!",
     finish_toast: "🏁 You finished the whole course, {name}! 🎉",
     welcome_back: "👋 Welcome back, {name}!",
@@ -113,7 +118,7 @@ const STR = {
 
   fa: {
     doc_title: "🐍 Python Tutor — آموزش پایتون ۳٫۱۴",
-    brand_name: "🐍 آموزش پایتون",
+    brand_name: "آموزش پایتون",
     brand_sub: "برگرفته از مستندات رسمی پایتون ۳٫۱۴",
     welcome_sub: "پایتون ۳٫۱۴ را قدم‌به‌قدم از روی مستندات رسمی بیاموز — " +
       "درس‌ها را بخوان، نمودارها را ببین و سپس با آزمون‌های واقعی " +
@@ -132,6 +137,11 @@ const STR = {
     cat_library: "مرجع کتابخانه",
     cat_howto: "راهنماها",
     cat_reference: "مرجع زبان",
+    cat_c_foundations: "پایه‌ها",
+    cat_c_memory: "حافظه و داده",
+    cat_c_programs: "ساخت برنامه",
+    cat_c_deep: "C عمیق",
+    cat_c_system: "سیستم و مدرن",
     chapter_complete: "🎉 فصل {num} کامل شد، {name}!",
     finish_toast: "🏁 کل دوره را تمام کردی، {name}! 🎉",
     welcome_back: "👋 خوش برگشتی، {name}!",
@@ -220,7 +230,7 @@ const SUBJ_STR = {
   c: {
     en: {
       doc_title: "🔷 C Tutor — Learn C Programming",
-      brand_name: "🔷 C Tutor",
+      brand_name: "C Tutor",
       brand_sub: "based on Beej's Guide to C Programming",
       welcome_sub: "Learn C from Beej's Guide to C Programming — at your " +
         "own pace. Read the lessons, run real C in your browser, then " +
@@ -235,7 +245,7 @@ const SUBJ_STR = {
     },
     fa: {
       doc_title: "🔷 آموزش C — برنامه‌نویسی C را یاد بگیر",
-      brand_name: "🔷 آموزش C",
+      brand_name: "آموزش C",
       brand_sub: "برگرفته از کتاب راهنمای C اثر بیج",
       welcome_sub: "برنامه‌نویسی C را قدم‌به‌قدم از روی کتاب بیج بیاموز — " +
         "درس‌ها را بخوان، همین‌جا در مرورگر کد C واقعی اجرا کن و بعد با " +
@@ -1210,14 +1220,19 @@ function activateSubject(id) {
   return true;
 }
 
-/* Branding that follows the subject: titles, logo emoji and favicon. */
+/* Branding that follows the subject: titles, logo and favicon. The logo
+   spans get the subject's REAL vector icon (the same art as the menu),
+   not an emoji. */
 function updateSubjectBrand() {
   const s = subjectById(activeSubject);
   document.querySelectorAll("[data-subject-brand]").forEach((el) => {
     el.textContent = t("brand_name");
   });
   document.querySelectorAll("[data-subject-logo]").forEach((el) => {
-    el.textContent = s.emoji || "📘";
+    const size = el.classList.contains("welcome-emoji") ? 56 : 34;
+    el.innerHTML = '<svg viewBox="0 0 100 100" style="width:' + size +
+      'px;height:' + size + 'px;display:block;direction:ltr" aria-hidden="true">' +
+      s.inner("lg-" + activeSubject) + "</svg>";
   });
   const favicon = document.querySelector("link[rel='icon']");
   if (favicon) {
