@@ -14,6 +14,25 @@ files, so anyone can open it from a live link and start learning.
 
 ![stack](https://img.shields.io/badge/static_web_app-✔-green)
 
+## 🔷 C Tutor — now on board
+
+The main menu's **C** tutor is fully built: **13 chapters / 55 lessons /
+59 quiz questions** distilled from *Beej's Guide to C Programming* —
+from variables and pointers all the way to VLAs, `setjmp/longjmp`,
+multithreading and atomics. It ships with:
+
+- its own **C engine** (`static/cengine.js`) — a C interpreter written in
+  pure JavaScript with byte-accurate memory (real pointer arithmetic,
+  struct padding/`offsetof`, `malloc`), an in-memory filesystem so file
+  I/O actually runs, `setjmp/longjmp`, `goto`, VLAs, function pointers
+  and `_Generic` — no download, instant start, worker-sandboxed;
+- a **C Playground** window (`playground-c.html`) with C syntax
+  highlighting, examples and a stdin box for `scanf()`;
+- a **blue & white** theme that activates whenever the C course is open;
+- full **English + Persian** content, like the Python course.
+
+Pick **C** in the main menu to start it; Python remains the default.
+
 ## What's inside
 
 - **31 chapters** in official doc order — the 16-chapter tutorial, the

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CEngine test suite (dev only)</title>
+<style>
+  body { font: 13px/1.5 Consolas, Menlo, monospace; background: #10141a; color: #cfe3d2; padding: 16px; }
+  .pass { color: #7be08a; }
+  .fail { color: #ff8a80; }
+  .sum { margin-top: 14px; font-weight: bold; }
+  pre { margin: 0 0 0 24px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div id="out">running…</div>
+<script src="cengine.js"></script>
+<script>
+"use strict";
+const CASES = [
+  ["hello", '#include <stdio.h>\nint main() { printf("Hello, %s! %d+%d=%d\\n", "C", 2, 3, 2+3); printf("pi=%.4f %10.2f\\n", 3.14159, 42.5); return 0; }',
+   "Hello, C! 2+3=5\npi=3.1416      42.50\n", ""],
+  ["scanf ints+string", '#include <stdio.h>\nint main() { int n; char name[32]; scanf("%d", &n); scanf("%31s", name); printf("%d %s\\n", n * 2, name); return 0; }',
+   "84 Ada\n", "42 Ada"],
+  ["struct typedef arrow", '#include <stdio.h>\ntypedef struct { int x, y; } Point;\nint main() { Point p = {3, 4}; Point *pp = &p; pp->x = 10; printf("%d %d\\n", p.x, p.y); return 0; }',
+   "10 4\n", ""],
+  ["malloc array", '#include <stdio.h>\n#include <stdlib.h>\nint main() { int *a = malloc(5 * sizeof(int)); for (int i = 0; i < 5; i++) a[i] = i * i; for (int i = 0; i < 5; i++) printf("%d ", a[i]); free(a); printf("| freed\\n"); return 0; }',
+   "0 1 4 9 16 | freed\n", ""],
+  ["pointer swap", '#include <stdio.h>\nvoid swap(int *a, int *b) { int t = *a; *a = *b; *b = t; }\nint main() { int x = 1, y = 2; swap(&x, &y); printf("%d %d\\n", x, y); return 0; }',
+   "2 1\n", ""],
+  ["2d array", '#include <stdio.h>\nint main() { int m[2][3] = {{1,2,3},{4,5,6}}; for (int i = 0; i < 2; i++) for (int j = 0; j < 3; j++) printf("%d", m[i][j]); printf("\\n"); return 0; }',
+   "123456\n", ""],
+  ["function pointer", '#include <stdio.h>\nint add(int a, int b) { return a + b; }\nint mul(int a, int b) { return a * b; }\nint main() { int (*op)(int, int) = add; printf("%d ", op(3, 4)); op = mul; printf("%d\\n", op(3, 4)); return 0; }',
+   "7 12\n", ""],
+  ["qsort", '#include <stdio.h>\n#include <stdlib.h>\nint cmp(const void *a, const void *b) { return *(const int *)b - *(const int *)a; }\nint main() { int v[] = {5, 1, 9, 3, 7}; qsort(v, 5, sizeof(int), cmp); for (int i = 0; i < 5; i++) printf("%d ", v[i]); printf("\\n"); return 0; }',
+   "9 7 5 3 1 \n", ""],
+  ["cstring", '#include <stdio.h>\n#include <string.h>\nint main() { char s[32] = "hello"; printf("%zu\\n", strlen(s)); strcat(s, " world"); printf("%s\\n", s); if (strcmp(s, "hello world") == 0) printf("equal\\n"); char t[32]; strcpy(t, s); printf("%s\\n", t); return 0; }',
+   "5\nhello world\nequal\nhello world\n", ""],
+  ["recursion fib", '#include <stdio.h>\nint fib(int n) { return n < 2 ? n : fib(n-1) + fib(n-2); }\nint main() { printf("%d\\n", fib(15)); return 0; }',
+   "610\n", ""],
+  ["switch", '#include <stdio.h>\nint main() { for (int i = 0; i < 5; i++) { switch (i) { case 0: printf("zero "); break; case 1: printf("one "); break; default: printf("many "); } } printf("\\n"); return 0; }',
+   "zero one many many many \n", ""],
+  ["exit code", '#include <stdio.h>\n#include <stdlib.h>\nint main() { printf("bye\\n"); exit(3); }',
+   "bye\n", "", {exit: 3}],
+  ["macros", '#include <stdio.h>\n#define SQUARE(x) ((x)*(x))\n#define GREETING "hi"\n#define NAME 5\nint main() { printf("%s %d\\n", GREETING, SQUARE(5)); printf("%d\\n", SQUARE(NAME + 1)); return 0; }',
+   "hi 25\n36\n", ""],
+  ["stringize paste", '#include <stdio.h>\n#define STR(x) #x\n#define CAT(a, b) a##b\nint main() { printf("%s\\n", STR(hello there)); int CAT(va, r) = 7; printf("%d\\n", var); return 0; }',
+   "hello there\n7\n", ""],
+  ["nested struct memcpy", '#include <stdio.h>\n#include <string.h>\nstruct Node { int v; struct Node *next; };\nint main() { struct Node b = {2, 0}; struct Node a = {1, &b}; printf("%d %d\\n", a.v, a.next->v); char buf[8]; memcpy(buf, "abc", 4); printf("%s\\n", buf); return 0; }',
+   "1 2\nabc\n", ""],
+  ["sizeof types", '#include <stdio.h>\nint main() { printf("%d %d %d %d %d\\n", (int)sizeof(char), (int)sizeof(short), (int)sizeof(int), (int)sizeof(double), (int)sizeof(int *)); return 0; }',
+   "1 2 4 8 8\n", ""],
+  ["getchar lines", '#include <stdio.h>\nint main() { int c, n = 0; while ((c = getchar()) != EOF) { if (c == 10) n++; } printf("lines: %d\\n", n); return 0; }',
+   "lines: 3\n", "a\nbb\nccc\n"],
+  ["enum", '#include <stdio.h>\nenum Color { RED, GREEN = 5, BLUE };\nint main() { enum Color c = BLUE; printf("%d %d\\n", RED, c); return 0; }',
+   "0 6\n", ""],
+  ["union punning", '#include <stdio.h>\nunion U { int i; char c[4]; };\nint main() { union U u; u.i = 65; printf("%d\\n", u.c[0]); return 0; }',
+   "65\n", ""],
+  ["file read lines", '#include <stdio.h>\nint main() { FILE *f = fopen("names.txt", "r"); char line[64]; while (fgets(line, sizeof line, f)) printf("hi %s", line); fclose(f); return 0; }',
+   "hi Ada\nhi Grace\nhi Linus\nhi Margaret\n", ""],
+  ["file write+read", '#include <stdio.h>\nint main() { FILE *f = fopen("out.txt", "w"); fprintf(f, "n=%d\\n", 42); fclose(f); FILE *g = fopen("out.txt", "r"); char line[64]; fgets(line, sizeof line, g); printf("%s", line); fclose(g); return 0; }',
+   "n=42\n", ""],
+  ["binary io", '#include <stdio.h>\nint main() { int v[4] = {10, 20, 30, 40}; FILE *f = fopen("d.bin", "wb"); fwrite(v, sizeof(int), 4, f); fclose(f); int r[4] = {0}; FILE *g = fopen("d.bin", "rb"); fread(r, sizeof(int), 4, g); fclose(g); printf("%d %d %d %d\\n", r[0], r[1], r[2], r[3]); return 0; }',
+   "10 20 30 40\n", ""],
+  ["pointer arithmetic", '#include <stdio.h>\nint main() { int a[] = {10, 20, 30, 40}; int *p = a; p++; printf("%d ", *p); p += 2; printf("%d ", *p); printf("%d ", *(a + 1)); int *q = &a[3]; printf("%d\\n", (int)(q - a)); return 0; }',
+   "20 40 20 3\n", ""],
+  ["offsetof padding", '#include <stdio.h>\n#include <stddef.h>\nstruct S { char c; int i; char c2; };\nint main() { printf("%zu %zu %zu %zu\\n", offsetof(struct S, c), offsetof(struct S, i), offsetof(struct S, c2), sizeof(struct S)); return 0; }',
+   "0 4 8 12\n", ""],
+  ["bitfields", '#include <stdio.h>\n#include <stddef.h>\nstruct B { unsigned int a : 3; unsigned int b : 5; unsigned int c : 7; };\nint main() { struct B x; x.a = 5; x.b = 19; x.c = 100; printf("%u %u %u %zu\\n", x.a, x.b, x.c, sizeof(struct B)); return 0; }',
+   "5 19 100 4\n", ""],
+  ["setjmp longjmp", '#include <stdio.h>\n#include <setjmp.h>\njmp_buf env;\nvoid deep(int n) { if (n == 0) longjmp(env, 42); deep(n - 1); }\nint main() { int r = setjmp(env); if (r == 0) { deep(5); printf("not reached\\n"); } else printf("jumped %d\\n", r); return 0; }',
+   "jumped 42\n", ""],
+  ["goto cleanup", '#include <stdio.h>\n#include <stdlib.h>\nint main() { int *p = malloc(10 * sizeof(int)); for (int i = 0; i < 10; i++) { if (i == 4) goto cleanup; p[i] = i; } printf("not reached\\n"); cleanup: printf("done at i=%d\\n", 4); free(p); return 0; }',
+   "done at i=4\n", ""],
+  ["vla", '#include <stdio.h>\nint main() { int n = 4; int arr[n]; for (int i = 0; i < n; i++) arr[i] = i * 3; printf("%d %d\\n", (int)sizeof(arr), arr[3]); return 0; }',
+   "16 9\n", ""],
+  ["compound literal", '#include <stdio.h>\nstruct P { int x, y; };\nvoid show(struct P p) { printf("(%d,%d)\\n", p.x, p.y); }\nint main() { show((struct P){3, 9}); int *a = (int[]){7, 8, 9}; printf("%d %d\\n", a[0], a[2]); return 0; }',
+   "(3,9)\n7 9\n", ""],
+  ["_Generic", '#include <stdio.h>\n#define TNAME(x) _Generic((x), int: "int", double: "double", char *: "char*", default: "other")\nint main() { int i = 1; double d = 2; printf("%s %s\\n", TNAME(i), TNAME(d)); return 0; }',
+   "int double\n", ""],
+  ["argv", '#include <stdio.h>\nint main(int argc, char *argv[]) { printf("%d %s\\n", argc, argv[0]); return 0; }',
+   "1 main\n", ""],
+  ["sprintf", '#include <stdio.h>\nint main() { char buf[64]; sprintf(buf, "%05d|%-6s|%+.2f", 42, "hi", 3.14159); printf("%s\\n", buf); return 0; }',
+   "00042|hi    |+3.14\n", ""],
+  ["unsigned wrap", '#include <stdio.h>\nint main() { unsigned int u = 4294967295u; u = u + 1; printf("%u\\n", u); unsigned char b = 250; b = b + 10; printf("%d\\n", b); return 0; }',
+   "0\n4\n", ""],
+  ["casts", '#include <stdio.h>\nint main() { double d = 3.99; int i = (int)d; printf("%d\\n", i); int big = 300; char c = (char)big; printf("%d\\n", c); double x = 7 / 2; double y = 7 / 2.0; printf("%.1f %.1f\\n", x, y); return 0; }',
+   "3\n44\n3.0 3.5\n", ""],
+  ["bitwise", '#include <stdio.h>\nint main() { int a = 12; printf("%d %d %d %d %d %d\\n", a & 10, a | 3, a ^ 6, ~a, a << 2, a >> 2); return 0; }',
+   "8 15 10 -13 48 3\n", ""],
+  ["sscanf", '#include <stdio.h>\nint main() { int a, b; char w[16]; sscanf("12 apples 34", "%d %s %d", &a, w, &b); printf("%d %s %d\\n", a, w, b); return 0; }',
+   "12 apples 34\n", ""],
+  ["atof strtol", '#include <stdio.h>\n#include <stdlib.h>\nint main() { printf("%g\\n", atof("2.5xyz")); printf("%ld\\n", strtol("ff", 0, 16)); return 0; }',
+   "2.5\n255\n", ""],
+  ["assert pass+fail", '#include <stdio.h>\n#include <assert.h>\nint main() { int x = 5; assert(x == 5); printf("ok\\n"); assert(x == 6); printf("never\\n"); return 0; }',
+   "ok\nAssertion failed: x == 6, file main.c:3\n", "", {failContains: "assertion"}],
+  ["null deref", '#include <stdio.h>\nint main() { int *p = 0; printf("%d\\n", *p); return 0; }',
+   "", "segmentation fault", {failContains: "NULL"}],
+  ["div zero", '#include <stdio.h>\nint main() { int x = 5, y = 0; printf("%d\\n", x / y); return 0; }',
+   "", "division by zero", {failContains: "division by zero"}],
+  ["out of bounds caught", '#include <stdio.h>\nint main() { int a[3] = {1,2,3}; int *p = a; p = p + 100000; printf("%d\\n", *p); return 0; }',
+   "", "invalid memory", {failContains: "invalid memory"}],
+  ["gmtime fields", '#include <stdio.h>\n#include <time.h>\nint main() { time_t t = 86400; struct tm *tm = gmtime(t); printf("%d %d %d %d\\n", tm->tm_year + 1900, tm->tm_mon, tm->tm_mday, tm->tm_hour); return 0; }',
+   "1970 0 2 0\n", ""],
+  ["strftime", '#include <stdio.h>\n#include <time.h>\nint main() { struct tm tm = {0}; tm.tm_year = 126; tm.tm_mon = 8; tm.tm_mday = 27; char buf[64]; strftime(buf, sizeof buf, "%Y-%m-%d %a", &tm); printf("%s\\n", buf); return 0; }',
+   "2026-09-27 Sun\n", ""],
+  ["realloc", '#include <stdio.h>\n#include <stdlib.h>\nint main() { int *p = malloc(2 * sizeof(int)); p[0] = 7; p[1] = 8; p = realloc(p, 4 * sizeof(int)); p[2] = 9; p[3] = 10; printf("%d %d %d %d\\n", p[0], p[1], p[2], p[3]); return 0; }',
+   "7 8 9 10\n", ""],
+  ["conditional compilation", '#include <stdio.h>\n#define DEBUG 1\nint main() {\n#if DEBUG\n    printf("debug on\\n");\n#else\n    printf("debug off\\n");\n#endif\n#ifdef DEBUG\n    printf("defined\\n");\n#endif\n#ifndef NOPE\n    printf("nope undefined\\n");\n#endif\n    return 0;\n}',
+   "debug on\ndefined\nnope undefined\n", ""],
+  ["string concat literals", '#include <stdio.h>\nint main() { printf("hello, " "world\\n"); return 0; }',
+   "hello, world\n", ""],
+  ["const keyword", '#include <stdio.h>\nint main() { const int n = 10; printf("%d\\n", n); return 0; }',
+   "10\n", ""],
+  ["struct copy+return", '#include <stdio.h>\nstruct P { int x, y; };\nstruct P addone(struct P a) { a.x++; a.y++; return a; }\nint main() { struct P p = {1, 2}; struct P q = addone(p); printf("%d %d %d %d\\n", p.x, p.y, q.x, q.y); return 0; }',
+   "1 2 2 3\n", ""],
+  ["bool stdbool", '#include <stdio.h>\n#include <stdbool.h>\nint main() { bool flag = true; if (flag) printf("yes\\n"); if (!false) printf("also\\n"); printf("%d\\n", (int)sizeof(bool)); return 0; }',
+   "yes\nalso\n1\n", ""],
+  ["stdint types", '#include <stdio.h>\n#include <stdint.h>\nint main() { uint8_t a = 200; int32_t b = -5; printf("%d %d\\n", a, b); printf("%d\\n", INT32_MAX); return 0; }',
+   "200 -5\n2147483647\n", ""],
+  ["do while", '#include <stdio.h>\nint main() { int i = 10; do { printf("%d ", i); i++; } while (i < 13); printf("\\n"); return 0; }',
+   "10 11 12 \n", ""],
+  ["continue", '#include <stdio.h>\nint main() { for (int i = 0; i < 6; i++) { if (i % 2) continue; printf("%d", i); } printf("\\n"); return 0; }',
+   "024\n", ""],
+  ["static global", '#include <stdio.h>\nint counter(void) { static int n = 0; n++; return n; }\nint main() { printf("%d %d %d\\n", counter(), counter(), counter()); return 0; }',
+   "1 2 3\n", ""],
+  ["variadic call rejected", '#include <stdio.h>\nint sum(int n, ...) { return 0; }\nint main() { printf("%d\\n", sum(3, 1, 2, 3)); return 0; }',
+   "", "variable argument list", {failContains: "variable argument list"}],
+  ["unknown header rejected", '#include <foobar.h>\nint main() { return 0; }',
+   "", "header", {failContains: "header"}],
+];
+
+let pass = 0, fail = 0;
+const lines = [];
+for (const [name, src, expected, input, opt] of CASES) {
+  const o = opt || {};
+  if (o.maxSteps) o.maxSteps = o.maxSteps;
+  const res = window.CEngine.run(src, { input: input || "" });
+  let ok = true, detail = "";
+  if (o.failContains) {
+    if (res.ok) { ok = false; detail = "expected failure containing " + JSON.stringify(o.failContains) + " but got ok, output=" + JSON.stringify(res.output); }
+    else if ((res.error + res.output).indexOf(o.failContains) === -1) {
+      ok = false; detail = "expected failure containing " + JSON.stringify(o.failContains) + " got: " + res.error;
+    }
+  } else {
+    if (!res.ok) { ok = false; detail = "error: " + res.error; }
+    else if (res.output !== expected) { ok = false; detail = "output mismatch:\n    want: " + JSON.stringify(expected) + "\n    got:  " + JSON.stringify(res.output) + (res.exit !== undefined ? "\n    exit: " + res.exit : ""); }
+    else if (o.exit !== undefined && res.exit !== o.exit) { ok = false; detail = "exit mismatch: want " + o.exit + " got " + res.exit; }
+  }
+  if (ok) { pass++; lines.push('<span class="pass">PASS</span> ' + name); }
+  else { fail++; lines.push('<span class="fail">FAIL</span> ' + name + '\n<pre>' + detail + "</pre>"); }
+}
+document.getElementById("out").innerHTML =
+  lines.join("\n") + '<div class="sum">' + pass + " passed, " + fail + " failed</div>";
+</script>
+</body>
+</html>

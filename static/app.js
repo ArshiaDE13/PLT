@@ -26,6 +26,7 @@ let lang = currentLang();
 const STR = {
   en: {
     doc_title: "🐍 Python Tutor — Learn Python 3.14",
+    brand_name: "🐍 Python Tutor",
     brand_sub: "from the official Python 3.14 docs",
     welcome_sub: "Learn Python 3.14 from the official tutorial — at your own " +
       "pace. Read the lessons, study the diagrams, then prove your " +
@@ -112,6 +113,7 @@ const STR = {
 
   fa: {
     doc_title: "🐍 Python Tutor — آموزش پایتون ۳٫۱۴",
+    brand_name: "🐍 آموزش پایتون",
     brand_sub: "برگرفته از مستندات رسمی پایتون ۳٫۱۴",
     welcome_sub: "پایتون ۳٫۱۴ را قدم‌به‌قدم از روی مستندات رسمی بیاموز — " +
       "درس‌ها را بخوان، نمودارها را ببین و سپس با آزمون‌های واقعی " +
@@ -198,7 +200,11 @@ const STR = {
 };
 
 function t(key, vars) {
-  let s = (STR[lang] && STR[lang][key]) || STR.en[key] || key;
+  /* subject-specific strings win: the C course overrides branding and
+     engine wording without touching the shared table below */
+  const sub = SUBJ_STR[activeSubject];
+  let s = (sub && sub[lang] && sub[lang][key]) ||
+    (STR[lang] && STR[lang][key]) || STR.en[key] || key;
   if (vars) {
     for (const k of Object.keys(vars)) {
       s = s.replace(new RegExp("\\{" + k + "\\}", "g"), String(vars[k]));
@@ -206,6 +212,44 @@ function t(key, vars) {
   }
   return s;
 }
+
+/* Per-subject string overrides: the loaded course re-brands shared UI
+   strings (title, subtitle, engine wording, toasts) without touching
+   the shared STR table above. */
+const SUBJ_STR = {
+  c: {
+    en: {
+      doc_title: "🔷 C Tutor — Learn C Programming",
+      brand_name: "🔷 C Tutor",
+      brand_sub: "based on Beej's Guide to C Programming",
+      welcome_sub: "Learn C from Beej's Guide to C Programming — at your " +
+        "own pace. Read the lessons, run real C in your browser, then " +
+        "prove your knowledge with quiz questions.",
+      welcome_toast: "🎉 Welcome, {name}! Ready to learn C?",
+      tryit_label: "💻 Try it yourself — write C and run it:",
+      engine_loading: "⏳ Starting the in-browser C engine…",
+      engine_fail: "Couldn't start the C engine ({err}). Press Run again.",
+      engine_timeout: "Timed out after {sec}s — the code may be stuck in " +
+        "an infinite loop or waiting for scanf().",
+      subject_started: "🔷 C is ready — let's go, {name}!",
+    },
+    fa: {
+      doc_title: "🔷 آموزش C — برنامه‌نویسی C را یاد بگیر",
+      brand_name: "🔷 آموزش C",
+      brand_sub: "برگرفته از کتاب راهنمای C اثر بیج",
+      welcome_sub: "برنامه‌نویسی C را قدم‌به‌قدم از روی کتاب بیج بیاموز — " +
+        "درس‌ها را بخوان، همین‌جا در مرورگر کد C واقعی اجرا کن و بعد با " +
+        "سؤال‌های آزمون دانش‌ات را محک بزن.",
+      welcome_toast: "🎉 خوش آمدی، {name}! آماده‌ای C یاد بگیری؟",
+      tryit_label: "💻 خودت امتحان کن — کد C بنویس و اجرا کن:",
+      engine_loading: "⏳ در حال آماده‌سازی موتور C در مرورگر…",
+      engine_fail: "راه‌اندازی موتور C ممکن نشد ({err}). دوباره «اجرا» را بزن.",
+      engine_timeout: "پس از {sec} ثانیه متوقف شد — شاید کد در حلقهٔ بی‌نهایت " +
+        "گیر کرده یا منتظر scanf() است.",
+      subject_started: "🔷 C آماده است — بزن بریم، {name}!",
+    },
+  },
+};
 
 const FA_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
 function fmtNum(n) {
@@ -276,6 +320,7 @@ function applyLang(next) {
   if (next === "fa") root.setAttribute("dir", "rtl");
   else root.removeAttribute("dir");
   applyStaticText();
+  updateSubjectBrand();
   updateLangPills();
   if ($("subject").classList.contains("show")) {
     renderChooser();
@@ -299,7 +344,9 @@ function faChapterTitle(ch) {
 }
 function faLesson(lesson) {
   if (lang === "fa" && lesson && lesson.html_fa) {
-    return { __fa: true, title: lesson.title_fa || lesson.title, html: lesson.html_fa };
+    // the try-it seed code is shared: the sandbox runs the same C either way
+    return { __fa: true, title: lesson.title_fa || lesson.title,
+             html: lesson.html_fa, tryit: lesson.tryit };
   }
   return lesson;
 }
@@ -403,14 +450,18 @@ function checkQuestion(q, answer) {
   return { correct: false, explain: "Unknown question type: " + q.type };
 }
 
-/* ========================== in-browser Python ========================== */
-/* The "Try it yourself" playground runs REAL Python 3.14 in the browser.
-   The engine itself (Pyodide in a Web Worker with a kill switch) lives in
-   pyrunner.js and is shared with the Playground window; this thin wrapper
-   only maps its error codes to localized messages. */
+/* ========================== in-browser engines ========================= */
+/* The "Try it yourself" playground runs REAL code in the browser: Pyodide
+   for Python (pyrunner.js) and the CEngine interpreter for C (cengine.js,
+   wrapped in a worker by crunner.js). Both share the same interface. */
+
+function engineFor(subject) {
+  return subject === "c" ? window.CRunner : window.PyRunner;
+}
 
 async function apiRun(code) {
-  const res = await PyRunner.run(code);
+  const runner = engineFor(activeSubject);
+  const res = await runner.run(code);
   if (!res.err) return { ok: res.ok, output: res.output };
   if (res.err === "load") {
     return {
@@ -422,20 +473,33 @@ async function apiRun(code) {
   }
   return {
     ok: false,
-    output: t("engine_timeout", { sec: PyRunner.RUN_TIMEOUT_MS / 1000 }),
+    output: t("engine_timeout", { sec: runner.RUN_TIMEOUT_MS / 1000 }),
   };
 }
 
 /* ============================== sidebar ================================ */
 
-/* One header per official documentation section, in course order. */
-const CATEGORIES = [
-  { key: "cat_tutorial",   emoji: "\u{1F4D6}", start: 1,  end: 16 },
-  { key: "cat_using",      emoji: "\u2699\uFE0F", start: 17, end: 19 },
-  { key: "cat_library",    emoji: "\u{1F4DA}", start: 20, end: 23 },
-  { key: "cat_howto",      emoji: "\u{1F9ED}", start: 24, end: 27 },
-  { key: "cat_reference",  emoji: "\u{1F4DC}", start: 28, end: 31 },
-];
+/* One header per course section, in course order — per subject. */
+const CATEGORIES = {
+  python: [
+    { key: "cat_tutorial",   emoji: "\u{1F4D6}", start: 1,  end: 16 },
+    { key: "cat_using",      emoji: "\u2699\uFE0F", start: 17, end: 19 },
+    { key: "cat_library",    emoji: "\u{1F4DA}", start: 20, end: 23 },
+    { key: "cat_howto",      emoji: "\u{1F9ED}", start: 24, end: 27 },
+    { key: "cat_reference",  emoji: "\u{1F4DC}", start: 28, end: 31 },
+  ],
+  c: [
+    { key: "cat_c_foundations", emoji: "\u{1F9F1}", start: 1,  end: 2  },
+    { key: "cat_c_memory",      emoji: "\u{1F9E0}", start: 3,  end: 5  },
+    { key: "cat_c_programs",    emoji: "\u{1F6E0}\uFE0F", start: 6,  end: 8  },
+    { key: "cat_c_deep",        emoji: "\u{1F52C}", start: 9,  end: 10 },
+    { key: "cat_c_system",      emoji: "\u{1F5A5}\uFE0F", start: 11, end: 13 },
+  ],
+};
+
+function sidebarCategories() {
+  return CATEGORIES[activeSubject] || CATEGORIES.python;
+}
 
 /* Chevron shown at the end of every chapter row; points at the inline
    start edge when closed and rotates down when the group is open. */
@@ -453,7 +517,7 @@ function renderSidebar() {
   const list = $("chapter-list");
   list.innerHTML = "";
   const firstBuild = !sidebarEntranceShown;
-  for (const cat of CATEGORIES) {
+  for (const cat of sidebarCategories()) {
     const head = document.createElement("div");
     head.className = "category-head";
     head.innerHTML = '<span class="cat-emoji">' + cat.emoji +
@@ -690,8 +754,11 @@ function renderLesson(ch) {
   applyDir(body, !!lesson.__fa);
   card.appendChild(body);
 
-  // try-it playground
-  card.appendChild(renderTryIt());
+  // try-it playground — C lessons ship their own seed code; the Python
+  // course keeps its always-present box, C shows one only where runnable
+  if (activeSubject === "python" || lesson.tryit) {
+    card.appendChild(renderTryIt(lesson.tryit));
+  }
 
   const nav = document.createElement("div");
   nav.className = "nav-row";
@@ -712,7 +779,7 @@ function renderLesson(ch) {
   return card;
 }
 
-function renderTryIt() {
+function renderTryIt(seedCode) {
   const box = document.createElement("div");
   box.className = "tryit";
   const label = document.createElement("div");
@@ -720,7 +787,10 @@ function renderTryIt() {
   label.textContent = t("tryit_label");
   const ta = document.createElement("textarea");
   ta.className = "codebox";
-  ta.placeholder = "print('hello')\nfor i in range(3):\n    print(i)";
+  ta.value = seedCode || "";
+  ta.placeholder = activeSubject === "c"
+    ? "#include <stdio.h>\nint main(void) {\n    printf(\"hello\\n\");\n    return 0;\n}"
+    : "print('hello')\nfor i in range(3):\n    print(i)";
   const row = document.createElement("div");
   row.className = "answer-actions";
   const runBtn = document.createElement("button");
@@ -728,9 +798,10 @@ function renderTryIt() {
   runBtn.textContent = t("run");
   const out = document.createElement("div");
   out.className = "run-output";
+  const runner = engineFor(activeSubject);
   runBtn.addEventListener("click", async () => {
     out.className = "run-output show";
-    out.textContent = PyRunner.status === "ready"
+    out.textContent = runner.status === "ready"
       ? t("running")
       : t("engine_loading");
     runBtn.disabled = true;
@@ -1059,9 +1130,10 @@ function renderQuestion(ch, q, i) {
 /* ============================== playground ============================= */
 
 /* The Playground is a separate page opened in its own browser window, so
-   the course stays where it is while you experiment with real Python. */
+   the course stays where it is while you experiment with real code. */
 function openPlayground() {
-  const w = window.open("playground.html", "pytutor-playground",
+  const page = activeSubject === "c" ? "playground-c.html" : "playground.html";
+  const w = window.open(page, "pytutor-playground-" + activeSubject,
     "popup=yes,width=1180,height=780");
   if (!w) toast(t("playground_blocked"));
 }
@@ -1097,14 +1169,62 @@ function updateQuizStatus() {
 
 /* ============================== subjects =============================== */
 /* The main menu lets the learner pick WHICH language to learn. Six tutors
-   have room here; only Python ships content for now — the others preview
-   in the orbital menu and answer with a friendly "coming soon". */
+   have room here; Python and C ship full content — the others preview in
+   the orbital menu and answer with a friendly "coming soon". */
 
 const SUBJECT_KEY = "pytutor-subject-v1";
 let courseActive = false;        // the course view is on screen
-let activeSubject = "python";    // subject of the loaded course (python only)
+let activeSubject = "python";    // subject of the loaded course
 let chooserChosen = "python";    // selection inside the chooser overlay
 let previewSubject = "python";   // what the big circle is morphing/showing
+
+function courseDataFor(id) {
+  if (id === "python") {
+    return (window.COURSE_DATA &&
+            Array.isArray(window.COURSE_DATA.chapters) &&
+            window.COURSE_DATA.chapters.length) ? window.COURSE_DATA : null;
+  }
+  if (id === "c") {
+    return (window.COURSE_DATA_C &&
+            Array.isArray(window.COURSE_DATA_C.chapters) &&
+            window.COURSE_DATA_C.chapters.length) ? window.COURSE_DATA_C : null;
+  }
+  return null;
+}
+
+/* Load a subject's course: swap the chapter data, reset navigation state
+   and re-theme the page (data-subject drives the CSS variables). */
+function activateSubject(id) {
+  const data = courseDataFor(id);
+  if (!data) return false;
+  if (activeSubject !== id || chapters.length !== data.chapters.length) {
+    chapters = data.chapters;
+    state = { chapter: 0, step: { kind: "lesson", idx: 0 } };
+    sidebarOpenChapter = 0;
+    sidebarEntranceShown = false; // replay the sidebar entrance
+  }
+  activeSubject = id;
+  document.documentElement.dataset.subject = id;
+  updateSubjectBrand();
+  applyStaticText();
+  return true;
+}
+
+/* Branding that follows the subject: titles, logo emoji and favicon. */
+function updateSubjectBrand() {
+  const s = subjectById(activeSubject);
+  document.querySelectorAll("[data-subject-brand]").forEach((el) => {
+    el.textContent = t("brand_name");
+  });
+  document.querySelectorAll("[data-subject-logo]").forEach((el) => {
+    el.textContent = s.emoji || "📘";
+  });
+  const favicon = document.querySelector("link[rel='icon']");
+  if (favicon) {
+    favicon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E" +
+      encodeURIComponent(s.emoji || "📘") + "%3C/text%3E%3C/svg%3E";
+  }
+}
 
 /* --- vector icons (hand-drawn, 100×100 viewBox, no image files) -------- */
 
@@ -1154,27 +1274,27 @@ function jsInner() {
 }
 
 const SUBJECTS = [
-  { id: "python", en: "Python", fa: "پایتون",
+  { id: "python", en: "Python", fa: "پایتون", emoji: "🐍",
     c1: "#3776ab", c2: "#ffd43b",
     blob: { r: [130, 124, 128, 132, 124, 128, 130, 124], rot: 0.12 },
     inner: pyInner, soon: false },
-  { id: "c", en: "C", fa: "C",
+  { id: "c", en: "C", fa: "C", emoji: "🔷",
     c1: "#03599c", c2: "#4f8cc9",
     blob: { r: [136, 120, 136, 120, 136, 120, 136, 120], rot: Math.PI / 8 },
-    inner: (u) => hexInner("C", "#03599c", "#4f8cc9", u, 40), soon: true },
-  { id: "cpp", en: "C++", fa: "C++",
+    inner: (u) => hexInner("C", "#03599c", "#4f8cc9", u, 40), soon: false },
+  { id: "cpp", en: "C++", fa: "C++", emoji: "🔷",
     c1: "#004482", c2: "#5f94d2",
     blob: { r: [140, 116, 138, 118, 140, 116, 138, 118], rot: Math.PI / 8 },
     inner: (u) => hexInner("C++", "#004482", "#5f94d2", u, 28), soon: true },
-  { id: "html", en: "HTML", fa: "HTML",
+  { id: "html", en: "HTML", fa: "HTML", emoji: "🛡️",
     c1: "#e44d26", c2: "#f16529",
     blob: { r: [120, 126, 130, 136, 144, 130, 120, 116], rot: -Math.PI / 2 },
     inner: (u) => shieldInner("5", "#e44d26", "#f16529", u), soon: true },
-  { id: "css", en: "CSS", fa: "CSS",
+  { id: "css", en: "CSS", fa: "CSS", emoji: "🛡️",
     c1: "#1572b6", c2: "#33a9dc",
     blob: { r: [122, 126, 130, 132, 140, 130, 126, 122], rot: -Math.PI / 2 },
     inner: (u) => shieldInner("3", "#1572b6", "#33a9dc", u), soon: true },
-  { id: "js", en: "JavaScript", fa: "جاوااسکریپت",
+  { id: "js", en: "JavaScript", fa: "جاوااسکریپت", emoji: "🟨",
     c1: "#e9d823", c2: "#f7df1e",
     blob: { r: [138, 120, 138, 120, 138, 120, 138, 120], rot: Math.PI / 4 },
     inner: jsInner, soon: true },
@@ -1255,11 +1375,22 @@ function totalQuestions() {
   return chapters.reduce((n, ch) => n + ch.quiz.length, 0);
 }
 
+function subjectChapterCount(id) {
+  const data = courseDataFor(id);
+  return data ? data.chapters.length : 0;
+}
+
+function subjectQuestionCount(id) {
+  const data = courseDataFor(id);
+  return data
+    ? data.chapters.reduce((n, ch) => n + ch.quiz.length, 0) : 0;
+}
+
 function blobTag(s) {
   if (!s.soon) {
     return t("ready_tag", {
-      chapters: fmtNum(chapters.length),
-      questions: fmtNum(totalQuestions()),
+      chapters: fmtNum(subjectChapterCount(s.id)),
+      questions: fmtNum(subjectQuestionCount(s.id)),
     });
   }
   return t("coming_soon_tag");
@@ -1403,9 +1534,12 @@ function subjectStart() {
     toast(t("soon_toast", { name: subjName(s) }));
     return;
   }
+  if (!activateSubject(s.id)) {
+    toast(t("soon_toast", { name: subjName(s) }));
+    return;
+  }
   saveSubject(s.id);
   const firstTime = !courseActive;
-  activeSubject = s.id;
   closeChooser();
   enterCourse(firstTime);
 }
@@ -1450,7 +1584,9 @@ function showWelcome() {
     overlay.classList.remove("show");
     overlay.classList.remove("entering");
     input.value = "";
-    if (getSavedSubject() === "python") {
+    const saved = getSavedSubject();
+    if (courseDataFor(saved)) {
+      activateSubject(saved);
       enterCourse(false);
       toast(t("welcome_toast", { name: n }));
     } else {
@@ -1482,23 +1618,24 @@ function boot() {
   ensureLangPills();
   applyStaticText();
   $("open-playground").addEventListener("click", openPlayground);
-  if (window.COURSE_DATA && Array.isArray(window.COURSE_DATA.chapters) &&
-      window.COURSE_DATA.chapters.length) {
-    chapters = window.COURSE_DATA.chapters;
-    sidebarOpenChapter = state.chapter;
-  } else {
+  if (!courseDataFor("python") && !courseDataFor("c")) {
     $("view").innerHTML = "<div class='card'><h2>" +
       esc(t("load_error_title")) + "</h2><p>" +
       t("load_error_body") + "</p></div>";
     return;
   }
+  // default the course data to Python so the chooser's ready-tag works
+  activateSubject("python");
   if (!getUserName().trim()) {
     showWelcome();
-  } else if (getSavedSubject() === "python") {
-    enterCourse(false);
-    toast(t("welcome_back", { name: displayName() }));
   } else {
-    openChooser();
+    const saved = getSavedSubject();
+    if (courseDataFor(saved) && activateSubject(saved)) {
+      enterCourse(false);
+      toast(t("welcome_back", { name: displayName() }));
+    } else {
+      openChooser();
+    }
   }
 }
 

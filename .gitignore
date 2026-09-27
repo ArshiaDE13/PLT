@@ -13,3 +13,6 @@ dist_README.txt
 verify_exe.py
 _diagtest.py
 _jcheck.py
+
+# C Tutor prep materials (local only — the book text stays out of the repo)
+.ctutor/

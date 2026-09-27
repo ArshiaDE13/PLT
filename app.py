@@ -13,6 +13,7 @@ import webbrowser
 
 import checker
 import content
+import ctutor_content
 import server
 
 # Windows consoles default to cp1252, which cannot encode emoji or the
@@ -36,19 +37,25 @@ def selftest():
         if not cond:
             failures.append(msg)
 
-    # 1. content structure
+    # 1. content structure (both courses)
     try:
         content.validate()
+        ctutor_content.validate()
     except ValueError as exc:
         print("FAIL: content validation\n%s" % exc)
         return 1
     # build_content returns rendered copies (diagrams inlined, Persian
     # variants attached); validate() left the source chapters untouched.
     chapters = content.build_content()
+    c_chapters = ctutor_content.build_content()
     total_q = sum(len(ch["quiz"]) for ch in chapters)
     total_lessons = sum(len(ch["lessons"]) for ch in chapters)
-    print("content OK: %d chapters, %d lessons, %d quiz questions"
+    c_total_q = sum(len(ch["quiz"]) for ch in c_chapters)
+    c_total_lessons = sum(len(ch["lessons"]) for ch in c_chapters)
+    print("content OK: python %d chapters, %d lessons, %d quiz questions"
           % (len(chapters), total_lessons, total_q))
+    print("content OK: c %d chapters, %d lessons, %d quiz questions"
+          % (len(c_chapters), c_total_lessons, c_total_q))
 
     # 2. diagrams render without leftover placeholders (both languages)
     for ch in chapters:
@@ -57,34 +64,43 @@ def selftest():
                 html = lesson.get(key) or ""
                 expect("[[diag:" not in html and "[[code" not in html,
                        "%s: leftover diagram/code placeholder" % ch["id"])
+    # C course: Persian lessons get English code listings spliced in —
+    # no [[codeN]] or [[diag:...]] may survive there either.
+    for ch in c_chapters:
+        for lesson in ch["lessons"]:
+            for key in ("html", "html_fa"):
+                html = lesson.get(key) or ""
+                expect("[[diag:" not in html and "[[code" not in html,
+                       "%s: leftover code placeholder" % ch["id"])
 
     # 3. every quiz question is answerable correctly by its own data
-    for ch in chapters:
-        for i, q in enumerate(ch["quiz"]):
-            if q["type"] == "mc":
-                ok, _ = checker.check_mc(q, q["answer"])
-                wrong, _ = checker.check_mc(q, (q["answer"] + 1) % len(q["options"]))
-            elif q["type"] == "blank":
-                ok, _ = checker.check_blank(q, q["answers"][0])
-                wrong, _ = checker.check_blank(q, "zzz definitely wrong zzz")
-            elif q["type"] == "order":
-                ok, _ = checker.check_order(q, list(range(len(q["lines"]))))
-                wrong, _ = checker.check_order(q, [1, 0] + list(range(2, len(q["lines"]))))
-            elif q["type"] == "codefill":
-                blanks = [b for b in q["code"] if isinstance(b, dict)]
-                answer = [b["answers"][0] for b in blanks]
-                ok, _ = checker.check_codefill(q, answer)
-                wrong = list(answer)
-                if wrong:
-                    wrong[0] = "zzz definitely wrong zzz"
-                wrong, _ = checker.check_codefill(q, wrong)
-            else:
-                expect(False, "%s quiz[%d]: unexpected type" % (ch["id"], i))
-                continue
-            expect(ok, "%s quiz[%d]: correct answer rejected" % (ch["id"], i))
-            expect(not wrong, "%s quiz[%d]: wrong answer accepted" % (ch["id"], i))
+    for chapters_in_course in (chapters, c_chapters):
+        for ch in chapters_in_course:
+            for i, q in enumerate(ch["quiz"]):
+                if q["type"] == "mc":
+                    ok, _ = checker.check_mc(q, q["answer"])
+                    wrong, _ = checker.check_mc(q, (q["answer"] + 1) % len(q["options"]))
+                elif q["type"] == "blank":
+                    ok, _ = checker.check_blank(q, q["answers"][0])
+                    wrong, _ = checker.check_blank(q, "zzz definitely wrong zzz")
+                elif q["type"] == "order":
+                    ok, _ = checker.check_order(q, list(range(len(q["lines"]))))
+                    wrong, _ = checker.check_order(q, [1, 0] + list(range(2, len(q["lines"]))))
+                elif q["type"] == "codefill":
+                    blanks = [b for b in q["code"] if isinstance(b, dict)]
+                    answer = [b["answers"][0] for b in blanks]
+                    ok, _ = checker.check_codefill(q, answer)
+                    wrong = list(answer)
+                    if wrong:
+                        wrong[0] = "zzz definitely wrong zzz"
+                    wrong, _ = checker.check_codefill(q, wrong)
+                else:
+                    expect(False, "%s quiz[%d]: unexpected type" % (ch["id"], i))
+                    continue
+                expect(ok, "%s quiz[%d]: correct answer rejected" % (ch["id"], i))
+                expect(not wrong, "%s quiz[%d]: wrong answer accepted" % (ch["id"], i))
     print("quiz checkers OK: all %d questions accept the right answer and "
-          "reject a wrong one" % total_q)
+          "reject a wrong one" % (total_q + c_total_q))
 
     # 4. code runner (only meaningful under a real interpreter)
     result = checker.run_code("print(2 + 3)\n")

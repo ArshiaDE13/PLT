@@ -1142,3 +1142,65 @@ html[dir="rtl"] #toast { direction: rtl; }
     transition-duration: .01ms !important;
   }
 }
+
+/* ---------- C Tutor theme (blue & white) ---------- */
+/* The whole palette shifts when the C course is active: html[data-subject]
+   is set by app.js on subject activation. Blue carries the brand; white
+   replaces Python's yellow accents. */
+html[data-subject="c"] {
+  --blue: #0b69c2;
+  --blue-dark: #03599c;
+  --yellow: #cfe8ff;           /* accent slots go ice-blue/white */
+  --bg: #ffffff;
+  --card: #ffffff;
+  --line: #d7e5f2;
+  --code-bg: #f2f7fd;
+}
+
+html[data-subject="c"] #sidebar {
+  background: linear-gradient(180deg, #0b5da4, #023e70);
+}
+
+/* sidebar accents that hardcode Python's yellow */
+html[data-subject="c"] .chapter-item.active {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 3px 0 0 var(--yellow);
+}
+html[data-subject="c"] .chapter-item .num {
+  color: #dcecff;
+  background: rgba(255, 255, 255, 0.14);
+}
+html[data-subject="c"] .sub-item.active {
+  background: rgba(255, 255, 255, 0.14);
+  border-inline-start-color: var(--yellow);
+  color: #eaf5ff;
+}
+html[data-subject="c"] .playground-btn {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(3, 89, 156, 0.4));
+  color: #eaf5ff;
+}
+html[data-subject="c"] .playground-btn:hover {
+  border-color: #fff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(3, 89, 156, 0.5));
+  box-shadow: 0 6px 18px rgba(207, 232, 255, 0.25);
+}
+html[data-subject="c"] .progress-text { color: #d7e9f9; }
+html[data-subject="c"] .change-name { color: #cfe3f7; }
+
+/* the welcome/menu overlays turn pure blue for the C course */
+html[data-subject="c"] #welcome,
+html[data-subject="c"] #subject {
+  background: linear-gradient(-45deg, #023e70, #0b69c2, #03599c, #0a4f8c);
+  background-size: 400% 400%;
+}
+
+html[data-subject="c"] #toast {
+  background: #03599c;
+}
+
+/* welcome-card heading follows the blue brand */
+html[data-subject="c"] .welcome-card h1,
+html[data-subject="c"] .welcome-card label {
+  color: #03599c;
+}
