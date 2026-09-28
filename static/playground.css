@@ -355,3 +355,16 @@ body.switching #pg { opacity: 0; filter: blur(4px); transition: .18s ease; }
   user-select: none;
 }
 .pg-live input { accent-color: var(--blue); }
+
+/* CSS playground — tab bar for the dual-pane editor */
+.pg-tabs { display: flex; gap: 4px; }
+.pg-tab {
+  border: none; background: transparent; cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--muted); padding: 4px 12px; border-radius: 6px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.pg-tab:hover { background: rgba(21, 114, 182, 0.08); }
+.pg-tab.active {
+  background: var(--blue); color: white;
+}

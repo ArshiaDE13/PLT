@@ -1274,3 +1274,58 @@ html[data-subject="html"] .welcome-card label {
   margin-top: 8px;
 }
 .html-preview-note { display: none; }
+
+/* ---------- CSS Tutor theme (web blue & white) ---------- */
+html[data-subject="css"] {
+  --blue: #1572b6;
+  --blue-dark: #0d5590;
+  --yellow: #c9e6f9;           /* accent slots go light blue */
+  --bg: #ffffff;
+  --line: #d9e8f4;
+  --code-bg: #f0f7fd;
+}
+
+html[data-subject="css"] #sidebar {
+  background: linear-gradient(180deg, #1572b6, #0a3c63);
+}
+
+html[data-subject="css"] .chapter-item.active {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 3px 0 0 var(--yellow);
+}
+html[data-subject="css"] .chapter-item .num {
+  color: #d6ecfb;
+  background: rgba(255, 255, 255, 0.14);
+}
+html[data-subject="css"] .sub-item.active {
+  background: rgba(255, 255, 255, 0.14);
+  border-inline-start-color: var(--yellow);
+  color: #e8f4fd;
+}
+html[data-subject="css"] .playground-btn {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(21, 114, 182, 0.4));
+  color: #e8f4fd;
+}
+html[data-subject="css"] .playground-btn:hover {
+  border-color: #fff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(21, 114, 182, 0.5));
+  box-shadow: 0 6px 18px rgba(201, 230, 249, 0.25);
+}
+html[data-subject="css"] .progress-text { color: #d9eaf8; }
+html[data-subject="css"] .change-name { color: #cde2f4; }
+
+html[data-subject="css"] #welcome,
+html[data-subject="css"] #subject {
+  background: linear-gradient(-45deg, #0a3c63, #1572b6, #33a9dc, #0d5590);
+  background-size: 400% 400%;
+}
+
+html[data-subject="css"] #toast {
+  background: #1572b6;
+}
+
+html[data-subject="css"] .welcome-card h1,
+html[data-subject="css"] .welcome-card label {
+  color: #0d5590;
+}

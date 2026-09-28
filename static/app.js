@@ -54,6 +54,15 @@ const STR = {
     cat_h_structure: "Structure & Tables",
     cat_h_forms: "Forms & Attributes",
     cat_h_advanced: "Accessibility & Advanced",
+    cat_s_fundamentals: "Fundamentals",
+    cat_s_values: "Values & Boxes",
+    cat_s_typography: "Typography",
+    cat_s_layout: "Layout",
+    cat_s_responsive: "Responsive",
+    cat_s_modern: "Modern CSS",
+    cat_s_effects: "Visual Effects",
+    cat_s_advanced: "Advanced",
+    cat_s_pro: "Professional",
     chapter_complete: "🎉 Chapter {num} complete, {name}!",
     finish_toast: "🏁 You finished the whole course, {name}! 🎉",
     welcome_back: "👋 Welcome back, {name}!",
@@ -150,6 +159,15 @@ const STR = {
     cat_h_structure: "ساختار و جدول‌ها",
     cat_h_forms: "فرم‌ها و ویژگی‌ها",
     cat_h_advanced: "دسترس‌پذیری و پیشرفته",
+    cat_s_fundamentals: "مبانی",
+    cat_s_values: "مقادیر و جعبه‌ها",
+    cat_s_typography: "تایپوگرافی",
+    cat_s_layout: "چیدمان",
+    cat_s_responsive: "واکنش‌گرا",
+    cat_s_modern: "CSS مدرن",
+    cat_s_effects: "جلوه‌های بصری",
+    cat_s_advanced: "پیشرفته",
+    cat_s_pro: "حرفه‌ای",
     chapter_complete: "🎉 فصل {num} کامل شد، {name}!",
     finish_toast: "🏁 کل دوره را تمام کردی، {name}! 🎉",
     welcome_back: "👋 خوش برگشتی، {name}!",
@@ -289,6 +307,30 @@ const SUBJ_STR = {
       welcome_toast: "🎉 خوش آمدی، {name}! آماده‌ای HTML یاد بگیری؟",
       tryit_label: "💻 خودت امتحان کن — HTML بنویس و زنده ببینش:",
       subject_started: "🛡️ HTML آماده است — بزن بریم، {name}!",
+    },
+  },
+  css: {
+    en: {
+      doc_title: "🎯 CSS Tutor — Learn CSS",
+      brand_name: "CSS Tutor",
+      brand_sub: "based on MDN Web Docs",
+      welcome_sub: "Learn CSS — the presentation of the web — across 30 " +
+        "chapters: from selectors and the cascade to Flexbox, Grid and " +
+        "modern CSS. Style real pages and see them render live.",
+      welcome_toast: "🎉 Welcome, {name}! Ready to learn CSS?",
+      tryit_label: "💻 Try it yourself — edit the CSS and see it live:",
+      subject_started: "🎯 CSS is ready — let's go, {name}!",
+    },
+    fa: {
+      doc_title: "🎯 آموزش CSS — سی‌اس‌اس را یاد بگیر",
+      brand_name: "آموزش CSS",
+      brand_sub: "برگرفته از اسناد وب MDN",
+      welcome_sub: "CSS — نمایشِ وب — را در ۳۰ فصل بیاموز: از سلکتورها و " +
+        "آبشار تا Flexbox، Grid و CSS مدرن. صفحه‌های واقعی را استایل بده " +
+        "و زنده ببینشان.",
+      welcome_toast: "🎉 خوش آمدی، {name}! آماده‌ای CSS یاد بگیری؟",
+      tryit_label: "💻 خودت امتحان کن — CSS را ویرایش کن و زنده ببینش:",
+      subject_started: "🎯 CSS آماده است — بزن بریم، {name}!",
     },
   },
 };
@@ -545,6 +587,17 @@ const CATEGORIES = {
     { key: "cat_h_structure",   emoji: "\u{1F3D7}\uFE0F", start: 6,  end: 7  },
     { key: "cat_h_forms",       emoji: "\u{1F4DD}", start: 8,  end: 9  },
     { key: "cat_h_advanced",    emoji: "\u{1F9F0}", start: 10, end: 13 },
+  ],
+  css: [
+    { key: "cat_s_fundamentals", emoji: "\u{1F331}", start: 1,  end: 3  },
+    { key: "cat_s_values",       emoji: "\u{1F7E1}", start: 4,  end: 7  },
+    { key: "cat_s_typography",   emoji: "\u270D\uFE0F", start: 8,  end: 8  },
+    { key: "cat_s_layout",       emoji: "\u{1F7E3}", start: 9,  end: 13 },
+    { key: "cat_s_responsive",   emoji: "\u{1F4F1}", start: 14, end: 15 },
+    { key: "cat_s_modern",       emoji: "\u{1F534}", start: 16, end: 19 },
+    { key: "cat_s_effects",      emoji: "\u{1FA84}", start: 20, end: 23 },
+    { key: "cat_s_advanced",     emoji: "\u26AB", start: 24, end: 27 },
+    { key: "cat_s_pro",          emoji: "\u{1F3DB}\uFE0F", start: 28, end: 30 },
   ],
 };
 
@@ -805,9 +858,9 @@ function renderLesson(ch) {
   applyDir(body, !!lesson.__fa);
   card.appendChild(body);
 
-  // try-it playground — HTML renders live; C lessons ship seed code; the
-  // Python course keeps its always-present box
-  if (activeSubject === "html") {
+  // try-it playground — HTML/CSS render live; C lessons ship seed code;
+  // the Python course keeps its always-present box
+  if (activeSubject === "html" || activeSubject === "css") {
     card.appendChild(renderTryItHtml(lesson.tryit));
   } else if (activeSubject === "python" || lesson.tryit) {
     card.appendChild(renderTryIt(lesson.tryit));
@@ -1233,6 +1286,7 @@ function renderQuestion(ch, q, i) {
 function openPlayground() {
   const page = activeSubject === "c" ? "playground-c.html"
     : activeSubject === "html" ? "playground-html.html"
+    : activeSubject === "css" ? "playground-css.html"
     : "playground.html";
   const w = window.open(page, "pytutor-playground-" + activeSubject,
     "popup=yes,width=1180,height=780");
@@ -1294,6 +1348,11 @@ function courseDataFor(id) {
     return (window.COURSE_DATA_HTML &&
             Array.isArray(window.COURSE_DATA_HTML.chapters) &&
             window.COURSE_DATA_HTML.chapters.length) ? window.COURSE_DATA_HTML : null;
+  }
+  if (id === "css") {
+    return (window.COURSE_DATA_CSS &&
+            Array.isArray(window.COURSE_DATA_CSS.chapters) &&
+            window.COURSE_DATA_CSS.chapters.length) ? window.COURSE_DATA_CSS : null;
   }
   return null;
 }
@@ -1404,7 +1463,7 @@ const SUBJECTS = [
   { id: "css", en: "CSS", fa: "CSS", emoji: "🛡️",
     c1: "#1572b6", c2: "#33a9dc",
     blob: { r: [122, 126, 130, 132, 140, 130, 126, 122], rot: -Math.PI / 2 },
-    inner: (u) => shieldInner("3", "#1572b6", "#33a9dc", u), soon: true },
+    inner: (u) => shieldInner("3", "#1572b6", "#33a9dc", u), soon: false },
   { id: "js", en: "JavaScript", fa: "جاوااسکریپت", emoji: "🟨",
     c1: "#e9d823", c2: "#f7df1e",
     blob: { r: [138, 120, 138, 120, 138, 120, 138, 120], rot: Math.PI / 4 },
@@ -1730,7 +1789,7 @@ function boot() {
   applyStaticText();
   $("open-playground").addEventListener("click", openPlayground);
   if (!courseDataFor("python") && !courseDataFor("c") &&
-      !courseDataFor("html")) {
+      !courseDataFor("html") && !courseDataFor("css")) {
     $("view").innerHTML = "<div class='card'><h2>" +
       esc(t("load_error_title")) + "</h2><p>" +
       t("load_error_body") + "</p></div>";
