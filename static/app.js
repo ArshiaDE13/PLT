@@ -50,6 +50,10 @@ const STR = {
     cat_c_programs: "Program Building",
     cat_c_deep: "Deep C",
     cat_c_system: "System & Modern",
+    cat_h_basics: "HTML Basics",
+    cat_h_structure: "Structure & Tables",
+    cat_h_forms: "Forms & Attributes",
+    cat_h_advanced: "Accessibility & Advanced",
     chapter_complete: "🎉 Chapter {num} complete, {name}!",
     finish_toast: "🏁 You finished the whole course, {name}! 🎉",
     welcome_back: "👋 Welcome back, {name}!",
@@ -142,6 +146,10 @@ const STR = {
     cat_c_programs: "ساخت برنامه",
     cat_c_deep: "C عمیق",
     cat_c_system: "سیستم و مدرن",
+    cat_h_basics: "مبانی HTML",
+    cat_h_structure: "ساختار و جدول‌ها",
+    cat_h_forms: "فرم‌ها و ویژگی‌ها",
+    cat_h_advanced: "دسترس‌پذیری و پیشرفته",
     chapter_complete: "🎉 فصل {num} کامل شد، {name}!",
     finish_toast: "🏁 کل دوره را تمام کردی، {name}! 🎉",
     welcome_back: "👋 خوش برگشتی، {name}!",
@@ -257,6 +265,30 @@ const SUBJ_STR = {
       engine_timeout: "پس از {sec} ثانیه متوقف شد — شاید کد در حلقهٔ بی‌نهایت " +
         "گیر کرده یا منتظر scanf() است.",
       subject_started: "🔷 C آماده است — بزن بریم، {name}!",
+    },
+  },
+  html: {
+    en: {
+      doc_title: "🛡️ HTML Tutor — Learn HTML",
+      brand_name: "HTML Tutor",
+      brand_sub: "based on MDN Web Docs",
+      welcome_sub: "Learn HTML — the structure of the web — at your own " +
+        "pace. Read the lessons, see your markup render live in the " +
+        "browser, then prove your knowledge with quiz questions.",
+      welcome_toast: "🎉 Welcome, {name}! Ready to learn HTML?",
+      tryit_label: "💻 Try it yourself — write HTML and see it render:",
+      subject_started: "🛡️ HTML is ready — let's go, {name}!",
+    },
+    fa: {
+      doc_title: "🛡️ آموزش HTML — اچ‌تی‌ام‌ال را یاد بگیر",
+      brand_name: "آموزش HTML",
+      brand_sub: "برگرفته از اسناد وب MDN",
+      welcome_sub: "HTML — ساختار وب — را قدم‌به‌قدم بیاموز. درس‌ها را بخوان، " +
+        "نشانه‌گذاری‌ات را زنده در مرورگر ببین و بعد با سؤال‌های آزمون " +
+        "دانش‌ات را محک بزن.",
+      welcome_toast: "🎉 خوش آمدی، {name}! آماده‌ای HTML یاد بگیری؟",
+      tryit_label: "💻 خودت امتحان کن — HTML بنویس و زنده ببینش:",
+      subject_started: "🛡️ HTML آماده است — بزن بریم، {name}!",
     },
   },
 };
@@ -469,6 +501,9 @@ function engineFor(subject) {
   return subject === "c" ? window.CRunner : window.PyRunner;
 }
 
+/* Engine wording for status lines: HTML has no engine (the browser
+   renders), so those strings never surface there. */
+
 async function apiRun(code) {
   const runner = engineFor(activeSubject);
   const res = await runner.run(code);
@@ -504,6 +539,12 @@ const CATEGORIES = {
     { key: "cat_c_programs",    emoji: "\u{1F6E0}\uFE0F", start: 6,  end: 8  },
     { key: "cat_c_deep",        emoji: "\u{1F52C}", start: 9,  end: 10 },
     { key: "cat_c_system",      emoji: "\u{1F5A5}\uFE0F", start: 11, end: 13 },
+  ],
+  html: [
+    { key: "cat_h_basics",      emoji: "\u{1F680}", start: 1,  end: 5  },
+    { key: "cat_h_structure",   emoji: "\u{1F3D7}\uFE0F", start: 6,  end: 7  },
+    { key: "cat_h_forms",       emoji: "\u{1F4DD}", start: 8,  end: 9  },
+    { key: "cat_h_advanced",    emoji: "\u{1F9F0}", start: 10, end: 13 },
   ],
 };
 
@@ -764,9 +805,11 @@ function renderLesson(ch) {
   applyDir(body, !!lesson.__fa);
   card.appendChild(body);
 
-  // try-it playground — C lessons ship their own seed code; the Python
-  // course keeps its always-present box, C shows one only where runnable
-  if (activeSubject === "python" || lesson.tryit) {
+  // try-it playground — HTML renders live; C lessons ship seed code; the
+  // Python course keeps its always-present box
+  if (activeSubject === "html") {
+    card.appendChild(renderTryItHtml(lesson.tryit));
+  } else if (activeSubject === "python" || lesson.tryit) {
     card.appendChild(renderTryIt(lesson.tryit));
   }
 
@@ -787,6 +830,52 @@ function renderLesson(ch) {
   nav.appendChild(next);
   card.appendChild(nav);
   return card;
+}
+
+/* The HTML try-it is a live renderer: the browser IS the engine, so the
+   code goes into a sandboxed iframe instead of a text console. */
+function renderTryItHtml(seedCode) {
+  const box = document.createElement("div");
+  box.className = "tryit";
+  const label = document.createElement("div");
+  label.className = "tryit-label";
+  label.textContent = t("tryit_label");
+  const ta = document.createElement("textarea");
+  ta.className = "codebox";
+  ta.value = seedCode || "";
+  ta.placeholder = "<!DOCTYPE html>\n<html lang=\"en\">\n<head><title>Demo</title></head>\n<body>\n  <h1>Hello!</h1>\n</body>\n</html>";
+  ta.style.minHeight = "170px";
+  const row = document.createElement("div");
+  row.className = "answer-actions";
+  const runBtn = document.createElement("button");
+  runBtn.className = "btn secondary";
+  runBtn.textContent = t("run");
+  const frame = document.createElement("iframe");
+  frame.className = "html-preview";
+  frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
+  frame.setAttribute("title", "HTML preview");
+  const out = document.createElement("div");
+  out.className = "run-output show html-preview-note";
+  function render() {
+    out.style.display = "none";
+    frame.srcdoc = ta.value;
+  }
+  runBtn.addEventListener("click", render);
+  // render the seed once, lazily, when the box first scrolls into view
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) {
+      render();
+      io.disconnect();
+    }
+  });
+  io.observe(frame);
+  row.appendChild(runBtn);
+  box.appendChild(label);
+  box.appendChild(ta);
+  box.appendChild(row);
+  box.appendChild(frame);
+  box.appendChild(out);
+  return box;
 }
 
 function renderTryIt(seedCode) {
@@ -1142,7 +1231,9 @@ function renderQuestion(ch, q, i) {
 /* The Playground is a separate page opened in its own browser window, so
    the course stays where it is while you experiment with real code. */
 function openPlayground() {
-  const page = activeSubject === "c" ? "playground-c.html" : "playground.html";
+  const page = activeSubject === "c" ? "playground-c.html"
+    : activeSubject === "html" ? "playground-html.html"
+    : "playground.html";
   const w = window.open(page, "pytutor-playground-" + activeSubject,
     "popup=yes,width=1180,height=780");
   if (!w) toast(t("playground_blocked"));
@@ -1198,6 +1289,11 @@ function courseDataFor(id) {
     return (window.COURSE_DATA_C &&
             Array.isArray(window.COURSE_DATA_C.chapters) &&
             window.COURSE_DATA_C.chapters.length) ? window.COURSE_DATA_C : null;
+  }
+  if (id === "html") {
+    return (window.COURSE_DATA_HTML &&
+            Array.isArray(window.COURSE_DATA_HTML.chapters) &&
+            window.COURSE_DATA_HTML.chapters.length) ? window.COURSE_DATA_HTML : null;
   }
   return null;
 }
@@ -1304,7 +1400,7 @@ const SUBJECTS = [
   { id: "html", en: "HTML", fa: "HTML", emoji: "🛡️",
     c1: "#e44d26", c2: "#f16529",
     blob: { r: [120, 126, 130, 136, 144, 130, 120, 116], rot: -Math.PI / 2 },
-    inner: (u) => shieldInner("5", "#e44d26", "#f16529", u), soon: true },
+    inner: (u) => shieldInner("5", "#e44d26", "#f16529", u), soon: false },
   { id: "css", en: "CSS", fa: "CSS", emoji: "🛡️",
     c1: "#1572b6", c2: "#33a9dc",
     blob: { r: [122, 126, 130, 132, 140, 130, 126, 122], rot: -Math.PI / 2 },
@@ -1633,7 +1729,8 @@ function boot() {
   ensureLangPills();
   applyStaticText();
   $("open-playground").addEventListener("click", openPlayground);
-  if (!courseDataFor("python") && !courseDataFor("c")) {
+  if (!courseDataFor("python") && !courseDataFor("c") &&
+      !courseDataFor("html")) {
     $("view").innerHTML = "<div class='card'><h2>" +
       esc(t("load_error_title")) + "</h2><p>" +
       t("load_error_body") + "</p></div>";

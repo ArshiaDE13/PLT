@@ -1207,3 +1207,70 @@ html[data-subject="c"] .welcome-card label {
 
 /* real vector icons in the brand slots (replacing emoji) */
 .brand-logo svg, .welcome-emoji svg { display: block; }
+
+/* ---------- HTML Tutor theme (orange & white) ---------- */
+html[data-subject="html"] {
+  --blue: #e44d26;
+  --blue-dark: #c73c1a;
+  --yellow: #ffd8c2;           /* accent slots go warm orange */
+  --bg: #ffffff;
+  --line: #f3ddd2;
+  --code-bg: #fdf3ee;
+}
+
+html[data-subject="html"] #sidebar {
+  background: linear-gradient(180deg, #d94f26, #8f2f12);
+}
+
+html[data-subject="html"] .chapter-item.active {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 3px 0 0 var(--yellow);
+}
+html[data-subject="html"] .chapter-item .num {
+  color: #ffe0d1;
+  background: rgba(255, 255, 255, 0.14);
+}
+html[data-subject="html"] .sub-item.active {
+  background: rgba(255, 255, 255, 0.14);
+  border-inline-start-color: var(--yellow);
+  color: #ffeee5;
+}
+html[data-subject="html"] .playground-btn {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(241, 101, 41, 0.4));
+  color: #ffeee5;
+}
+html[data-subject="html"] .playground-btn:hover {
+  border-color: #fff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(241, 101, 41, 0.5));
+  box-shadow: 0 6px 18px rgba(255, 216, 194, 0.25);
+}
+html[data-subject="html"] .progress-text { color: #f6ddcf; }
+html[data-subject="html"] .change-name { color: #f3d3c2; }
+
+html[data-subject="html"] #welcome,
+html[data-subject="html"] #subject {
+  background: linear-gradient(-45deg, #8f2f12, #e44d26, #f16529, #c73c1a);
+  background-size: 400% 400%;
+}
+
+html[data-subject="html"] #toast {
+  background: #d94f26;
+}
+
+html[data-subject="html"] .welcome-card h1,
+html[data-subject="html"] .welcome-card label {
+  color: #c73c1a;
+}
+
+/* live HTML preview inside lesson try-it boxes */
+.html-preview {
+  width: 100%;
+  min-height: 240px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  display: block;
+  margin-top: 8px;
+}
+.html-preview-note { display: none; }
