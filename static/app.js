@@ -73,6 +73,14 @@ const STR = {
     cat_j_modules: "Modules",
     cat_j_browser: "Browser JS",
     cat_j_topics: "Advanced Topics",
+    cat_p_basics: "C++ Basics",
+    cat_p_scope: "Scope & Pointers",
+    cat_p_oop: "OOP & Classes",
+    cat_p_raii: "RAII & Memory",
+    cat_p_stl: "STL",
+    cat_p_modern: "Modern C++",
+    cat_p_cpp23: "C++20/23 Features",
+    cat_p_pro: "Professional C++",
     chapter_complete: "🎉 Chapter {num} complete, {name}!",
     finish_toast: "🏁 You finished the whole course, {name}! 🎉",
     welcome_back: "👋 Welcome back, {name}!",
@@ -188,6 +196,14 @@ const STR = {
     cat_j_modules: "ماژول‌ها",
     cat_j_browser: "JS مرورگر",
     cat_j_topics: "موضوعات پیشرفته",
+    cat_p_basics: "مبانی ++C",
+    cat_p_scope: "scope و اشاره‌گرها",
+    cat_p_oop: "OOP و کلاس‌ها",
+    cat_p_raii: "RAII و حافظه",
+    cat_p_stl: "STL",
+    cat_p_modern: "++C مدرن",
+    cat_p_cpp23: "قابلیت‌های C++20/23",
+    cat_p_pro: "‏++C حرفه‌ای",
     chapter_complete: "🎉 فصل {num} کامل شد، {name}!",
     finish_toast: "🏁 کل دوره را تمام کردی، {name}! 🎉",
     welcome_back: "👋 خوش برگشتی، {name}!",
@@ -375,6 +391,29 @@ const SUBJ_STR = {
       welcome_toast: "🎉 خوش آمدی، {name}! آماده‌ای جاوااسکریپت یاد بگیری؟",
       tryit_label: "💻 خودت امتحان کن — JS بنویس و خروجی console را ببین:",
       subject_started: "🟨 جاوااسکریپت آماده است — بزن بریم، {name}!",
+    },
+  },
+  cpp: {
+    en: {
+      doc_title: "🔷 C++ Tutor — Learn C++23",
+      brand_name: "C++ Tutor",
+      brand_sub: "based on learncpp.com and MDN",
+      welcome_sub: "Learn C++23 — from fundamentals through templates, " +
+        "STL, smart pointers, ranges and beyond. 44 chapters covering " +
+        "the complete modern C++ journey.",
+      welcome_toast: "🎉 Welcome, {name}! Ready to learn C++?",
+      tryit_label: "💻 Try it yourself — write C++ and see the output:",
+      subject_started: "🔷 C++ is ready — let's go, {name}!",
+    },
+    fa: {
+      doc_title: "🔷 آموزش ++C — بیاموز C++23",
+      brand_name: "آموزش ++C",
+      brand_sub: "برگرفته از learncpp.com و MDN",
+      welcome_sub: "‏C++23 را بیاموز — از مبانی تا قالب‌ها، STL، اشاره‌گرهای " +
+        "هوشمند، رنج‌ها و فراتر. ۴۴ فصل پوشش‌دهندهٔ سفرِ کاملِ ++C مدرن.",
+      welcome_toast: "🎉 خوش آمدی، {name}! آماده‌ای ++C یاد بگیری؟",
+      tryit_label: "💻 خودت امتحان کن — کد بنویس و خروجی را ببین:",
+      subject_started: "🔷 ++C آماده است — بزن بریم، {name}!",
     },
   },
 };
@@ -655,6 +694,16 @@ const CATEGORIES = {
     { key: "cat_j_browser",      emoji: "\u{1F310}", start: 9,  end: 9  },
     { key: "cat_j_topics",       emoji: "\u{1F9E0}", start: 10, end: 10 },
   ],
+  cpp: [
+    { key: "cat_p_basics",       emoji: "\u{1F537}", start: 1,  end: 5  },
+    { key: "cat_p_scope",        emoji: "\u{1F5C2}\uFE0F", start: 6,  end: 10 },
+    { key: "cat_p_oop",          emoji: "\u{1F3DB}\uFE0F", start: 11, end: 16 },
+    { key: "cat_p_raii",         emoji: "\u{1F511}", start: 17, end: 20 },
+    { key: "cat_p_stl",          emoji: "\u{1F4DA}", start: 21, end: 24 },
+    { key: "cat_p_modern",       emoji: "\u26A1", start: 25, end: 32 },
+    { key: "cat_p_cpp23",        emoji: "\u{1F195}", start: 33, end: 40 },
+    { key: "cat_p_pro",          emoji: "\u{1F3C6}", start: 41, end: 44 },
+  ],
 };
 
 function sidebarCategories() {
@@ -918,7 +967,7 @@ function renderLesson(ch) {
   // C lessons ship seed code; Python keeps its always-present box
   if (activeSubject === "html" || activeSubject === "css") {
     card.appendChild(renderTryItHtml(lesson.tryit));
-  } else if (activeSubject === "js") {
+  } else if (activeSubject === "js" || activeSubject === "cpp") {
     card.appendChild(renderTryItJs(lesson.tryit));
   } else if (activeSubject === "python" || lesson.tryit) {
     card.appendChild(renderTryIt(lesson.tryit));
@@ -1402,6 +1451,7 @@ function openPlayground() {
     : activeSubject === "html" ? "playground-html.html"
     : activeSubject === "css" ? "playground-css.html"
     : activeSubject === "js" ? "playground-js.html"
+    : activeSubject === "cpp" ? "playground-cpp.html"
     : "playground.html";
   const w = window.open(page, "pytutor-playground-" + activeSubject,
     "popup=yes,width=1180,height=780");
@@ -1473,6 +1523,11 @@ function courseDataFor(id) {
     return (window.COURSE_DATA_JS &&
             Array.isArray(window.COURSE_DATA_JS.chapters) &&
             window.COURSE_DATA_JS.chapters.length) ? window.COURSE_DATA_JS : null;
+  }
+  if (id === "cpp") {
+    return (window.COURSE_DATA_CPP &&
+            Array.isArray(window.COURSE_DATA_CPP.chapters) &&
+            window.COURSE_DATA_CPP.chapters.length) ? window.COURSE_DATA_CPP : null;
   }
   return null;
 }
@@ -1573,9 +1628,9 @@ const SUBJECTS = [
     blob: { r: [136, 120, 136, 120, 136, 120, 136, 120], rot: Math.PI / 8 },
     inner: (u) => hexInner("C", "#03599c", "#4f8cc9", u, 40), soon: false },
   { id: "cpp", en: "C++", fa: "C++", emoji: "🔷",
-    c1: "#004482", c2: "#5f94d2",
+    c1: "#00599c", c2: "#004482",
     blob: { r: [140, 116, 138, 118, 140, 116, 138, 118], rot: Math.PI / 8 },
-    inner: (u) => hexInner("C++", "#004482", "#5f94d2", u, 28), soon: true },
+    inner: (u) => hexInner("C++", "#00599c", "#004482", u, 28), soon: false },
   { id: "html", en: "HTML", fa: "HTML", emoji: "🛡️",
     c1: "#e44d26", c2: "#f16529",
     blob: { r: [120, 126, 130, 136, 144, 130, 120, 116], rot: -Math.PI / 2 },
@@ -1910,7 +1965,7 @@ function boot() {
   $("open-playground").addEventListener("click", openPlayground);
   if (!courseDataFor("python") && !courseDataFor("c") &&
       !courseDataFor("html") && !courseDataFor("css") &&
-      !courseDataFor("js")) {
+      !courseDataFor("js") && !courseDataFor("cpp")) {
     $("view").innerHTML = "<div class='card'><h2>" +
       esc(t("load_error_title")) + "</h2><p>" +
       t("load_error_body") + "</p></div>";

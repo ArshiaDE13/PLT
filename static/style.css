@@ -1400,3 +1400,58 @@ html[data-subject="js"] .welcome-card label {
   text-align: left;
 }
 .run-output.js-console .err { color: #f44; }
+
+/* ---------- C++ Tutor theme (Classic Blue #00599C & white) ---------- */
+html[data-subject="cpp"] {
+  --blue: #00599c;
+  --blue-dark: #004482;
+  --yellow: #b8d4e8;
+  --bg: #ffffff;
+  --line: #d0e0f0;
+  --code-bg: #edf4fa;
+}
+
+html[data-subject="cpp"] #sidebar {
+  background: linear-gradient(180deg, #00599c, #00305a);
+}
+
+html[data-subject="cpp"] .chapter-item.active {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 3px 0 0 var(--yellow);
+}
+html[data-subject="cpp"] .chapter-item .num {
+  color: #b8d4e8;
+  background: rgba(255, 255, 255, 0.14);
+}
+html[data-subject="cpp"] .sub-item.active {
+  background: rgba(255, 255, 255, 0.14);
+  border-inline-start-color: var(--yellow);
+  color: #d0e8fa;
+}
+html[data-subject="cpp"] .playground-btn {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(0, 89, 156, 0.4));
+  color: #d0e8fa;
+}
+html[data-subject="cpp"] .playground-btn:hover {
+  border-color: #fff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(0, 89, 156, 0.5));
+  box-shadow: 0 6px 18px rgba(184, 212, 232, 0.25);
+}
+html[data-subject="cpp"] .progress-text { color: #c8ddf0; }
+html[data-subject="cpp"] .change-name { color: #b8d4e8; }
+
+html[data-subject="cpp"] #welcome,
+html[data-subject="cpp"] #subject {
+  background: linear-gradient(-45deg, #00305a, #00599c, #0077cc, #004482);
+  background-size: 400% 400%;
+}
+
+html[data-subject="cpp"] #toast {
+  background: #00599c;
+}
+
+html[data-subject="cpp"] .welcome-card h1,
+html[data-subject="cpp"] .welcome-card label {
+  color: #00599c;
+}
