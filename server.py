@@ -76,6 +76,8 @@ class TutorHandler(BaseHTTPRequestHandler):
             self._serve_file("data-html.js", ".js")
         elif path == "/data-css.js":
             self._serve_file("data-css.js", ".js")
+        elif path == "/data-js.js":
+            self._serve_file("data-js.js", ".js")
         elif path == "/cengine.js":
             self._serve_file("cengine.js", ".js")
         elif path == "/crunner.js":
@@ -88,6 +90,8 @@ class TutorHandler(BaseHTTPRequestHandler):
             self._serve_file("playground-html.html", ".html")
         elif path == "/playground-css" or path == "/playground-css.html":
             self._serve_file("playground-css.html", ".html")
+        elif path == "/playground-js" or path == "/playground-js.html":
+            self._serve_file("playground-js.html", ".html")
         elif path == "/playground.css":
             self._serve_file("playground.css", ".css")
         elif path == "/playground.js":
@@ -98,6 +102,8 @@ class TutorHandler(BaseHTTPRequestHandler):
             self._serve_file("playground-html.js", ".js")
         elif path == "/playground-css.js":
             self._serve_file("playground-css.js", ".js")
+        elif path == "/playground-js.js":
+            self._serve_file("playground-js.js", ".js")
         elif path == "/api/content":
             self._send(200, CONTENT_JSON, MIME[".json"])
         elif path == "/favicon.ico":

@@ -63,6 +63,16 @@ const STR = {
     cat_s_effects: "Visual Effects",
     cat_s_advanced: "Advanced",
     cat_s_pro: "Professional",
+    cat_j_fundamentals: "Fundamentals",
+    cat_j_flow: "Control Flow",
+    cat_j_functions: "Functions",
+    cat_j_data: "Arrays & Objects",
+    cat_j_advanced: "Advanced JS",
+    cat_j_builtin: "Built-in Objects",
+    cat_j_async: "Async JavaScript",
+    cat_j_modules: "Modules",
+    cat_j_browser: "Browser JS",
+    cat_j_topics: "Advanced Topics",
     chapter_complete: "🎉 Chapter {num} complete, {name}!",
     finish_toast: "🏁 You finished the whole course, {name}! 🎉",
     welcome_back: "👋 Welcome back, {name}!",
@@ -168,6 +178,16 @@ const STR = {
     cat_s_effects: "جلوه‌های بصری",
     cat_s_advanced: "پیشرفته",
     cat_s_pro: "حرفه‌ای",
+    cat_j_fundamentals: "مبانی",
+    cat_j_flow: "کنترل جریان",
+    cat_j_functions: "توابع",
+    cat_j_data: "آرایه‌ها و شیءها",
+    cat_j_advanced: "JS پیشرفته",
+    cat_j_builtin: "شیءهای داخلی",
+    cat_j_async: "JS ناهمگام",
+    cat_j_modules: "ماژول‌ها",
+    cat_j_browser: "JS مرورگر",
+    cat_j_topics: "موضوعات پیشرفته",
     chapter_complete: "🎉 فصل {num} کامل شد، {name}!",
     finish_toast: "🏁 کل دوره را تمام کردی، {name}! 🎉",
     welcome_back: "👋 خوش برگشتی، {name}!",
@@ -331,6 +351,30 @@ const SUBJ_STR = {
       welcome_toast: "🎉 خوش آمدی، {name}! آماده‌ای CSS یاد بگیری؟",
       tryit_label: "💻 خودت امتحان کن — CSS را ویرایش کن و زنده ببینش:",
       subject_started: "🎯 CSS آماده است — بزن بریم، {name}!",
+    },
+  },
+  js: {
+    en: {
+      doc_title: "🟨 JavaScript Tutor — Learn JS",
+      brand_name: "JavaScript Tutor",
+      brand_sub: "based on MDN Web Docs",
+      welcome_sub: "Learn JavaScript — the language of the web — across " +
+        "10 phases: from variables and control flow to closures, async, " +
+        "DOM and beyond. Write real JS and see the console output live.",
+      welcome_toast: "🎉 Welcome, {name}! Ready to learn JavaScript?",
+      tryit_label: "💻 Try it yourself — write JS and check the console:",
+      subject_started: "🟨 JavaScript is ready — let's go, {name}!",
+    },
+    fa: {
+      doc_title: "🟨 آموزش جاوااسکریپت — JS را یاد بگیر",
+      brand_name: "آموزش جاوااسکریپت",
+      brand_sub: "برگرفته از اسناد وب MDN",
+      welcome_sub: "جاوااسکریپت — زبانِ وب — را در ۱۰ مرحله بیاموز: از " +
+        "متغیرها و کنترل جریان تا closureها، async و DOM. کد JS واقعی " +
+        "بنویس و خروجی console را زنده ببین.",
+      welcome_toast: "🎉 خوش آمدی، {name}! آماده‌ای جاوااسکریپت یاد بگیری؟",
+      tryit_label: "💻 خودت امتحان کن — JS بنویس و خروجی console را ببین:",
+      subject_started: "🟨 جاوااسکریپت آماده است — بزن بریم، {name}!",
     },
   },
 };
@@ -599,6 +643,18 @@ const CATEGORIES = {
     { key: "cat_s_advanced",     emoji: "\u26AB", start: 24, end: 27 },
     { key: "cat_s_pro",          emoji: "\u{1F3DB}\uFE0F", start: 28, end: 30 },
   ],
+  js: [
+    { key: "cat_j_fundamentals", emoji: "\u{1F7E1}", start: 1,  end: 1  },
+    { key: "cat_j_flow",         emoji: "\u{1F500}", start: 2,  end: 2  },
+    { key: "cat_j_functions",    emoji: "\u{1F9E9}", start: 3,  end: 3  },
+    { key: "cat_j_data",         emoji: "\u{1F4E6}", start: 4,  end: 4  },
+    { key: "cat_j_advanced",     emoji: "\u{1F393}", start: 5,  end: 5  },
+    { key: "cat_j_builtin",      emoji: "\u{1F9F0}", start: 6,  end: 6  },
+    { key: "cat_j_async",        emoji: "\u23F3", start: 7,  end: 7  },
+    { key: "cat_j_modules",      emoji: "\u{1F4C4}", start: 8,  end: 8  },
+    { key: "cat_j_browser",      emoji: "\u{1F310}", start: 9,  end: 9  },
+    { key: "cat_j_topics",       emoji: "\u{1F9E0}", start: 10, end: 10 },
+  ],
 };
 
 function sidebarCategories() {
@@ -858,10 +914,12 @@ function renderLesson(ch) {
   applyDir(body, !!lesson.__fa);
   card.appendChild(body);
 
-  // try-it playground — HTML/CSS render live; C lessons ship seed code;
-  // the Python course keeps its always-present box
+  // try-it playground — HTML/CSS render live; JS runs with console output;
+  // C lessons ship seed code; Python keeps its always-present box
   if (activeSubject === "html" || activeSubject === "css") {
     card.appendChild(renderTryItHtml(lesson.tryit));
+  } else if (activeSubject === "js") {
+    card.appendChild(renderTryItJs(lesson.tryit));
   } else if (activeSubject === "python" || lesson.tryit) {
     card.appendChild(renderTryIt(lesson.tryit));
   }
@@ -927,6 +985,62 @@ function renderTryItHtml(seedCode) {
   box.appendChild(ta);
   box.appendChild(row);
   box.appendChild(frame);
+  box.appendChild(out);
+  return box;
+}
+
+/* The JS try-it runs code with the browser's own engine and shows
+   console output — the browser IS the JS engine. */
+function renderTryItJs(seedCode) {
+  const box = document.createElement("div");
+  box.className = "tryit";
+  const label = document.createElement("div");
+  label.className = "tryit-label";
+  label.textContent = t("tryit_label");
+  const ta = document.createElement("textarea");
+  ta.className = "codebox";
+  ta.value = seedCode || "";
+  ta.placeholder = 'console.log("Hello, JS!");';
+  ta.style.minHeight = "140px";
+  const row = document.createElement("div");
+  row.className = "answer-actions";
+  const runBtn = document.createElement("button");
+  runBtn.className = "btn secondary";
+  runBtn.textContent = t("run");
+  const out = document.createElement("div");
+  out.className = "run-output show";
+  function run() {
+    const logs = [];
+    const origLog = console.log;
+    const origWarn = console.warn;
+    const origError = console.error;
+    console.log = (...args) => logs.push(args.map(a =>
+      typeof a === "object" ? JSON.stringify(a, null, 2) : String(a)).join(" "));
+    console.warn = (...args) => logs.push("⚠ " + args.join(" "));
+    console.error = (...args) => logs.push("✗ " + args.join(" "));
+    try {
+      const fn = new Function(ta.value);
+      fn();
+    } catch (e) {
+      logs.push("✗ " + e.message);
+    } finally {
+      console.log = origLog;
+      console.warn = origWarn;
+      console.error = origError;
+    }
+    out.textContent = logs.join("\n") || "(no output)";
+    out.classList.toggle("err", logs.some(l => l.startsWith("✗")));
+  }
+  runBtn.addEventListener("click", run);
+  // lazy render on scroll into view
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) { run(); io.disconnect(); }
+  });
+  io.observe(out);
+  row.appendChild(runBtn);
+  box.appendChild(label);
+  box.appendChild(ta);
+  box.appendChild(row);
   box.appendChild(out);
   return box;
 }
@@ -1287,6 +1401,7 @@ function openPlayground() {
   const page = activeSubject === "c" ? "playground-c.html"
     : activeSubject === "html" ? "playground-html.html"
     : activeSubject === "css" ? "playground-css.html"
+    : activeSubject === "js" ? "playground-js.html"
     : "playground.html";
   const w = window.open(page, "pytutor-playground-" + activeSubject,
     "popup=yes,width=1180,height=780");
@@ -1353,6 +1468,11 @@ function courseDataFor(id) {
     return (window.COURSE_DATA_CSS &&
             Array.isArray(window.COURSE_DATA_CSS.chapters) &&
             window.COURSE_DATA_CSS.chapters.length) ? window.COURSE_DATA_CSS : null;
+  }
+  if (id === "js") {
+    return (window.COURSE_DATA_JS &&
+            Array.isArray(window.COURSE_DATA_JS.chapters) &&
+            window.COURSE_DATA_JS.chapters.length) ? window.COURSE_DATA_JS : null;
   }
   return null;
 }
@@ -1465,9 +1585,9 @@ const SUBJECTS = [
     blob: { r: [122, 126, 130, 132, 140, 130, 126, 122], rot: -Math.PI / 2 },
     inner: (u) => shieldInner("3", "#1572b6", "#33a9dc", u), soon: false },
   { id: "js", en: "JavaScript", fa: "جاوااسکریپت", emoji: "🟨",
-    c1: "#e9d823", c2: "#f7df1e",
+    c1: "#f7df1e", c2: "#323330",
     blob: { r: [138, 120, 138, 120, 138, 120, 138, 120], rot: Math.PI / 4 },
-    inner: jsInner, soon: true },
+    inner: jsInner, soon: false },
 ];
 
 function subjectById(id) {
@@ -1789,7 +1909,8 @@ function boot() {
   applyStaticText();
   $("open-playground").addEventListener("click", openPlayground);
   if (!courseDataFor("python") && !courseDataFor("c") &&
-      !courseDataFor("html") && !courseDataFor("css")) {
+      !courseDataFor("html") && !courseDataFor("css") &&
+      !courseDataFor("js")) {
     $("view").innerHTML = "<div class='card'><h2>" +
       esc(t("load_error_title")) + "</h2><p>" +
       t("load_error_body") + "</p></div>";

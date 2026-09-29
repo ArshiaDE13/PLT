@@ -16,6 +16,7 @@ import content
 import ctutor_content
 import html_content
 import css_content
+import js_content
 import server
 
 # Windows consoles default to cp1252, which cannot encode emoji or the
@@ -45,6 +46,7 @@ def selftest():
         ctutor_content.validate()
         html_content.validate()
         css_content.validate()
+        js_content.validate()
     except ValueError as exc:
         print("FAIL: content validation\n%s" % exc)
         return 1
@@ -54,6 +56,7 @@ def selftest():
     c_chapters = ctutor_content.build_content()
     h_chapters = html_content.build_content()
     s_chapters = css_content.build_content()
+    j_chapters = js_content.build_content()
     total_q = sum(len(ch["quiz"]) for ch in chapters)
     total_lessons = sum(len(ch["lessons"]) for ch in chapters)
     c_total_q = sum(len(ch["quiz"]) for ch in c_chapters)
@@ -62,6 +65,8 @@ def selftest():
     h_total_lessons = sum(len(ch["lessons"]) for ch in h_chapters)
     s_total_q = sum(len(ch["quiz"]) for ch in s_chapters)
     s_total_lessons = sum(len(ch["lessons"]) for ch in s_chapters)
+    j_total_q = sum(len(ch["quiz"]) for ch in j_chapters)
+    j_total_lessons = sum(len(ch["lessons"]) for ch in j_chapters)
     print("content OK: python %d chapters, %d lessons, %d quiz questions"
           % (len(chapters), total_lessons, total_q))
     print("content OK: c %d chapters, %d lessons, %d quiz questions"
@@ -70,9 +75,11 @@ def selftest():
           % (len(h_chapters), h_total_lessons, h_total_q))
     print("content OK: css %d chapters, %d lessons, %d quiz questions"
           % (len(s_chapters), s_total_lessons, s_total_q))
+    print("content OK: js %d chapters, %d lessons, %d quiz questions"
+          % (len(j_chapters), j_total_lessons, j_total_q))
 
     # 2. diagrams render without leftover placeholders (both languages)
-    for chs in (chapters, c_chapters, h_chapters, s_chapters):
+    for chs in (chapters, c_chapters, h_chapters, s_chapters, j_chapters):
         for ch in chs:
             for lesson in ch["lessons"]:
                 for key in ("html", "html_fa"):
@@ -81,7 +88,7 @@ def selftest():
                            "%s: leftover code placeholder" % ch["id"])
 
     # 3. every quiz question is answerable correctly by its own data
-    for chapters_in_course in (chapters, c_chapters, h_chapters, s_chapters):
+    for chapters_in_course in (chapters, c_chapters, h_chapters, s_chapters, j_chapters):
         for ch in chapters_in_course:
             for i, q in enumerate(ch["quiz"]):
                 if q["type"] == "mc":
@@ -107,7 +114,7 @@ def selftest():
                 expect(ok, "%s quiz[%d]: correct answer rejected" % (ch["id"], i))
                 expect(not wrong, "%s quiz[%d]: wrong answer accepted" % (ch["id"], i))
     print("quiz checkers OK: all %d questions accept the right answer and "
-          "reject a wrong one" % (total_q + c_total_q + h_total_q + s_total_q))
+          "reject a wrong one" % (total_q + c_total_q + h_total_q + s_total_q + j_total_q))
 
     # 4. code runner (only meaningful under a real interpreter)
     result = checker.run_code("print(2 + 3)\n")

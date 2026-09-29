@@ -1329,3 +1329,74 @@ html[data-subject="css"] .welcome-card h1,
 html[data-subject="css"] .welcome-card label {
   color: #0d5590;
 }
+
+/* ---------- JS Tutor theme (yellow, black & white) ---------- */
+html[data-subject="js"] {
+  --blue: #c9a50a;
+  --blue-dark: #9a7d00;
+  --yellow: #f7df1e;           /* JS brand yellow — kept as accent */
+  --bg: #ffffff;
+  --line: #e8e3d0;
+  --code-bg: #fffbe6;
+}
+
+html[data-subject="js"] #sidebar {
+  background: linear-gradient(180deg, #2b2b20, #1a1a12);
+}
+
+html[data-subject="js"] .chapter-item.active {
+  background: rgba(247, 223, 30, 0.12);
+  box-shadow: inset 3px 0 0 var(--yellow);
+}
+html[data-subject="js"] .chapter-item .num {
+  color: #f7df1e;
+  background: rgba(247, 223, 30, 0.14);
+}
+html[data-subject="js"] .sub-item.active {
+  background: rgba(247, 223, 30, 0.12);
+  border-inline-start-color: var(--yellow);
+  color: #f7df1e;
+}
+html[data-subject="js"] .playground-btn {
+  border: 1px solid rgba(247, 223, 30, 0.45);
+  background: linear-gradient(135deg, rgba(247, 223, 30, 0.12), rgba(50, 51, 48, 0.4));
+  color: #f7df1e;
+}
+html[data-subject="js"] .playground-btn:hover {
+  border-color: var(--yellow);
+  background: linear-gradient(135deg, rgba(247, 223, 30, 0.2), rgba(50, 51, 48, 0.5));
+  box-shadow: 0 6px 18px rgba(247, 223, 30, 0.2);
+}
+html[data-subject="js"] .progress-text { color: #d4ce9e; }
+html[data-subject="js"] .change-name { color: #c4b96a; }
+html[data-subject="js"] .greeting { color: #e6dfa0; }
+
+html[data-subject="js"] #welcome,
+html[data-subject="js"] #subject {
+  background: linear-gradient(-45deg, #1a1a12, #323330, #f7df1e, #2b2b20);
+  background-size: 400% 400%;
+}
+
+html[data-subject="js"] #toast {
+  background: #323330;
+}
+
+html[data-subject="js"] .welcome-card h1,
+html[data-subject="js"] .welcome-card label {
+  color: #9a7d00;
+}
+
+/* JS try-it console output */
+.run-output.js-console {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 13px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  min-height: 40px;
+  white-space: pre-wrap;
+  direction: ltr;
+  text-align: left;
+}
+.run-output.js-console .err { color: #f44; }
