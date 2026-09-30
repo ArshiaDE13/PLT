@@ -319,6 +319,8 @@ coroutine.</p>
 زمان‌اجرایی که در buildهای انتشار با تعریف <code>NDEBUG</code> غیرفعال
 می‌شود:</p>
 
+[[code1]]
+
 <p><code>assert(divisor != 0);</code> — اگر نقض شود جیغ می‌زند.</p>
 """,
             },

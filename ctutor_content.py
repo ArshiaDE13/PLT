@@ -12,9 +12,11 @@ from copy import deepcopy
 from ctutor_chapters_a import CHAPTERS_CT_A
 from ctutor_chapters_b import CHAPTERS_CT_B
 from ctutor_chapters_c import CHAPTERS_CT_C
+from ctutor_chapters_d import CHAPTERS_CT_D
 from ctutor_fa_a import FA_CT_A
 from ctutor_fa_b import FA_CT_B
 from ctutor_fa_c import FA_CT_C
+from ctutor_fa_d import FA_CT_D
 
 # Persian variants for every chapter, merged by chapter id. English content
 # stays the canonical source; the browser picks the fa variant at render time.
@@ -22,8 +24,9 @@ FA_CONTENT = {}
 FA_CONTENT.update(FA_CT_A)   # chapters 1-5   (Syntax & Basics .. Type System)
 FA_CONTENT.update(FA_CT_B)   # chapters 6-9   (Organization .. Low-Level)
 FA_CONTENT.update(FA_CT_C)   # chapters 10-13 (Advanced .. Modern)
+FA_CONTENT.update(FA_CT_D)   # chapters 14-15 (UB & Memory Model .. C11->C23)
 
-CHAPTERS = CHAPTERS_CT_A + CHAPTERS_CT_B + CHAPTERS_CT_C
+CHAPTERS = CHAPTERS_CT_A + CHAPTERS_CT_B + CHAPTERS_CT_C + CHAPTERS_CT_D
 
 QUIZ_TYPES = {"mc", "blank", "order", "codefill"}
 
