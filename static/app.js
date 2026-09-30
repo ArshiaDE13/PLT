@@ -623,7 +623,8 @@ function checkQuestion(q, answer) {
    wrapped in a worker by crunner.js). Both share the same interface. */
 
 function engineFor(subject) {
-  return subject === "c" ? window.CRunner : window.PyRunner;
+  return (subject === "c" || subject === "cpp")
+    ? window.CRunner : window.PyRunner;
 }
 
 /* Engine wording for status lines: HTML has no engine (the browser
@@ -964,10 +965,11 @@ function renderLesson(ch) {
   card.appendChild(body);
 
   // try-it playground — HTML/CSS render live; JS runs with console output;
-  // C lessons ship seed code; Python keeps its always-present box
+  // C and C++ lessons ship seed code for the engine; Python keeps its
+  // always-present box
   if (activeSubject === "html" || activeSubject === "css") {
     card.appendChild(renderTryItHtml(lesson.tryit));
-  } else if (activeSubject === "js" || activeSubject === "cpp") {
+  } else if (activeSubject === "js") {
     card.appendChild(renderTryItJs(lesson.tryit));
   } else if (activeSubject === "python" || lesson.tryit) {
     card.appendChild(renderTryIt(lesson.tryit));
@@ -1021,14 +1023,9 @@ function renderTryItHtml(seedCode) {
     frame.srcdoc = ta.value;
   }
   runBtn.addEventListener("click", render);
-  // render the seed once, lazily, when the box first scrolls into view
-  const io = new IntersectionObserver((entries) => {
-    if (entries.some((e) => e.isIntersecting)) {
-      render();
-      io.disconnect();
-    }
-  });
-  io.observe(frame);
+  // render the seed right away — the preview is cheap and this way the
+  // box works even before any scrolling
+  render();
   row.appendChild(runBtn);
   box.appendChild(label);
   box.appendChild(ta);
@@ -1105,6 +1102,8 @@ function renderTryIt(seedCode) {
   ta.value = seedCode || "";
   ta.placeholder = activeSubject === "c"
     ? "#include <stdio.h>\nint main(void) {\n    printf(\"hello\\n\");\n    return 0;\n}"
+    : activeSubject === "cpp"
+    ? "#include <iostream>\n\nint main() {\n    std::cout << \"Hello, C++23!\\n\";\n    return 0;\n}"
     : "print('hello')\nfor i in range(3):\n    print(i)";
   const row = document.createElement("div");
   row.className = "answer-actions";

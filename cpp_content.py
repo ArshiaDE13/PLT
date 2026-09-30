@@ -10,10 +10,16 @@ from chapters_cpp_d import CHAPTERS_CPP_D
 from chapters_cpp_e import CHAPTERS_CPP_E
 from chapters_cpp_fa_a import FA_CPP as FA_CPP_A
 from chapters_cpp_fa_b import FA_CPP_B
+from chapters_cpp_fa_c import FA_CPP_C
+from chapters_cpp_fa_d import FA_CPP_D
+from chapters_cpp_fa_e import FA_CPP_E
 
 FA_CONTENT = {}
 FA_CONTENT.update(FA_CPP_A)
 FA_CONTENT.update(FA_CPP_B)
+FA_CONTENT.update(FA_CPP_C)
+FA_CONTENT.update(FA_CPP_D)
+FA_CONTENT.update(FA_CPP_E)
 
 CHAPTERS = (CHAPTERS_CPP_A + CHAPTERS_CPP_B +
             CHAPTERS_CPP_C + CHAPTERS_CPP_D + CHAPTERS_CPP_E)

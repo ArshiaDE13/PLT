@@ -35,28 +35,6 @@ auto counter = [count = 0]() mutable { return ++count; };</pre>
 std::sort(v.begin(), v.end(), [](int a, int b) { return a &gt; b; });  // descending
 auto evens = std::count_if(v.begin(), v.end(), [](int n) { return n % 2 == 0; });</pre>
 """,
-                "tryit": """#include <iostream>
-#include <vector>
-#include <algorithm>
-
-int main() {
-    std::vector<int> v = {5, 2, 8, 1, 9};
-
-    std::sort(v.begin(), v.end(), [](int a, int b) {
-        return a > b;
-    });
-
-    std::cout << "descending: ";
-    for (int n : v) std::cout << n << " ";
-    std::cout << "\\n";
-
-    int threshold = 5;
-    auto count = std::count_if(v.begin(), v.end(),
-        [threshold](int n) { return n > threshold; });
-    std::cout << "above " << threshold << ": " << count << "\\n";
-    return 0;
-}
-""",
             },
         ],
         "quiz": [

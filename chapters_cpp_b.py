@@ -167,33 +167,6 @@ hero.print();      // "Hero: 70 HP"</pre>
 <li><b>protected</b> — like private, but visible to derived classes</li>
 </ul>
 """,
-                "tryit": """#include <iostream>
-#include <string>
-
-class Player {
-private:
-    std::string name;
-    int health;
-
-public:
-    Player(std::string n, int h) : name(n), health(h) {}
-    void takeDamage(int dmg) {
-        health -= dmg;
-        if (health < 0) health = 0;
-    }
-    void print() const {
-        std::cout << name << ": " << health << " HP\\n";
-    }
-};
-
-int main() {
-    Player hero("Hero", 100);
-    hero.takeDamage(30);
-    hero.takeDamage(50);
-    hero.print();
-    return 0;
-}
-""",
             },
         ],
         "quiz": [
@@ -245,29 +218,6 @@ public:
 void demo() {
     Resource r;
 }   // destructor called here — automatic cleanup!</pre>
-""",
-                "tryit": """#include <iostream>
-#include <string>
-
-class Resource {
-    std::string name;
-public:
-    Resource(std::string n) : name(n) {
-        std::cout << "acquired: " << name << "\\n";
-    }
-    ~Resource() {
-        std::cout << "released: " << name << "\\n";
-    }
-};
-
-int main() {
-    Resource a("File");
-    {
-        Resource b("Lock");
-    }  // b's destructor called here
-    std::cout << "end of main\\n";
-    return 0;
-}
 """,
             },
         ],
@@ -399,39 +349,6 @@ for (Animal* a : animals) {
 <p><b>Pure virtual</b> (= 0) makes the class abstract — can't be
 instantiated. Derived classes MUST implement it. An abstract class with
 only pure virtual functions is an <b>interface</b>.</p>
-""",
-                "tryit": """#include <iostream>
-#include <memory>
-
-class Shape {
-public:
-    virtual double area() const = 0;
-    virtual ~Shape() = default;
-};
-
-class Circle : public Shape {
-    double r;
-public:
-    Circle(double r) : r(r) {}
-    double area() const override { return 3.14159 * r * r; }
-};
-
-class Square : public Shape {
-    double s;
-public:
-    Square(double s) : s(s) {}
-    double area() const override { return s * s; }
-};
-
-int main() {
-    std::unique_ptr<Shape> shapes[] = {
-        std::make_unique<Circle>(5),
-        std::make_unique<Square>(4),
-    };
-    for (const auto& s : shapes)
-        std::cout << "area: " << s->area() << "\\n";
-    return 0;
-}
 """,
             },
         ],

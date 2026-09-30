@@ -110,6 +110,8 @@ class TutorHandler(BaseHTTPRequestHandler):
             self._serve_file("playground-js.js", ".js")
         elif path == "/playground-cpp.js":
             self._serve_file("playground-cpp.js", ".js")
+        elif path == "/test-cengine.html":
+            self._serve_file("test-cengine.html", ".html")
         elif path == "/api/content":
             self._send(200, CONTENT_JSON, MIME[".json"])
         elif path == "/favicon.ico":

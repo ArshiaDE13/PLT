@@ -392,31 +392,6 @@ auto max_it = std::max_element(v.begin(), v.end());</pre>
 instead of <code>std::sort(v.begin(), v.end())</code>. Cleaner and
 safer.</p>
 """,
-                "tryit": """#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <numeric>
-
-int main() {
-    std::vector<int> v = {5, 2, 8, 1, 9, 3};
-
-    std::sort(v.begin(), v.end());
-    std::cout << "sorted: ";
-    for (int n : v) std::cout << n << " ";
-    std::cout << "\\n";
-
-    int sum = std::accumulate(v.begin(), v.end(), 0);
-    std::cout << "sum: " << sum << "\\n";
-
-    auto max = *std::max_element(v.begin(), v.end());
-    std::cout << "max: " << max << "\\n";
-
-    int evens = std::count_if(v.begin(), v.end(),
-        [](int n) { return n % 2 == 0; });
-    std::cout << "evens: " << evens << "\\n";
-    return 0;
-}
-""",
             },
         ],
         "quiz": [

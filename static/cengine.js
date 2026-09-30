@@ -100,10 +100,62 @@
   };
   const RESTRICTED_HEADERS = { "signal.h": 1, "threads.h": 1, "stdatomic.h": 1 };
 
+  /* ------------------- minimal C++ lowering -------------------------------
+     The sandbox runs a C interpreter, but the C++ course's runnable seeds
+     use a small C++ subset. Before preprocessing we lower it to C:
+       - <iostream> and friends are aliased to their C equivalents
+       - `using namespace std;` is dropped, `std::` is stripped
+       - string::npos becomes a builtin constant
+     The runtime side (cout/endl, a string type with methods, references)
+     lives in the interpreter proper. Anything outside this subset (classes,
+     templates, STL containers) fails with a normal parse error. */
+  const CPP_HEADER_ALIAS = {
+    "iostream": "stdio.h", "string": "string.h", "cstring": "string.h",
+    "cstdlib": "stdlib.h", "cmath": "math.h", "cctype": "ctype.h",
+    "climits": "limits.h", "cfloat": "float.h", "cassert": "assert.h",
+    "ctime": "time.h", "cstddef": "stddef.h", "cstdint": "stdint.h",
+    "cinttypes": "inttypes.h", "cerrno": "errno.h",
+  };
+  const CPP_IGNORE_HEADERS = {
+    "vector": 1, "memory": 1, "algorithm": 1, "numeric": 1, "functional": 1,
+    "stdexcept": 1, "utility": 1, "map": 1, "set": 1, "unordered_map": 1,
+    "unordered_set": 1, "array": 1, "iterator": 1, "chrono": 1,
+    "initializer_list": 1, "string_view": 1, "optional": 1, "variant": 1,
+    "any": 1, "tuple": 1, "typeinfo": 1, "new": 1, "compare": 1,
+    "numbers": 1, "concepts": 1, "ranges": 1, "span": 1, "format": 1,
+  };
+  const CPP_RE = /\bstd\s*::|<iostream>|<string>|<vector>|<memory>|<algorithm>|<numeric>|<string_view>|<utility>|<functional>|<map>|<set>|<array>|<optional>|<variant>|<tuple>|<chrono>|<format>|<ranges>|<span>|<concepts>|<compare>|<numbers>|\busing\s+namespace\b|\bnamespace\b|\bclass\s+[A-Za-z_]|\bcout\b|\bcin\b|\bendl\b|\barray\s*<|\bvector\s*</;
+
+  /* is a C++ program at all (drives cppMode even when nothing needs
+     rewriting) vs. the textual lowering itself */
+  function isCppSource(src) {
+    return CPP_RE.test(src);
+  }
+
+  /* Split a line into string-literal and code parts, lower only the code. */
+  function lowerCppLine(line) {
+    const parts = line.split(/("(?:[^"\\]|\\.)*")/);
+    for (let i = 0; i < parts.length; i += 2) {
+      parts[i] = parts[i]
+        .replace(/\bstd\s*::\s*/g, "")
+        .replace(/\busing\s+namespace\s+\w+\s*;/g, "")
+        .replace(/\bstring\s*::\s*npos\b/g, "npos")
+        // C++ cast syntax -> C cast: static_cast<int>(x) becomes ((int)(x))
+        .replace(/\b(?:static_cast|dynamic_cast|const_cast|reinterpret_cast)\s*<\s*([^<>]*)\s*>/g,
+                 "($1)");
+    }
+    return parts.join("");
+  }
+
+  function lowerCppSource(src) {
+    if (!CPP_RE.test(src)) return src;
+    return src.split("\n").map(lowerCppLine).join("\n");
+  }
+
   /* Parse directive lines and produce (a) the expanded plain-C text,
      (b) the set of included headers, (c) a macro table. Macros are stored
      as {args:[..]|null, body:"raw replacement text", line}. */
-  function preprocess(src) {
+  function preprocess(src, cppMode) {
     const text = stripComments(src);
     const lines = text.split("\n");
     const outLines = [];
@@ -111,6 +163,10 @@
     const headers = [];         // included header names
     const condStack = [];       // {active, taken, seenElse}
     let lineNo = 0;
+    if (cppMode) {
+      macros["bool"] = { args: null, body: "_Bool", line: 0 };
+      macros["npos"] = { args: null, body: "((int)-1)", line: 0 };
+    }
 
     function skipping() {
       for (const c of condStack) if (!c.active) return true;
@@ -177,10 +233,16 @@
         if (dir === "include") {
           const inc = rest.match(/^[<"]([^>"]+)[>"]$/);
           if (!inc) err("#include expects <header> or \"header\"", lineNo);
-          const name = inc[1];
+          let name = inc[1];
+          if (!KNOWN_HEADERS[name] && CPP_HEADER_ALIAS[name]) {
+            name = CPP_HEADER_ALIAS[name]; // <iostream> -> stdio.h, etc.
+          }
           if (!KNOWN_HEADERS[name]) {
-            err("the browser sandbox does not have the header <" + name +
-                ">. Available: " + Object.keys(KNOWN_HEADERS).join(", "), lineNo);
+            if (CPP_IGNORE_HEADERS[name]) continue; // accepted, but a no-op
+            err("the browser sandbox does not have the header <" + inc[1] +
+                ">. Available: " + Object.keys(KNOWN_HEADERS).join(", ") +
+                " and the C++ versions of these (iostream, cstring, ...)",
+                lineNo);
           }
           if (headers.indexOf(name) === -1) headers.push(name);
           injectHeaderMacros(name, macros);
@@ -442,7 +504,7 @@
   ("auto break case char const continue default do double else enum extern " +
    "float for goto if inline int long register restrict return short signed " +
    "sizeof static struct switch typedef union unsigned void volatile while " +
-   "_Bool _Complex _Generic _Alignof _Alignas _Noreturn").split(" ")
+   "_Bool _Complex _Generic _Alignof _Alignas _Noreturn constexpr").split(" ")
     .forEach((k) => { KEYWORDS[k] = 1; });
 
   const PUNCTS = [
@@ -589,7 +651,7 @@
 
   const PENDING = { k: "pending" }; // placeholder inside nested declarators
 
-  function makeParser(toks, unit, seedTypedefs) {
+  function makeParser(toks, unit, seedTypedefs, cppMode) {
     let p = 0;
     const typedefs = Object.assign({}, seedTypedefs || {});   // name -> type
 
@@ -619,9 +681,14 @@
           "signed", "unsigned", "_Bool", "struct", "union", "enum",
           "const", "volatile", "static", "extern", "register", "inline",
           "restrict", "typedef", "_Complex", "_Alignas", "_Noreturn",
-          "_Thread_local", "auto"].indexOf(t.v) !== -1;
+          "_Thread_local", "auto", "constexpr"].indexOf(t.v) !== -1;
       }
-      if (t.k === "id") return typedefs[t.v] !== undefined;
+      if (t.k === "id") {
+        if (typedefs[t.v] !== undefined) return true;
+        // std::array<...> reaches the parser as `array` (std:: stripped)
+        if (cppMode && t.v === "array") return true;
+        return false;
+      }
       return false;
     }
 
@@ -755,6 +822,7 @@
             case "static": staticSeen = true; next(); continue;
             case "restrict": case "register": case "extern":
             case "inline": case "auto": case "_Noreturn": case "_Thread_local":
+            case "constexpr":
               next(); continue;
             case "_Alignas": next(); skipParens(); continue;
             case "_Complex":
@@ -775,11 +843,19 @@
             case "struct": case "union": {
               if (type) break;
               type = parseStructSpec(); // consumes the keyword itself
+              // in C++ the tag name is itself a type name: Player p;
+              if (cppMode && type.k === "rec" && type.name) {
+                typedefs[type.name] = type;
+              }
               continue;
             }
             case "enum": {
               if (type) break;
               type = parseEnumSpec();
+              if (cppMode && type.k === "enumT" && type.name &&
+                  type.name.indexOf("enum@") !== 0) {
+                typedefs[type.name] = type;
+              }
               continue;
             }
           }
@@ -788,6 +864,23 @@
         if (t.k === "id" && !type && typedefs[t.v] !== undefined) {
           type = typedefs[t.v];
           next();
+          continue;
+        }
+        // C++ std::array<ELEM, N> -> a plain C array of N elements
+        if (cppMode && !type && t.k === "id" && t.v === "array" &&
+            peek(1).k === "punct" && peek(1).v === "<") {
+          next(); next(); // 'array' '<'
+          const elemT = parseDeclSpecifiers();
+          expectPunct(",");
+          // the size is a bare integer literal — parsing it as an
+          // expression would read `N > var` as a comparison
+          const nT = peek();
+          if (nT.k !== "num") {
+            err("std::array size must be an integer constant", t.line);
+          }
+          next();
+          expectPunct(">");
+          type = { k: "arr", of: elemT, n: Math.trunc(nT.v) };
           continue;
         }
         break;
@@ -821,7 +914,24 @@
           next();
         }
       }
+      // C++ references: `int& r` / `int&& r` behave as auto-deref pointers
+      while (atPunct("&") || atPunct("&&")) {
+        next();
+        base = { k: "ref", to: base };
+      }
       return base;
+    }
+
+    /* C++ range-for range: a braced list becomes an anonymous array
+       (compound literal), anything else is evaluated as an expression. */
+    function parseRangeExpr(elemType) {
+      if (atPunct("{")) {
+        const items = parseInitializerList(() => parseAssignExpr())
+          .map((e2) => ({ k: "expr", e: e2 }));
+        return { x: "compound", type: { k: "arr", of: elemType, n: null },
+                 inits: items };
+      }
+      return parseAssignExpr();
     }
 
     /* Parse a declarator. Returns {name, type}. If abstract, the name is
@@ -906,7 +1016,14 @@
 
     function substituteType(type, pending, repl) {
       if (type === pending) return repl;
-      if (type && type.k === "ptr") return { k: "ptr", to: substituteType(type.to, pending, repl), const: type.const };
+      if (type && type.k === "ptr") {
+        return { k: "ptr", to: substituteType(type.to, pending, repl),
+                 const: type.const, cppstr: type.cppstr };
+      }
+      if (type && type.k === "ref") {
+        return { k: "ref", to: substituteType(type.to, pending, repl),
+                 const: type.const };
+      }
       if (type && type.k === "arr") return { k: "arr", of: substituteType(type.of, pending, repl), n: type.n, vlaExpr: type.vlaExpr };
       if (type && type.k === "fn") {
         return {
@@ -980,6 +1097,10 @@
         next();
         return parseInitializer(type);
       }
+      // C++ brace initialization: Player p{"Mage", 50};
+      if (atPunct("{") && !(type && type.k === "fn")) {
+        return parseInitializer(type);
+      }
       return null;
     }
 
@@ -1041,8 +1162,23 @@
             let init = null;
             if (!atPunct(";")) {
               if (isTypeStart(peek())) {
-                const d = parseDeclaration(false);
-                init = { x: "decl", items: d.items, line: t.line };
+                // C++ range-based for: for (T x : range) body
+                const base = parseDeclSpecifiers();
+                const d = parseDeclarator(base, false);
+                if (cppMode && d.name && atPunct(":")) {
+                  next(); // ':'
+                  const range = parseRangeExpr(d.type);
+                  expectPunct(")");
+                  return { x: "rangeFor", varName: d.name, varType: d.type,
+                           range, body: parseStatement(), line: t.line };
+                }
+                const items = [{ name: d.name, type: d.type, init: parseOptInit(d.type) }];
+                while (atPunct(",") && next()) {
+                  const d2 = parseDeclarator(base, false);
+                  items.push({ name: d2.name, type: d2.type, init: parseOptInit(d2.type) });
+                }
+                expectPunct(";");
+                init = { x: "decl", items, line: t.line };
               } else { init = { x: "expr", e: parseExpr() }; expectPunct(";"); }
             } else next();
             let c = null;
@@ -1360,12 +1496,21 @@
   const T_VOIDPTR = () => ({ k: "ptr", to: { k: "void" } });
   const T_SIZET = () => makeInt(8, false, "size_t");
 
+  /* C++ layer types: `string` is a char* tagged cppstr; cout/endl/cin are
+     singleton marker types intercepted in binaryValue(). */
+  const T_CPPSTR = () => ({ k: "ptr", to: T_CHAR(), cppstr: true });
+  const T_COUT = () => ({ k: "cout" });
+  const T_ENDL = () => ({ k: "endl" });
+  const T_CIN = () => ({ k: "cin" });
+  function isCppStr(t) { return !!t && t.cppstr === true; }
+
   function typeAlign(t) {
     switch (t.k) {
       case "int": return t.size;
       case "float": return Math.min(t.size, 8);
       case "void": return 1;
       case "ptr": return 8;
+      case "ref": return 8;
       case "arr": return typeAlign(t.of);
       case "rec": return t.complete ? t.align : err("sizeof of incomplete type " + recName(t));
       case "fn": return 8;
@@ -1380,6 +1525,7 @@
       case "float": return t.size;
       case "void": return err("sizeof of void is not valid C");
       case "ptr": return 8;
+      case "ref": return 8;
       case "enumT": return 4;
       case "fn": return 8;
       case "arr":
@@ -1536,6 +1682,7 @@
     let heapPtr = STACK_LIMIT; // grows up, adjusted after globals
     let fnCount = 0;
     const funcs = {};        // name -> {decl, fnAddr}
+    const overloads = {};    // C++: name -> [{key, params}] in definition order
     const fnByAddr = {};     // fnAddr -> {decl|builtin}
     const literals = {};     // deduped string literal -> address
     let roPtr = 16;
@@ -1557,13 +1704,15 @@
 
     /* ---------------- program loading ---------------- */
 
-    const headers = {};
-    let macroText;
-    try {
-      const pre = preprocess(source);
-      macroText = pre.text;
-      pre.headers.forEach((h) => { headers[h] = 1; });
-    } catch (e) {
+      const headers = {};
+      let macroText;
+      const cppMode = isCppSource(source);
+      const lowered = cppMode ? lowerCppSource(source) : source;
+      try {
+        const pre = preprocess(lowered, cppMode);
+        macroText = pre.text;
+        pre.headers.forEach((h) => { headers[h] = 1; });
+      } catch (e) {
       if (e instanceof CErr) throw e;
       throw new CErr(String(e && e.message || e), 0, "compile");
     }
@@ -1636,6 +1785,13 @@
     }
     seedTypedefsForHeaders();
 
+    // the C++ layer: a `string` type (a tagged char*), plus true/false
+    if (cppMode) {
+      parserTypedefs["string"] = T_CPPSTR();
+      unit.consts["true"] = { v: 1 };
+      unit.consts["false"] = { v: 0 };
+    }
+
     // numeric constants from headers
     function seedConstsForHeaders() {
       const C = unit.consts;
@@ -1700,7 +1856,7 @@
     seedConstsForHeaders();
     errnoAddr = heapAlloc(4, 4); // the errno object lives here
 
-    const P = makeParser(lex(macroText), unit, parserTypedefs);
+    const P = makeParser(lex(macroText), unit, parserTypedefs, cppMode);
     let parsed;
     try {
       parsed = P.parseUnit();
@@ -1715,11 +1871,22 @@
     for (const f of parsed.funcs) registerFunction(f);
 
     function registerFunction(decl) {
-      if (funcs[decl.name]) err("redefinition of function " + decl.name, 0);
+      if (funcs[decl.name]) {
+        if (!cppMode) err("redefinition of function " + decl.name, 0);
+        // C++ overloading: keep every definition, dispatch by arg types
+        const id = fnCount++;
+        const addr = FN_BASE + id * 8;
+        const key = decl.name + "##" + id;
+        funcs[key] = { decl, addr };
+        fnByAddr[addr] = { user: decl };
+        overloads[decl.name].push({ key, params: decl.type.params.map((p) => p.type) });
+        return addr;
+      }
       const id = fnCount++;
       const addr = FN_BASE + id * 8;
       funcs[decl.name] = { decl, addr };
       fnByAddr[addr] = { user: decl };
+      overloads[decl.name] = [{ key: decl.name, params: decl.type.params.map((p) => p.type) }];
       return addr;
     }
 
@@ -2001,7 +2168,16 @@
             addr = p.v;
           } else {
             const o = evalLValue(e.obj, frame);
-            if (!o || o.type.k !== "rec") {
+            if (!o) err(". used on something that is not a struct", e.line);
+            if (o.type.k === "ref") {
+              // member access through a reference: auto-deref the base
+              const target = memRead(mem, o.addr, T_VOIDPTR());
+              rec = o.type.to;
+              const f0 = rec.fields.find((x) => x.name === e.name);
+              if (!f0) err(recName(rec) + " has no field named " + e.name, e.line);
+              return { addr: target + f0.off, type: f0.type, field: f0 };
+            }
+            if (o.type.k !== "rec") {
               err(". used on something that is not a struct", e.line);
             }
             rec = o.type;
@@ -2139,6 +2315,24 @@
 
     /* array/function decay: value of an array expr = its address */
     function decayed(lv) {
+      if (lv.type.k === "ref") {
+        // a reference slot stores the referent's address: auto-deref
+        const target = memRead(mem, lv.addr, T_VOIDPTR());
+        const to = lv.type.to;
+        if (to.k === "rec" || to.k === "arr") {
+          return { v: target, t: to, addr: target, rawType: to.k === "rec" ? to : undefined };
+        }
+        if (lv.field && lv.field.bits !== null && lv.field.bits !== undefined) {
+          const f2 = lv.field;
+          checkAddr(target - f2.off, f2.unitSize || 4, "bit-field read");
+          const base = readUnit(target - f2.off, f2);
+          let val = Math.floor(base / Math.pow(2, f2.bitOff)) % Math.pow(2, f2.bits);
+          if (f2.type.signed && val >= Math.pow(2, f2.bits - 1)) val -= Math.pow(2, f2.bits);
+          return { v: val, t: f2.type };
+        }
+        checkAddr(target, typeSizeSafe(to), "reference read");
+        return { v: memRead(mem, target, to), t: to };
+      }
       if (lv.type.k === "arr") return { v: lv.addr, t: { k: "ptr", to: lv.type.of } };
       if (lv.field && lv.field.bits !== null && lv.field.bits !== undefined) {
         // bit-field: extract from its storage unit, sign-extend if signed
@@ -2165,8 +2359,11 @@
     }
 
     function evalAssign(e, frame) {
-      const lv = evalLValue(e.l, frame);
+      let lv = evalLValue(e.l, frame);
       if (!lv) err("expression before = is not assignable", e.line);
+      if (lv.type.k === "ref") {
+        lv = { addr: memRead(mem, lv.addr, T_VOIDPTR()), type: lv.type.to };
+      }
       if (lv.type.const) err("cannot assign to a const variable", e.line);
       let rv = evalExpr(e.r, frame);
       if (e.op !== "=") {
@@ -2232,11 +2429,31 @@
         return { v: truthy(r.v) ? 1 : 0, t: T_INT() };
       }
       const l = evalExpr(e.l, frame);
+      if (e.op === ">>" && l.t && l.t.k === "cin") return evalCinChain(e.r, frame);
       const r = evalExpr(e.r, frame);
       return binaryValue(e.op, l, r, e.line);
     }
 
     function binaryValue(op, l, r, line) {
+      /* ---- C++ layer: streams and strings (before C pointer rules) ---- */
+      if (op === "<<" && l.t && l.t.k === "cout") {
+        out.text += coutFormat(r);
+        return l;
+      }
+      if (op === "+" && (isCppStr(l.t) || isCppStr(r.t))) {
+        return cppStrConcat(l, r, line);
+      }
+      if ((op === "==" || op === "!=" || op === "<" || op === ">" ||
+           op === "<=" || op === ">=") &&
+          (isCppStr(l.t) || isCppStr(r.t)) &&
+          (isPtr(l.t) || isPtr(r.t)) && (isPtr(l.t) === isPtr(r.t))) {
+        const ls = cppStrText(l, line), rs = cppStrText(r, line);
+        const cmp = ls === rs ? 0 : (ls < rs ? -1 : 1);
+        const res = op === "==" ? cmp === 0 : op === "!=" ? cmp !== 0 :
+                    op === "<" ? cmp < 0 : op === ">" ? cmp > 0 :
+                    op === "<=" ? cmp <= 0 : cmp >= 0;
+        return { v: res ? 1 : 0, t: T_INT() };
+      }
       // pointer arithmetic
       if (isPtr(l.t) && (op === "+" || op === "-")) {
         if (op === "+" && isArith(r.t)) {
@@ -2311,6 +2528,100 @@
       return { v: wrapInt(v, ct), t: ct };
     }
 
+    /* ---- C++ layer helpers: cout formatting, strings, cin ---- */
+
+    function cppStrText(s, line) {
+      if ((isCppStr(s.t) || (isPtr(s.t) && s.t.to && s.t.to.k === "int" &&
+           s.t.to.size === 1 && !s.t.to.const))) {
+        // cppstr values and plain char* both print their bytes; only
+        // cppstr can legally be null (empty)
+        if (s.v === 0 && isCppStr(s.t)) return "";
+        return readCString(s.v, 1048576);
+      }
+      err("invalid operands: expected a string value", line);
+    }
+
+    function cppStrConcat(l, r, line) {
+      const ls = cppStrText(l, line);
+      let rs;
+      if (isPtr(r.t)) rs = cppStrText(r, line);
+      else if (r.t && r.t.k === "int" && r.t.size === 1) {
+        rs = String.fromCharCode(r.v & 0xff);
+      } else err("invalid operands to binary + with a string", line);
+      const s = ls + rs;
+      const buf = heapAlloc(s.length + 1, 1);
+      writeCString(buf, s);
+      return { v: buf, t: T_CPPSTR() };
+    }
+
+    function coutFormat(r) {
+      if (!r || !r.t) return String(r && r.v);
+      if (r.t.k === "endl") return "\n";
+      if (isCppStr(r.t)) return r.v === 0 ? "" : readCString(r.v, 1048576);
+      if (isPtr(r.t) && r.t.to && r.t.to.k === "int" && r.t.to.size === 1) {
+        return readCString(r.v, 1048576);
+      }
+      if (r.t.k === "int" && r.t.size === 1 && r.t.name === "char") {
+        return String.fromCharCode(r.v & 0xff);
+      }
+      if (isFloatType(r.t)) return formatC("%g", [r]);
+      if (isArith(r.t)) {
+        if (r.t.signed === false && r.t.size === 8) {
+          const TWO64 = 18446744073709551616;
+          let u = r.v % TWO64;
+          if (u < 0) u += TWO64;
+          return String(u);
+        }
+        if (r.t.signed === false && r.t.size === 4) return String(r.v >>> 0);
+        return String(Math.trunc(r.v));
+      }
+      if (isPtr(r.t)) return "0x" + (r.v >>> 0).toString(16);
+      return String(r.v);
+    }
+
+    /* `cin >> x [>> y ...]` — one target per call; chaining works because
+       the returned marker is a cin again. Reads a whitespace-delimited
+       token from the sandbox's stdin. */
+    function evalCinChain(e, frame) {
+      const lv = evalLValue(e, frame);
+      if (!lv) err("std::cin can only read into a variable", e.line);
+      let addr = lv.addr, t = lv.type;
+      if (t.k === "ref") { addr = memRead(mem, addr, T_VOIDPTR()); t = t.to; }
+      if (lv.field && lv.field.bits !== null && lv.field.bits !== undefined) {
+        err("std::cin cannot read into a bit-field", e.line);
+      }
+      if (isCppStr(t)) {
+        const word = readStdinWord();
+        const buf = heapAlloc(word.length + 1, 1);
+        writeCString(buf, word);
+        memWrite(mem, addr, buf, T_VOIDPTR());
+      } else if (isFloatType(t)) {
+        scanC("%lf", fileRecs[FILE_STDIN], [{ v: addr }], [t]);
+      } else if (isIntType(t) || isPtr(t)) {
+        scanC(t.signed === false ? "%u" : "%d", fileRecs[FILE_STDIN],
+              [{ v: addr }], [isPtr(t) ? { k: "ptr", to: t } : t]);
+      } else {
+        err("std::cin cannot read into this type", e.line);
+      }
+      return { v: 2, t: T_CIN() };
+    }
+
+    function readStdinWord() {
+      const rec = fileRecs[FILE_STDIN];
+      let s = "";
+      for (;;) {
+        const b = rec.pos < rec.bytes.length ? rec.bytes[rec.pos++] : -1;
+        if (b === -1) break;
+        const ch = String.fromCharCode(b);
+        if (/\s/.test(ch)) {
+          if (s.length) break;
+          continue; // skip leading whitespace
+        }
+        s += ch;
+      }
+      return s;
+    }
+
     function cmpUnsigned(op, a, b, size) {
       const range = size === 4 ? 4294967296 : 18446744073709551616;
       let ua = a % range, ub = b % range;
@@ -2380,6 +2691,11 @@
             }
             err("cannot take the address of this expression", e.line);
           }
+          if (lv.type.k === "ref") {
+            // &reference yields the referent's address (C++ semantics)
+            return { v: memRead(mem, lv.addr, T_VOIDPTR()),
+                     t: { k: "ptr", to: lv.type.to } };
+          }
           return { v: lv.addr, t: { k: "ptr", to: lv.type } };
         }
         case "*": {
@@ -2388,8 +2704,11 @@
           return decayed({ addr: d.addr, type: d.type });
         }
         case "++": case "--": {
-          const lv = evalLValue(e.e, frame);
+          let lv = evalLValue(e.e, frame);
           if (!lv) err("operand of " + e.op + " is not assignable", e.line);
+          if (lv.type.k === "ref") {
+            lv = { addr: memRead(mem, lv.addr, T_VOIDPTR()), type: lv.type.to };
+          }
           if (lv.type.const) err("cannot modify a const variable", e.line);
           checkAddr(lv.addr, typeSizeSafe(lv.type), "increment");
           const cur = { v: memRead(mem, lv.addr, lv.type), t: lv.type };
@@ -2419,8 +2738,11 @@
     }
 
     function evalPost(e, frame) {
-      const lv = evalLValue(e.e, frame);
+      let lv = evalLValue(e.e, frame);
       if (!lv) err("operand of " + e.op + " is not assignable", e.line);
+      if (lv.type.k === "ref") {
+        lv = { addr: memRead(mem, lv.addr, T_VOIDPTR()), type: lv.type.to };
+      }
       if (lv.type.const) err("cannot modify a const variable", e.line);
       checkAddr(lv.addr, typeSizeSafe(lv.type), "increment");
       const cur = { v: memRead(mem, lv.addr, lv.type), t: lv.type };
@@ -2486,8 +2808,15 @@
             rec = pt.to;
           } else {
             rec = inferType(e.obj, frame);
-            if (rec.k !== "rec") err(". on a non-struct", e.line);
+            if (rec.k === "ref") rec = rec.to;
           }
+          if (rec.k === "arr" && (e.name === "size" || e.name === "empty" ||
+              e.name === "at" || e.name === "front" || e.name === "back")) {
+            if (e.name === "size") return T_SIZET();
+            if (e.name === "empty") return makeInt(1, false, "_Bool");
+            return rec.of;
+          }
+          if (rec.k !== "rec") err(". on a non-struct", e.line);
           const f = rec.fields.find((x) => x.name === e.name);
           if (!f) err(recName(rec) + " has no field named " + e.name, e.line);
           return f.type;
@@ -2547,6 +2876,22 @@
   /* --------------------------- calls & frames --------------------------- */
 
   function evalCall(e, frame) {
+    // C++ string methods: s.length(), s.substr(a, b), s.find(x), ...
+    if (e.fn.x === "member" && !e.fn.arrow) {
+      let bt = null;
+      try { bt = inferType(e.fn.obj, frame); } catch (e1) { /* not a cppstr */ }
+      if (bt && isCppStr(bt)) return cppStrMethod(e, frame);
+      if (bt && bt.k === "arr") return cppArrMethod(e, frame, bt);
+      if (bt && bt.k === "arr") return cppArrMethod(e, frame, bt);
+    }
+    // C++ overloading: pick the definition whose parameters best match
+    if (e.fn.x === "id" && overloads[e.fn.name]) {
+      const key = pickOverload(e.fn.name, e.args, frame, e.line);
+      if (key && key !== e.fn.name) {
+        return evalCall({ x: "call", fn: { x: "id", name: key, line: e.fn.line },
+                          args: e.args, line: e.line }, frame);
+      }
+    }
     const callee = evalExpr(e.fn, frame);
     const target = callee.v >= FN_BASE ? fnByAddr[callee.v] : null;
     if (callee.v === 0) {
@@ -2575,6 +2920,20 @@
     const params = decl.type.params;
     const ret = decl.type.ret;
 
+    // reference parameters bind to the argument's lvalue (C++ semantics)
+    params.forEach((pm, i) => {
+      if (pm.type && pm.type.k === "ref") {
+        const lv = evalLValue(e.args[i], frame);
+        if (!lv) {
+          err("cannot bind a non-lvalue to reference parameter " +
+              (pm.name || "#" + (i + 1)), e.line);
+        }
+        const addr = lv.type.k === "ref"
+          ? memRead(mem, lv.addr, T_VOIDPTR()) : lv.addr;
+        args[i] = { v: addr, t: { k: "ptr", to: pm.type.to } };
+      }
+    });
+
     // struct/array returns go through a caller-allocated temporary slot
     let retSlot = null;
     if (ret.k === "rec" || ret.k === "arr") {
@@ -2586,6 +2945,107 @@
       return { v: retSlot, t: ret, addr: retSlot };
     }
     return result;
+  }
+
+  /* C++ overload resolution: prefer exact parameter matches, then any
+     convertible arithmetic/pointer combination; first definition wins ties. */
+  function pickOverload(name, args, frame, line) {
+    let best = null, bestScore = -1;
+    for (const c of overloads[name]) {
+      if (c.params.length !== args.length) continue;
+      let score = 0, ok = true;
+      for (let i = 0; i < args.length; i++) {
+        let at;
+        try { at = inferType(args[i], frame); } catch (e1) { ok = false; break; }
+        at = decayRuntimeType(at);
+        const pt = decayRuntimeType(c.params[i]);
+        if (typesCompatible(at, pt)) score += 2;
+        else if ((isArith(at) || isPtr(at)) && (isArith(pt) || isPtr(pt))) score += 1;
+        else { ok = false; break; }
+      }
+      if (ok && score > bestScore) { bestScore = score; best = c; }
+    }
+    return best ? best.key : null;
+  }
+
+  /* std::array lowered to a C array keeps a few member calls: size(), etc. */
+  function cppArrMethod(e, frame, at) {
+    const name = e.fn.name;
+    const obj = evalExpr(e.fn.obj, frame); // arrays decay: v is the data addr
+    if (name === "size") return { v: at.n, t: T_SIZET() };
+    if (name === "empty") {
+      return { v: at.n === 0 ? 1 : 0, t: makeInt(1, false, "_Bool") };
+    }
+    if (name === "at" || name === "front" || name === "back") {
+      let i;
+      if (name === "at") i = Math.trunc(evalExpr(e.args[0], frame).v);
+      else if (name === "front") i = 0;
+      else i = at.n - 1;
+      if (i < 0 || i >= at.n) rerr("std::array::at: index out of range", e.line);
+      const es = Math.max(1, typeSize(at.of));
+      return { v: memRead(mem, obj.v + i * es, at.of), t: at.of };
+    }
+    err("the sandbox std::array supports size(), empty(), at(), front() and " +
+        "back() — not " + name + "()", e.line);
+  }
+
+  /* The sandbox `string` type: a tagged char* with the methods the C++
+     course's runnable examples actually use. */
+  function cppStrMethod(e, frame) {
+    const obj = evalExpr(e.fn.obj, frame);
+    if (!isCppStr(obj.t)) err("this is not a string value", e.line);
+    const s = obj.v === 0 ? "" : readCString(obj.v, 1048576);
+    const name = e.fn.name;
+    const arg = (i) => evalExpr(e.args[i], frame);
+    const cstrArg = (i) => {
+      const a = arg(i);
+      if (isPtr(a.t)) return a.v === 0 ? "" : readCString(a.v, 1048576);
+      if (a.t && a.t.k === "int" && a.t.size === 1) {
+        return String.fromCharCode(a.v & 0xff);
+      }
+      err("the sandbox string methods take a string or char argument", e.line);
+    };
+    switch (name) {
+      case "length": case "size":
+        if (e.args.length) err(name + "() takes no arguments", e.line);
+        return { v: s.length, t: T_SIZET() };
+      case "empty":
+        return { v: s.length === 0 ? 1 : 0, t: makeInt(1, false, "_Bool") };
+      case "c_str": case "data":
+        return { v: obj.v, t: { k: "ptr", to: T_CHAR() } };
+      case "substr": {
+        const pos = Math.trunc(arg(0).v);
+        const n = e.args.length > 1 ? Math.trunc(arg(1).v) : s.length - pos;
+        if (pos < 0 || pos > s.length) {
+          rerr("std::string::substr: position out of range", e.line);
+        }
+        const part = s.slice(pos, pos + Math.max(0, n));
+        const buf = heapAlloc(part.length + 1, 1);
+        writeCString(buf, part);
+        return { v: buf, t: T_CPPSTR() };
+      }
+      case "find": case "rfind": {
+        const pos = e.args.length > 1 ? Math.trunc(arg(1).v) : 0;
+        const needle = cstrArg(0);
+        let idx;
+        if (name === "find") {
+          idx = s.indexOf(needle, Math.min(Math.max(pos, 0), s.length));
+        } else {
+          idx = s.lastIndexOf(needle, pos < 0 ? s.length - 1 : Math.min(pos, s.length - 1));
+        }
+        return { v: idx, t: T_INT() };
+      }
+      case "at": {
+        const i = Math.trunc(arg(0).v);
+        if (i < 0 || i >= s.length) {
+          rerr("std::string::at: index out of range", e.line);
+        }
+        return { v: s.charCodeAt(i), t: T_CHAR() };
+      }
+      default:
+        err("the sandbox string type supports length(), substr(), find(), " +
+            "rfind(), at(), empty() and c_str() — not " + name + "()", e.line);
+    }
   }
 
   function runUserFunction(decl, args, params, retSlot, line) {
@@ -2602,7 +3062,10 @@
         const addr = stackAlloc(size, typeAlign(pt) || 8);
         declareVar(frame, pm.name || "__arg" + i, pt, addr);
         const rv = args[i];
-        if (pt.k === "rec") {
+        if (pt.k === "ref") {
+          // the slot holds the referent's address; uses auto-deref
+          memWrite(mem, addr, rv.v, T_VOIDPTR());
+        } else if (pt.k === "rec") {
           const src = rv.addr !== undefined ? rv.addr : rv.v;
           mem.setBytes(addr, mem.getBytes(src, size));
         } else {
@@ -2726,7 +3189,17 @@
           const addr = stackAlloc(size, typeAlign(type) || 8);
           zeroRange(addr, size);
           declareVar(frame, item.name, type, addr);
-          if (item.init) writeInitLocal(addr, type, item.init, frame);
+          if (type.k === "ref") {
+            // int& r = x; — bind the address, not the value
+            if (!item.init || item.init.k !== "expr") {
+              err("a reference " + item.name + " must be initialized", s.line);
+            }
+            const lv = evalLValue(item.init.e, frame);
+            if (!lv) err("cannot bind a non-lvalue to reference " + item.name, s.line);
+            const target = lv.type.k === "ref"
+              ? memRead(mem, lv.addr, T_VOIDPTR()) : lv.addr;
+            memWrite(mem, addr, target, T_VOIDPTR());
+          } else if (item.init) writeInitLocal(addr, type, item.init, frame);
         }
         return;
       }
@@ -2754,6 +3227,47 @@
             if (sig !== CONT_SIG) throw sig;
           }
         }
+      }
+
+      case "rangeFor": {
+        // C++ range-based for over a sized array or braced list
+        enterScope(frame);
+        try {
+          const rv = evalExpr(s.range, frame);
+          let n = null, base = rv.v, elemT = s.varType;
+          if (s.range.x === "compound") {
+            if (rv.rawType && rv.rawType.k === "arr") {
+              n = rv.rawType.n;
+              elemT = rv.rawType.of;
+            }
+          } else {
+            const st = inferType(s.range, frame);
+            if (st.k === "arr") { n = st.n; elemT = st.of; }
+          }
+          if (n === null || n === undefined) {
+            err("the sandbox range-for needs a sized array or a braced list",
+                s.line);
+          }
+          const es = Math.max(1, typeSize(elemT));
+          for (let i = 0; i < n; i++) {
+            tick(s.line);
+            try {
+              enterScope(frame);
+              try {
+                const size = typeSizeSafe(s.varType);
+                const addr = stackAlloc(size, typeAlign(s.varType) || 8);
+                zeroRange(addr, size);
+                declareVar(frame, s.varName, s.varType, addr);
+                mem.setBytes(addr, mem.getBytes(base + i * es, Math.max(es, 1)));
+                execStmt(s.body, frame);
+              } finally { exitScope(frame); }
+            } catch (sig) {
+              if (sig === BREAK_SIG) break;
+              if (sig !== CONT_SIG) throw sig;
+            }
+          }
+        } finally { exitScope(frame); }
+        return;
       }
 
       case "do": {
@@ -2861,6 +3375,11 @@
     if (init.k === "expr") {
       const v = evalExpr(init.e, frame);
       storeValue(addr, type, v);
+      return;
+    }
+    // C++ brace init of a scalar: int b{20}; / int x{}; (zero)
+    if (init.items) {
+      if (init.items.length) writeInitLocal2(addr, type, init.items[0], frame);
       return;
     }
     err("bad initializer");
@@ -3987,6 +4506,11 @@
     stdin: { v: FILE_STDIN, t: { k: "ptr", to: unit.findRec("struct", "FILE") || T_INT() } },
     stdout: { v: FILE_STDOUT, t: { k: "ptr", to: unit.findRec("struct", "FILE") || T_INT() } },
     stderr: { v: FILE_STDERR, t: { k: "ptr", to: unit.findRec("struct", "FILE") || T_INT() } },
+    // C++ layer: singleton stream markers (see binaryValue / evalCall)
+    cout: { v: 1, t: T_COUT() },
+    cin: { v: 2, t: T_CIN() },
+    endl: { v: 10, t: T_ENDL() },
+    flush: { v: 0, t: T_ENDL() },
   };
 
   /* --------------------------- program start ---------------------------- */

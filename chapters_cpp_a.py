@@ -769,25 +769,6 @@ using PlayerMap = std::map&lt;std::string, Player&gt;;  // much cleaner!</pre>
 <code>enum</code> and <code>using</code> over
 <code>typedef</code>.</p>
 """,
-                "tryit": """#include <iostream>
-
-enum class Color { Red, Green, Blue };
-
-int main() {
-    Color c = Color::Green;
-
-    switch (c) {
-        case Color::Red:   std::cout << "red\\n"; break;
-        case Color::Green: std::cout << "green\\n"; break;
-        case Color::Blue:  std::cout << "blue\\n"; break;
-    }
-
-    // explicit conversion
-    int value = static_cast<int>(c);
-    std::cout << "value: " << value << "\\n";  // 1
-    return 0;
-}
-""",
             },
         ],
         "quiz": [
