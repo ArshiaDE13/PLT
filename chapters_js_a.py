@@ -14,27 +14,35 @@ CHAPTERS_JS_A = [
             {
                 "title": "What is JavaScript?",
                 "html": """
-<p><b>JavaScript</b> is a lightweight, interpreted (or JIT-compiled)
-programming language with <b>first-class functions</b>. MDN describes it
-as prototype-based, garbage-collected, and dynamically typed — supporting
-imperative, functional and object-oriented paradigms. Despite the name,
-it has nothing to do with Java.</p>
+<p>Every web page you have ever used is built from three layers.
+<b>HTML</b> is the skeleton: headings, paragraphs, buttons. <b>CSS</b>
+is the skin: colors, fonts, layout. <b>JavaScript</b> is the muscles:
+when you click "Add to cart" and the total updates without a page
+reload, that is JS running. Without it, a web page is a poster you can
+only look at. This chapter's job is to make you fluent in the language
+itself before later chapters use it to build real things.</p>
 
-<p>The three core web technologies, per MDN:</p>
+<p>So what <i>is</i> JavaScript? A full programming language that runs
+<i>inside your browser</i>. MDN describes it as dynamically typed,
+prototype-based, and garbage-collected, with first-class functions —
+you will meet every one of those ideas in the coming chapters. Despite
+the name, it has nothing to do with Java; the similar name was 1995
+marketing, and the two languages share about as much as "car" and
+"carpet".</p>
 
-<ul>
-<li><b>HTML</b> — structure and meaning</li>
-<li><b>CSS</b> — presentation and layout</li>
-<li><b>JavaScript</b> — <i>interactivity and dynamic behaviour</i></li>
-</ul>
+<p>How does it actually run? The browser ships an engine (V8 in
+Chrome, SpiderMonkey in Firefox) that reads your code and executes it
+statement by statement, top to bottom. The same language also runs
+outside browsers — Node.js uses it for servers and tools — but in this
+course you write code, press Run, and the page's own engine executes
+it, printing every <code>console.log()</code> to the console
+below.</p>
 
-<p>JS runs in browsers (making pages interactive) and outside them too
-(Node.js for servers, tools, and more). It's standardized as
-<b>ECMAScript</b> (ECMA-262), with new features added every year.</p>
-
-<p>This course runs your code in the browser's own engine — the same
-V8/SpiderMonkey that powers real websites. Press Run and see the
-console output.</p>
+<p><b>Gotcha:</b> JavaScript is standardized as <b>ECMAScript</b>
+(ECMA-262) and gains new features every year, but browsers adopt them
+at different speeds. If something that "should work" throws an error,
+check MDN's browser-support tables before assuming your code is
+wrong.</p>
 """,
                 "tryit": """// Welcome to the JS Tutor! 🟡
 // Everything after // is a comment — the browser ignores it.
@@ -55,23 +63,46 @@ console.log("2 + 3 =", 2 + 3);
             {
                 "title": "Syntax & Comments",
                 "html": """
-<p>JS statements end with a semicolon (optional but recommended),
-blocks wrap in curly braces, and comments come in two flavours:</p>
+<p>Before you can say anything interesting, you need the punctuation
+rules of JS: how statements end, how code is grouped, and how to leave
+notes the engine ignores. That last one matters more than beginners
+expect — professional code is read far more often than it is written,
+and comments are how you explain the <i>why</i> to the next reader,
+who is usually future you.</p>
+
+<p>JS executes statements one at a time, top to bottom. Each statement
+usually ends with a semicolon — technically optional, because the
+engine can often infer it, but recommended, because the inference
+rules have edge cases. Curly braces <code>{ }</code> group statements
+into blocks, which you will use for functions, conditions and loops.
+Whitespace and indentation mean nothing to the engine — but they mean
+everything to humans, so indent consistently.</p>
+
+<p>The block below shows both comment styles. Before you read any
+explanation, predict: what will the console show when this runs? The
+answer is <i>nothing</i>. Both lines are comments, so the engine skips
+them entirely — they exist only for human eyes.</p>
 
 <pre class="code">// single-line comment
 
 /* multi-line
    comment */</pre>
 
-<p>JavaScript is <b>case-sensitive</b>: <code>myVar</code> and
-<code>myvar</code> are different variables. Statements execute top to
-bottom unless control flow redirects them. Whitespace is mostly
-insignificant — but consistent indentation makes code readable.</p>
+<p>The first style, <code>//</code>, comments out the rest of its
+line; use it for short notes or for switching off a single line while
+debugging. The second, <code>/* ... */</code>, stretches across
+lines; use it for longer explanations or for temporarily disabling a
+whole chunk of code.</p>
 
-<p>MDN's strict mode (<code>"use strict"</code>) opts into stricter
-parsing: it catches silent errors like assigning to undeclared
-variables. Modern modules and classes are always in strict mode — you
-rarely need to type it manually anymore.</p>
+<p><b>Gotchas:</b> JS is <b>case-sensitive</b> — <code>myVar</code>
+and <code>myvar</code> are two different variables, and a
+capitalization typo produces "is not defined" errors that look
+baffling. Also, block comments do not nest: the first
+<code>*/</code> ends the comment, and everything after it is code
+again — usually a syntax error. (Modern modules and classes run in
+strict mode automatically, which catches silent mistakes like
+assigning to undeclared variables — you rarely type
+<code>"use strict"</code> yourself anymore.)</p>
 """,
                 "tryit": """// Case-sensitive!
 let greeting = "hello";
@@ -90,31 +121,45 @@ console.log("done");
             {
                 "title": "Variables: let, const, var",
                 "html": """
-<p>Three keywords declare variables — and the differences matter:</p>
+<p>A program needs to remember things — a score, a user's name, a
+counter. <b>Variables</b> are named boxes for values, and JS gives you
+three keywords to create them. Picking the wrong one leads to bugs
+that are painful to trace, so learn the decision now: default to
+<code>const</code>, switch to <code>let</code> only when the value
+must change, and never write <code>var</code> in new code.</p>
+
+<p>Walk the first block. <code>const PI = 3.14159</code> creates a
+binding that can never be reassigned — try <code>PI = 3</code> later
+and the engine throws a TypeError. <code>let count = 0</code> is a
+normal, changeable variable: reassign it freely. <code>var old =
+"legacy"</code> is the 1995 keyword — it ignores block boundaries
+(function-scoped) and is hoisted, meaning usable before its line.
+Both behaviors cause subtle bugs, which is why modern code avoids
+it.</p>
 
 <pre class="code">const PI = 3.14159;    // cannot be reassigned
 let count = 0;          // can be reassigned, block-scoped
 var old = "legacy";     // function-scoped, hoisted — avoid in new code</pre>
 
-<ul>
-<li><b><code>const</code></b> — the default choice. The binding can't be
-reassigned (though objects/arrays assigned to const can still be
-<i>mutated</i>)</li>
-<li><b><code>let</code></b> — when you know the value will change
-(counters, accumulators)</li>
-<li><b><code>var</code></b> — the legacy keyword; function-scoped and
-hoisted (accessible before its line!), which causes subtle bugs. Modern
-code uses let/const exclusively</li>
-</ul>
+<p>Now the classic surprise. <code>const</code> freezes the
+<i>binding</i>, not the value. Predict what the second block does:
+replacing <code>user</code> entirely throws, but editing the object's
+<i>contents</i> is fine — so <code>user.name = "Grace"</code>
+succeeds. Run the try-it to confirm both sides.</p>
 
 <pre class="code">const user = { name: "Ada" };
 user.name = "Grace";     // ✓ mutation is fine — same object
 // user = {};            // ✗ TypeError: assignment to constant</pre>
 
-<p>Block scoping: <code>let</code>/<code>const</code> only exist inside
-their <code>{ }</code> block; <code>var</code> leaks to the function
-level. This is why <code>var</code> in loops caused bugs for
-years.</p>
+<p>Both <code>let</code> and <code>const</code> are block-scoped: they
+exist only inside the <code>{ }</code> they were declared in.
+<code>var</code> leaks to the whole function — which is exactly why
+<code>var</code> inside loops caused bugs for years.</p>
+
+<p><b>Gotcha:</b> "const means the value never changes" is the wrong
+mental model — it means the <i>name</i> never points somewhere else.
+Objects and arrays behind a <code>const</code> stay fully
+mutable.</p>
 """,
                 "tryit": """const name = "Ada";
 let score = 0;
@@ -138,32 +183,48 @@ if (true) {
             {
                 "title": "Data Types",
                 "html": """
-<p>JavaScript has <b>8 data types</b> — 7 primitives and 1 object
-type:</p>
+<p>Every value in JS has a type, and the type decides what you can do
+with it: multiplying numbers makes sense, multiplying two strings does
+not. JS has <b>8 types</b> — 7 small, immutable <b>primitives</b> and
+one big <b>object</b> type. The primitives:</p>
 
 <ul>
 <li><b>Number</b> — integers and floats: <code>42</code>,
-<code>3.14</code>, <code>NaN</code>, <code>Infinity</code></li>
+<code>3.14</code>, plus the special values <code>NaN</code> and
+<code>Infinity</code></li>
 <li><b>String</b> — text: <code>"hello"</code>,
 <code>'world'</code>, <code>`template`</code></li>
 <li><b>Boolean</b> — <code>true</code> / <code>false</code></li>
-<li><b>undefined</b> — a variable declared but not yet assigned</li>
-<li><b>null</b> — intentional absence of value</li>
-<li><b>BigInt</b> — arbitrary precision integers:
-<code>123n</code></li>
+<li><b>undefined</b> — declared, but not yet assigned a value</li>
+<li><b>null</b> — deliberately empty, set by you</li>
+<li><b>BigInt</b> — huge integers: <code>123n</code></li>
 <li><b>Symbol</b> — unique identifiers: <code>Symbol("id")</code></li>
-<li><b>Object</b> — everything else: arrays, functions, dates... (the
-only non-primitive type)</li>
+<li><b>Object</b> — everything else: arrays, functions, dates, plain
+<code>{ }</code>... the only non-primitive type</li>
 </ul>
 
-<p>The <code>typeof</code> operator reveals a value's type at runtime —
-with one famous quirk: <code>typeof null</code> returns
-<code>"object"</code> (a bug from 1995 that can't be fixed without
-breaking the web).</p>
+<p>How do you find out what you are holding? The <code>typeof</code>
+operator answers at runtime: <code>typeof 42</code> gives
+<code>"number"</code>, <code>typeof "hello"</code> gives
+<code>"string"</code>. The try-it below asks typeof about ten values —
+predict every answer before you press Run, especially
+<code>typeof []</code> and <code>typeof null</code>.</p>
 
-<p>JS is <b>dynamically typed</b>: variables have no fixed type — the
-<i>value</i> has the type. A variable can hold a number, then a string,
-then an object. Flexibility with responsibility.</p>
+<p>That last one is the famous quiz question: <code>typeof null</code>
+returns <code>"object"</code>. It is a bug from the very first version
+of JS in 1995 — the value is obviously not an object — but it can
+never be fixed, because changing it would break every website that
+relies on today's behavior.</p>
+
+<p>JS is <b>dynamically typed</b>: the variable has no fixed type, the
+<i>value</i> does. One variable can hold a number, then a string, then
+an object — the last lines of the try-it demonstrate exactly that
+sequence. Flexibility, with responsibility.</p>
+
+<p><b>Gotcha:</b> <code>typeof []</code> is <code>"object"</code>, not
+"array" — arrays are objects with numbered keys. When you specifically
+need to know "is this an array?", use
+<code>Array.isArray(x)</code>.</p>
 """,
                 "tryit": """// typeof reveals the type of a VALUE
 console.log(typeof 42);           // "number"
@@ -187,9 +248,23 @@ console.log(typeof x);    // "string"
             {
                 "title": "Numbers & Strings",
                 "html": """
-<p><b>Numbers</b> are 64-bit floating point (there's no separate int
-type). Special values: <code>NaN</code> ("Not a Number" — the result of
-invalid math), <code>Infinity</code>, <code>-Infinity</code>:</p>
+<p>Real programs juggle two kinds of data constantly: quantities and
+text. JS models them with <b>Number</b> and <b>String</b> — and both
+hide surprises. There is no separate integer type: every number is a
+64-bit floating-point value, so <code>1</code> and <code>1.0</code>
+are the same number. That is mostly harmless; the surprises live at
+the edges.</p>
+
+<p>Read the first block top to bottom and predict each result before
+reading the comments. The arithmetic you expect works: <code>42 +
+1</code> is 43. Division produces decimals: <code>10 / 3</code> is
+3.3333... Dividing by zero does not error — it gives
+<code>Infinity</code> — and the truly broken case, <code>0 / 0</code>,
+gives <code>NaN</code> ("Not a Number"), the result of invalid math.
+The last lines convert text to numbers: <code>parseInt("42")</code>
+is 42, <code>parseFloat("3.14")</code> keeps the decimals, and
+<code>(42.5678).toFixed(2)</code> rounds for display, giving
+"42.57".</p>
 
 <pre class="code">42 + 1        // 43
 3.14 * 2      // 6.28
@@ -200,8 +275,14 @@ parseInt("42")  // 42
 parseFloat("3.14")  // 3.14
 (42.5678).toFixed(2)  // "42.57"</pre>
 
-<p><b>Strings</b> are sequences of characters, immutable (methods
-return new strings). Key methods:</p>
+<p>Strings are sequences of characters and are <b>immutable</b>: no
+method ever edits a string in place — each one returns a new string.
+In the second block, <code>"hello".length</code> is 5. Notice
+<code>slice(1, 3)</code> takes characters from index 1 up to — but
+not including — index 3, giving "el". <code>split(",")</code> chops
+the text into an array at each comma, <code>trim()</code> strips
+whitespace from both ends, and <code>replace()</code> swaps its first
+match, building the new string.</p>
 
 <pre class="code">"hello".length          // 5
 "hello".toUpperCase()   // "HELLO"
@@ -211,9 +292,16 @@ return new strings). Key methods:</p>
 "abc".includes("b")     // true
 "abc".replace("a", "X") // "Xbc"</pre>
 
-<p>Numbers and strings convert: <code>String(42) → "42"</code>,
-<code>Number("42") → 42</code>, <code>+"42" → 42</code>. But
-<code>Number("abc") → NaN</code> — always check!</p>
+<p>Converting between the two types is routine: <code>String(42)</code>
+gives "42", <code>Number("42")</code> gives 42, and the shortcut
+<code>+"42"</code> also gives 42. But <code>Number("abc")</code> gives
+<code>NaN</code> — so always check conversions from text.</p>
+
+<p><b>Gotcha:</b> <code>0.1 + 0.2</code> is
+<code>0.30000000000000004</code>, not 0.3 — floating-point rounding,
+the classic beginner shock (the try-it shows it). Format with
+<code>toFixed()</code> for display, and never test floats for exact
+equality.</p>
 """,
                 "tryit": """// Numbers
 console.log(10 / 3);            // division
@@ -237,27 +325,33 @@ console.log("a,b,c".split(","));  // ["a", "b", "c"]
             {
                 "title": "Booleans, null & undefined",
                 "html": """
-<p><b>Booleans</b> are <code>true</code> and <code>false</code> — but
-JS also has <b>truthy</b> and <b>falsy</b> values that coerce to
-booleans in conditions:</p>
+<p>Conditions need to answer yes/no questions, so JS has
+<code>true</code> and <code>false</code>. But here is what trips up
+beginners: JS does not require a real boolean in an <code>if</code>.
+It converts <i>any</i> value to true or false on the spot. Exactly
+<b>6 values</b> convert to false — the "falsy" list: <code>false</code>,
+<code>0</code>, <code>""</code> (empty string), <code>null</code>,
+<code>undefined</code>, <code>NaN</code>. Everything else — including
+<code>"0"</code>, <code>" "</code> (a space!), and even empty arrays
+and objects — is truthy.</p>
 
-<ul>
-<li><b>Falsy (6 total):</b> <code>false</code>, <code>0</code>,
-<code>""</code>, <code>null</code>, <code>undefined</code>,
-<code>NaN</code></li>
-<li><b>Truthy:</b> everything else — including <code>"0"</code>,
-<code>[]</code>, <code>{}</code>, <code>" "</code> (space!)</li>
-</ul>
+<p>Why does this matter? Because <code>if (count)</code> silently
+treats 0 as "no", and <code>if (name)</code> treats an empty string as
+"no". Sometimes that is exactly what you want; sometimes it is a bug.
+Memorize the 6-item list and you can predict any condition.</p>
 
-<p><b>null vs undefined</b> — the two "absence" values:</p>
+<p>Next, the two "absence" values. They look interchangeable but mean
+different things. <code>undefined</code> is JS's way of saying "not
+set yet": a declared-but-unassigned variable, a function that finishes
+without <code>return</code>, a missing object property.
+<code>null</code> is <i>you</i> deliberately writing "no value here"
+in your code.</p>
 
-<ul>
-<li><code>undefined</code> — a variable declared but not assigned; a
-function that doesn't return; an object property that doesn't exist.
-JS's way of saying "not set yet"</li>
-<li><code>null</code> — <i>you</i> set it, intentionally, to mean "no
-value". It's a deliberate assignment</li>
-</ul>
+<p>Now walk the code block. Predict both comparisons before reading
+the comments. <code>a</code> is undefined and <code>b</code> is null.
+The loose comparison <code>==</code> says they are equal — both count
+as "empty" — while the strict <code>===</code> says false, because the
+types differ.</p>
 
 <pre class="code">let a;           // undefined
 let b = null;    // null (intentional)
@@ -265,9 +359,14 @@ let b = null;    // null (intentional)
 console.log(a == b);    // true (loose: both "empty")
 console.log(a === b);   // false (strict: different types!)</pre>
 
-<p>The <code>!!</code> double-negation converts any value to its boolean
-equivalent — a common idiom: <code>!!"hello" → true</code>,
-<code>!!0 → false</code>.</p>
+<p>A handy idiom: the double negation <code>!!value</code> converts
+anything to its real boolean — <code>!!"hello"</code> is
+<code>true</code>, <code>!!0</code> is <code>false</code>. The try-it
+uses it to test the entire falsy list.</p>
+
+<p><b>Gotcha:</b> <code>typeof b</code> for a null value returns
+<code>"object"</code> — the same 1995 bug again. Test for null with
+<code>b === null</code>, never with typeof.</p>
 """,
                 "tryit": """// Falsy values (all 6)
 console.log(!!false);     // false
@@ -295,10 +394,20 @@ console.log(a === b);    // false (strict)
             {
                 "title": "Type Conversion",
                 "html": """
-<p>JS converts types <i>all the time</i> — sometimes when you don't
-expect it. <b>Explicit</b> conversion is when you call the conversion
-yourself; <b>implicit</b> (coercion) is when JS does it behind your
-back:</p>
+<p>JS constantly converts between types — sometimes because you asked
+(explicit), sometimes behind your back (implicit coercion). You need
+both in your mental model, because the implicit ones are where real
+bugs live. The one rule that explains half the weirdness: the
+<code>+</code> operator prefers strings; every other math operator
+prefers numbers.</p>
+
+<p>Start with explicit conversion, where you call the conversion
+yourself — the safe, readable style. <code>Number("42")</code> turns
+text into a number, <code>String(42)</code> does the reverse,
+<code>Boolean(1)</code> gives <code>true</code>,
+<code>(42).toString()</code> is another route to "42", and
+<code>parseInt("3.14")</code> chops off the decimals and gives 3.
+Predict each line, then check the comments.</p>
 
 <pre class="code">// explicit
 Number("42")       // 42
@@ -315,18 +424,29 @@ parseInt("3.14")   // 3 (integer part)
 [] + []      // ""     (both → "", concatenated)
 [] + {}      // "[object Object]"</pre>
 
-<p>The <code>+</code> operator is unique: it prefers string
-concatenation if either operand is a string. Every other math operator
-coerces to number. This asymmetry causes real bugs:</p>
+<p>Now the implicit ones — read them slowly, they are interview
+favorites. <code>"5" + 3</code> gives <code>"53"</code>: + sees a
+string and switches to concatenation. <code>"5" - 3</code> gives 2:
+minus only does math, so the string converts to a number.
+<code>1 + true</code> gives 2 because true becomes 1. And
+<code>[] + []</code> gives <code>""</code> — both arrays become empty
+strings first. Nobody writes these on purpose; you need them to
+diagnose accidents.</p>
+
+<p>The second block is the bug that bites every beginner once: form
+inputs always deliver strings. <code>"10" + 5</code> is
+<code>"105"</code>, not 15. Convert first with <code>Number(val)</code>,
+then do the math.</p>
 
 <pre class="code">// form inputs are always strings!
 const val = "10";
 val + 5     // "105" — concatenation, not addition!
 Number(val) + 5  // 15 — convert first!</pre>
 
-<p>Modern operators avoid coercion: <code>===</code> (strict equality),
-<code>??</code> (nullish coalescing), and
-<code>Object.is()</code> never surprise you.</p>
+<p><b>Rule of thumb:</b> modern operators avoid coercion — prefer
+<code>===</code> over <code>==</code>, <code>??</code> over
+<code>||</code> for defaults, and convert incoming text to numbers
+explicitly at the boundary where data enters your program.</p>
 """,
                 "tryit": """// Explicit conversion
 console.log(Number("42"));      // 42
@@ -351,24 +471,29 @@ console.log(Number(input) + 5); // 15 — convert first!
             {
                 "title": "Operators & Comparisons",
                 "html": """
-<p>JS operators, grouped by purpose:</p>
+<p>Operators are the verbs of JS: arithmetic (<code>+ - * / %
+**</code>), assignment shortcuts (<code>+=</code>, <code>*=</code>...),
+comparisons (<code>&gt;</code>, <code>&lt;=</code>), logical
+(<code>&amp;&amp;</code>, <code>||</code>, <code>!</code>), plus the
+ternary and optional chaining. You have already used most of them in
+try-it boxes; here we focus on the family that behaves in a
+non-obvious way: the logical operators.</p>
 
-<ul>
-<li><b>Arithmetic:</b> <code>+ - * / % **</code></li>
-<li><b>Assignment:</b> <code>= += -= *= /= %= **= &amp;&amp;= ||= ??=</code></li>
-<li><b>Comparison:</b> <code>&gt; &lt; &gt;= &lt;=</code></li>
-<li><b>Equality:</b> <code>==</code> (loose), <code>===</code>
-(strict), <code>!=</code>, <code>!==</code></li>
-<li><b>Logical:</b> <code>&amp;&amp;</code> (AND), <code>||</code>
-(OR), <code>!</code> (NOT), <code>??</code> (nullish)</li>
-<li><b>Ternary:</b> <code>condition ? a : b</code></li>
-<li><b>Optional chaining:</b> <code>obj?.prop</code></li>
-<li><b>Increment/Decrement:</b> <code>++i</code>, <code>i--</code></li>
-</ul>
+<p><code>&amp;&amp;</code> and <code>||</code> are
+<b>short-circuiting</b>: they stop evaluating as soon as the answer is
+decided — and, crucially, they return the <i>value that decided the
+result</i>, not just true/false. That sounds odd until you see the
+pattern it enables: <code>name || "Anonymous"</code> evaluates to
+<code>name</code> when name is truthy, otherwise to the fallback
+string. One line gives you "use this, or a default".</p>
 
-<p>The logical operators are <i>short-circuiting</i>: they return the
-value that decides the result, not just true/false. This enables
-powerful patterns:</p>
+<p>But the old <code>||</code> default has a trap: it falls back on
+<i>every</i> falsy value, including 0 and "". That is why
+<code>??</code> exists — it falls back only on null/undefined. Walk
+the code block and predict each result: which default wins for the
+empty name, what happens to the count of 0, when does
+<code>isReady &amp;&amp; start()</code> actually call, and what does
+optional chaining return for a missing property.</p>
 
 <pre class="code">name = name || "Anonymous";   // default value (old style)
 name = name ?? "Anonymous";   // default (only for null/undefined, not 0 or "")
@@ -376,9 +501,18 @@ name = name ?? "Anonymous";   // default (only for null/undefined, not 0 or "")
 isReady && start();            // only call if isReady is truthy
 value = mayBeNull?.property;   // no crash if mayBeNull is null</pre>
 
-<p><code>==</code> vs <code>===</code> deserves its own lesson (next!),
-but the rule is simple: <b>always use ===</b>. The loose ==
-performs type coercion that produces surprising results.</p>
+<p>The ternary <code>condition ? a : b</code> is a whole if/else
+compressed into one expression — great for picking between two
+values, too clever for anything longer. Optional chaining
+<code>obj?.prop</code> reads a property safely: if <code>obj</code>
+is null or undefined you get <code>undefined</code> back instead of a
+TypeError crash.</p>
+
+<p><b>Gotcha:</b> do not write <code>count = count || 10</code> for a
+counter — a perfectly legitimate 0 would be replaced by 10. That is
+precisely what <code>??</code> is for. And the loose
+<code>==</code> versus strict <code>===</code> question gets its own
+next lesson; for now the rule is simply: always <code>===</code>.</p>
 """,
                 "tryit": """// Short-circuit evaluation
 const name = "" || "Anonymous";     // "" is falsy → "Anonymous"
@@ -407,14 +541,22 @@ console.log(n);
             {
                 "title": "Equality: == vs ===",
                 "html": """
-<p>The single most important distinction for JS beginners:</p>
+<p>Comparing values sounds trivial — until JS converts one side just
+to surprise you. The two equality operators differ in exactly one
+thing: <code>==</code> (loose) converts both sides to the same type
+<i>first</i>, then compares; <code>===</code> (strict) compares value
+<i>and</i> type, converting nothing. Strict equality is always
+predictable, which is why the community rule is blunt: use
+<code>===</code> everywhere.</p>
 
-<ul>
-<li><code>==</code> (loose equality) — converts both sides to the same
-type, <i>then</i> compares. Convenient but full of traps</li>
-<li><code>===</code> (strict equality) — compares value AND type. No
-conversion. Always predictable</li>
-</ul>
+<p>Walk the block line by line and predict before reading the
+comments. <code>1 == "1"</code> is true because the string "1" is
+converted to the number 1. <code>1 === "1"</code> is false — a number
+is not a string, done. <code>null == undefined</code> is a special
+pair that loose equality treats as matching; strict says false.
+<code>NaN === NaN</code> is false — NaN is defined as unequal to
+everything, including itself. And <code>0 == false</code> is true
+because false converts to 0; strict says false.</p>
 
 <pre class="code">1 == "1"      // true  (string → number)
 1 === "1"     // false (different types!)
@@ -428,15 +570,22 @@ NaN === NaN    // false
 0 == false     // true
 0 === false    // false</pre>
 
-<p>The rules for <code>==</code> are so complex that MDN recommends
-<b>never using it</b>. The only valid use case:
-<code>x == null</code> checks for both null AND undefined at
-once.</p>
+<p>Why not just learn the conversion rules of <code>==</code>?
+Because they form a maze of special cases nobody remembers fully —
+MDN recommends never using it. There is exactly one accepted use:
+<code>x == null</code> is true when x is null <i>or</i> undefined, a
+compact "has no value" check.</p>
 
-<p><code>Object.is()</code> is a third comparison that's like
-<code>===</code> but treats <code>NaN === NaN</code> as true and
-<code>+0 !== -0</code>. It's what <code>Object.is()</code> is
-for.</p>
+<p>For completeness, <code>Object.is()</code> is a third comparison:
+like <code>===</code> except it treats NaN as equal to itself and
+distinguishes <code>+0</code> from <code>-0</code>. The try-it
+demonstrates both edge cases, plus the one valid
+<code>==</code>.</p>
+
+<p><b>Gotcha:</b> if a condition like <code>if (input == 0)</code>
+behaves strangely, suspect loose-equality coercion — an empty string
+also equals 0 loosely. Switch to <code>===</code> and the mystery
+usually disappears immediately.</p>
 """,
                 "tryit": """// The traps of ==
 console.log(1 == "1");          // true (coerced!)
@@ -465,18 +614,29 @@ console.log(x === undefined); // false
             {
                 "title": "Template Literals",
                 "html": """
-<p>Template literals use <b>backticks</b> (<code>`</code>) instead of
-quotes and unlock three superpowers that regular strings don't
-have:</p>
+<p>You constantly need strings that mix fixed text with live values:
+"Ada scored 95%". The old way was concatenation with <code>+</code> —
+opening quotes, plus signs, closing quotes, and a mess once the
+sentence grows. Template literals, written with backticks
+(<code>`</code>), solve this: you write the sentence naturally and
+embed values with <code>${expression}</code>.</p>
 
-<ul>
-<li><b>Interpolation:</b> embed any expression with
-<code>${expression}</code></li>
-<li><b>Multi-line</b>: line breaks are preserved, no <code>\\n</code>
-needed</li>
-<li><b>Tagged templates</b>: functions can process the template (how
-styled-components works)</li>
-</ul>
+<p>Three powers come with backticks. First, <b>interpolation</b>:
+anything legal in JS goes inside <code>${}</code> — a variable, a
+sum, a function call, even a ternary. Second, <b>multi-line</b>:
+press Enter and the line break becomes part of the string, no
+<code>\\n</code> needed — that is how the HTML card in the code block
+keeps its neat indentation. Third, <b>tagged templates</b>: a
+function can process the template; you will rarely write one, but
+libraries like styled-components are built on them.</p>
+
+<p>Walk the block. <code>`${name} scored ${score}%`</code> substitutes
+the variables' values — predict the exact output, punctuation
+included. <code>`Next year: ${score + 5}%`</code> proves that
+expressions are evaluated: 95 becomes 100. The multi-line HTML string
+shows why backticks won: quotes inside the string, no escaping, real
+line breaks. The last three lines compute, call a method, and branch
+— all inside <code>${}</code>.</p>
 
 <pre class="code">const name = "Ada";
 const score = 95;
@@ -498,10 +658,12 @@ console.log(`Double: ${score * 2}`);
 console.log(`Upper: ${name.toUpperCase()}`);
 console.log(`Conditional: ${score >= 90 ? "pass" : "fail"}`);</pre>
 
-<p>Any expression works inside <code>${}</code> — function calls,
-ternaries, even nested template literals. This is the modern way to
-build strings; string concatenation with <code>+</code> is
-legacy.</p>
+<p><b>Gotcha:</b> backticks only — a normal quote mark does not
+interpolate, so <code>"${name}"</code> prints a literal dollar-brace
+instead of the value. Also remember that a multi-line template really
+contains line breaks and the indentation spaces you typed — perfect
+for readable HTML, wrong when you need a tight single-line
+value.</p>
 """,
                 "tryit": """const name = "Ada";
 const items = ["sword", "shield", "potion"];
@@ -581,8 +743,23 @@ console.log(`${items[0].toUpperCase()} costs ${Math.round(gold / 3)}g`);
             {
                 "title": "if / else",
                 "html": """
-<p>The fundamental branching statement — run code only when a condition
-is truthy:</p>
+<p>Programs need to make decisions: show a "hot" icon above 30
+degrees, a different message otherwise. <code>if / else</code> is the
+fundamental branching tool — it runs a block only when its condition
+is truthy, and optionally an alternative block otherwise. You will
+use it in nearly every function you ever write.</p>
+
+<p>The mechanics: JS evaluates the condition inside the parentheses,
+converts it to true or false (remember the 6 falsy values), and runs
+the matching block. The chain in the code block is checked top to
+bottom — first match wins, everything after it is skipped. Order
+matters: if you tested <code>&gt; 20</code> first, a temperature of
+35 would print "nice" and never reach "hot".</p>
+
+<p>Predict the output for <code>temperature = 25</code> before reading
+on: the first test fails (25 is not greater than 30), the second
+succeeds, so "nice" prints and the final <code>else</code> is
+skipped.</p>
 
 <pre class="code">if (temperature &gt; 30) {
   console.log("hot");
@@ -592,15 +769,20 @@ is truthy:</p>
   console.log("cold");
 }</pre>
 
-<p>Conditions coerce to boolean — falsy values (0, "", null,
-undefined, NaN) are treated as <code>false</code>. Curly braces are
-technically optional for single statements, but always use them —
-omitting them causes real bugs. For simple conditionals, the ternary
-operator <code>condition ? a : b</code> is often cleaner.</p>
+<p>Three habits worth building now. First, always use curly braces,
+even for a single statement — omitting them causes real, documented
+bugs when someone later adds a second line at the wrong indentation.
+Second, keep chains shallow; deeply nested if/else is a code smell
+that early <code>return</code>s or a lookup table usually fix
+better. Third, for choosing between exactly two values, the ternary
+<code>condition ? a : b</code> is cleaner than a four-line
+if/else.</p>
 
-<p>MDN also documents <code>if...else if...else</code> chains (which are
-really nested ifs) — keep them shallow; deeply nested conditionals are
-a code smell that early returns or lookup tables can fix.</p>
+<p><b>Gotcha:</b> <code>if (name)</code> with an empty string skips
+the block, because <code>""</code> is falsy — is that what you meant?
+For presence checks, prefer explicit tests like
+<code>if (name !== "")</code> so your intent is visible to every
+reader, including you in six months.</p>
 """,
                 "tryit": """const hour = 14;
 
@@ -628,8 +810,24 @@ console.log(label);
             {
                 "title": "switch",
                 "html": """
-<p><code>switch</code> compares a value against multiple cases —
-cleaner than long if-else chains:</p>
+<p>When one value must be compared against many fixed options — a
+menu choice, a status code, a day of the week — a long if/else chain
+works but gets noisy. <code>switch</code> states the value once and
+lists the matching cases under it, which reads better and is harder
+to get wrong.</p>
+
+<p>Execution jumps to the matching <code>case</code> and runs from
+there — and here is the famous mechanic: it keeps running into the
+next case until it hits <code>break</code>. That is <b>fall-through</b>.
+Sometimes you want it on purpose: notice how "banana" and "plantain"
+share one body by stacking their cases. Most of the time it is an
+accident, so end every case with <code>break</code>. The
+<code>default</code> case catches everything that no case
+matched.</p>
+
+<p>Predict: what happens with <code>fruit = "cherry"</code>? No case
+matches, so execution lands in <code>default</code> and prints
+"unknown fruit".</p>
 
 <pre class="code">switch (fruit) {
   case "apple":
@@ -643,14 +841,16 @@ cleaner than long if-else chains:</p>
     console.log("unknown fruit");
 }</pre>
 
-<p>The <b>break</b> keyword exits the switch. Without it, execution
-<b>falls through</b> to the next case — sometimes useful
-(intentional fall-through for grouping), often a bug. The
-<b>default</b> case handles unmatched values.</p>
+<p>One more mechanic that surprises people: switch compares with
+<b>strict ===</b>, not loose ==. The string <code>"1"</code> will not
+match <code>case 1:</code>. This bites hardest with form inputs,
+which always arrive as strings — convert with
+<code>Number(...)</code> before switching on numbers.</p>
 
-<p>Important: switch uses <b>strict comparison</b> (===) —
-<code>switch("1")</code> will NOT match <code>case 1:</code>. This
-catches people off guard when working with form inputs.</p>
+<p><b>Gotcha:</b> forgetting a single <code>break</code> produces no
+error — the code simply runs the next case's body too, which can
+look like a logic bug from far away. If a switch prints two lines
+when you expected one, look for a missing break first.</p>
 """,
                 "tryit": """const day = "sat";
 
@@ -687,7 +887,25 @@ switch (num) {
             {
                 "title": "while & do...while",
                 "html": """
-<p>Two loops that repeat while a condition is true:</p>
+<p>Loops answer "how do I repeat this without copy-pasting it?"
+<code>while</code> is the most basic form: as long as the condition
+is true, run the body again. Reach for it when you do not know in
+advance how many repetitions you need — draining a queue, waiting
+for a value, counting down.</p>
+
+<p>Walk the first half of the block. <code>count</code> starts at 0;
+the condition <code>count &lt; 5</code> is checked <i>before</i> each
+pass; the body prints and then increments. So the loop prints 0
+through 4 — five numbers — and then the condition fails and execution
+continues below. Because the check comes first, a <code>while</code>
+loop can legitimately run zero times: start <code>count</code> at 10
+and nothing prints at all.</p>
+
+<p><code>do...while</code> flips the order: the body runs
+<i>first</i>, and the condition is checked after. That guarantees at
+least one execution — useful for "ask the user, then ask again if the
+answer was wrong" style logic, sketched in the second half of the
+block.</p>
 
 <pre class="code">// while: check condition FIRST (may run 0 times)
 let count = 0;
@@ -702,15 +920,13 @@ do {
   input = getNextGuess();
 } while (input !== "correct");</pre>
 
-<p>The critical difference: <code>while</code> checks before the first
-iteration; <code>do...while</code> checks after — so do...while always
-executes at least once. Use <code>while</code> for "repeat as long as"
-and <code>do...while</code> for "do at least once, then repeat
-if".</p>
-
-<p>Infinite loops are the classic mistake — always ensure something in
-the body moves toward the exit condition. The playground has a step
-limit to protect you.</p>
+<p><b>Gotchas:</b> the classic beginner disaster is the infinite
+loop — if nothing in the body moves the condition toward false
+(forgetting <code>count++</code>), the loop never ends and the tab
+freezes. Before running any while loop, point at the exact line that
+makes progress. And never put a semicolon directly after
+<code>while (...)</code> — it creates an empty loop body, and your
+"real" block below runs once, unguarded by the condition.</p>
 """,
                 "tryit": """let countdown = 5;
 while (countdown > 0) {
@@ -736,8 +952,27 @@ while (stack.length > 0) {
             {
                 "title": "for & for...of",
                 "html": """
-<p>The classic <code>for</code> loop and the modern
-<code>for...of</code>:</p>
+<p>When you know — or can compute — how many times to repeat, the
+classic <code>for</code> loop packs the whole setup into one header:
+start, condition, step. When you just want each element of an array
+or string, the modern <code>for...of</code> is simpler and safer.
+Knowing when each one fits is the actual skill here.</p>
+
+<p>The header has three parts separated by semicolons:
+<code>let i = 0</code> runs once before anything;
+<code>i &lt; 5</code> is checked before every pass; <code>i++</code>
+runs after every pass. So the loop prints 0, 1, 2, 3, 4 — notice it
+stops <i>before</i> 5. Off-by-one errors live exactly here: writing
+<code>&lt;=</code> would print six numbers instead.</p>
+
+<p><code>for...of</code> removes the counter entirely: for each
+element of an iterable — array, string, Map — it hands you the value
+itself. Predict the fruit loop's output: "apple", "banana",
+"cherry", one per line. Strings are iterable too, so
+<code>for (const ch of "JS")</code> gives "J" then "S". When you need
+the index <i>and</i> the value together, <code>fruits.entries()</code>
+yields <code>[index, value]</code> pairs that the loop header can
+destructure on the spot.</p>
 
 <pre class="code">// classic for: full control over the counter
 for (let i = 0; i &lt; 5; i++) {
@@ -760,10 +995,11 @@ for (const [index, fruit] of fruits.entries()) {
   console.log(index, fruit);
 }</pre>
 
-<p><b>for...of is the modern way</b> to iterate arrays — no counter to
-manage, no off-by-one errors. Use the classic <code>for</code> when you
-need the index or need to skip/modify the counter. Use
-<code>for...of</code> when you just need each value.</p>
+<p><b>Rules of thumb:</b> default to <code>for...of</code> for "do
+something with each item"; reach for classic <code>for</code> when
+you need to skip elements, walk backwards, or bend the counter. And
+never use <code>for...in</code> on arrays — the next lesson explains
+exactly why.</p>
 """,
                 "tryit": """// Classic for: full control
 for (let i = 0; i <= 4; i++) {
@@ -794,8 +1030,19 @@ for (const [i, lang] of langs.entries()) {
             {
                 "title": "for...in",
                 "html": """
-<p><code>for...in</code> iterates over the <b>keys</b> (property names)
-of an object:</p>
+<p>Arrays answer "give me each value", but objects raise a different
+question: "what keys do I even have?" <code>for...in</code> is the
+loop built for that — it walks the property <i>names</i> of an
+object, and you fetch each value with bracket access,
+<code>user[key]</code>.</p>
+
+<p>In the block's first loop, the keys "name", "age" and "role" come
+out one at a time as strings, and <code>user[key]</code> reads the
+matching value. The second and third loops show the modern
+alternatives: <code>Object.keys(user)</code> returns the keys as a
+real array, and <code>Object.entries(user)</code> returns
+<code>[key, value]</code> pairs — which the loop header can
+destructure directly, as the third loop does.</p>
 
 <pre class="code">const user = { name: "Ada", age: 36, role: "admin" };
 
@@ -813,14 +1060,20 @@ for (const [key, value] of Object.entries(user)) {
   console.log(`${key}: ${value}`);
 }</pre>
 
-<p>Important: <b>don't use for...in on arrays</b> — it iterates string
-indices ("0", "1"...) and may include inherited properties. Use
-<code>for...of</code> or array methods (<code>forEach</code>,
-<code>map</code>) instead. for...in is for <b>objects</b>.</p>
+<p>Why prefer the <code>Object.*</code> versions? Two reasons. They
+give real arrays, which you can also feed to
+<code>map</code>/<code>filter</code>/<code>reduce</code>. And
+<code>for...in</code> has a quirk: it walks <i>inherited</i>
+properties too, so keys you never wrote can appear. With plain
+object literals this is rare, but the habit of using
+<code>Object.entries()</code> sidesteps the issue entirely.</p>
 
-<p>The modern preference is <code>Object.keys()</code>,
-<code>Object.values()</code>, or <code>Object.entries()</code> — they
-return real arrays you can use with map/filter/reduce.</p>
+<p><b>Gotcha — the big one:</b> never use <code>for...in</code> on
+arrays. It yields indexes as <i>strings</i> ("0", "1", ...) and can
+include inherited members; <code>for...of</code> or array methods are
+what you want there. Split the rule in your head: <code>for...of</code>
+for arrays and strings, <code>for...in</code> — or better,
+<code>Object.entries()</code> — for objects.</p>
 """,
                 "tryit": """const scores = { math: 95, science: 88, art: 92 };
 
@@ -849,12 +1102,18 @@ console.log("best subject:", best);
             {
                 "title": "break & continue",
                 "html": """
-<p>Two loop-control keywords that change the flow:</p>
+<p>Normal loops run to completion, but search problems rarely need to:
+once you have found the answer, more iterations are wasted work.
+<b>break</b> exits the loop immediately; <b>continue</b> abandons just
+the current pass and jumps to the next one. Together they turn blunt
+loops into efficient ones.</p>
 
-<ul>
-<li><b>break</b> — exit the loop entirely</li>
-<li><b>continue</b> — skip to the next iteration</li>
-</ul>
+<p>In the first block, the loop scans <code>nums</code> until it finds
+a value above 10, prints it, and <code>break</code> stops everything
+— the remaining numbers are never checked. In the second block,
+<code>continue</code> filters: odd numbers fail the test, jump
+straight to <code>i++</code>, and never reach the print, so only 0,
+2, 4, 6 and 8 appear.</p>
 
 <pre class="code">// break: stop when found
 const nums = [3, 7, 12, 8, 15];
@@ -871,9 +1130,12 @@ for (let i = 0; i &lt; 10; i++) {
   console.log(i);               // 0 2 4 6 8
 }</pre>
 
-<p>In nested loops, <code>break</code>/<code>continue</code> affect only
-the <b>innermost</b> loop. To exit an outer loop, use labeled
-statements:</p>
+<p>Nested loops need one more tool: a plain <code>break</code> only
+leaves the <i>innermost</i> loop — the outer one keeps going, which
+is usually not what "stop searching entirely" means. A <b>label</b>
+names the outer loop (<code>outer:</code>) and <code>break
+outer;</code> exits <i>both</i>. The second block demonstrates: the
+moment <code>i * j === 2</code>, the whole search ends.</p>
 
 <pre class="code">outer: for (let i = 0; i &lt; 3; i++) {
   for (let j = 0; j &lt; 3; j++) {
@@ -881,6 +1143,14 @@ statements:</p>
     console.log(i, j);
   }
 }</pre>
+
+<p><b>Gotcha:</b> <code>continue</code> inside a classic
+<code>for</code> loop still runs the update expression
+(<code>i++</code>), but inside a <code>while</code> loop it jumps
+straight back to the condition check — if your <code>count++</code>
+sits below the <code>continue</code>, you have just built an infinite
+loop. Also remember that <code>find()</code> and <code>some()</code>
+often replace an entire search loop more cleanly.</p>
 """,
                 "tryit": """// break: early exit
 const passwords = ["1234", "letmein", "correct-horse", "hack"];
@@ -914,9 +1184,32 @@ console.log("done searching");
             {
                 "title": "Error Handling: try / catch / finally & throw",
                 "html": """
-<p>Errors happen — invalid input, network failures, missing data. JS
-handles them with <code>try / catch / finally</code> and creates them
-with <code>throw</code>:</p>
+<p>Code fails in the real world: JSON from a server is malformed, a
+value that should be a number arrives as a string. Without a plan,
+the failure crashes your program halfway through. JS's plan is
+<code>try / catch / finally</code> for handling failures and
+<code>throw</code> for signaling them.</p>
+
+<p>The flow: risky code goes inside <code>try</code>. If anything
+throws there, execution jumps instantly to <code>catch</code>, which
+receives an Error object — <code>error.message</code> holds the
+human-readable description, <code>error.stack</code> the trail.
+<code>finally</code> runs afterward no matter what happened: success,
+failure, even a <code>return</code> — its job is cleanup like closing
+a connection. In the block, <code>JSON.parse</code> throws on invalid
+text, so "never reaches here" really never runs; "Caught:" prints,
+then "done trying" from finally.</p>
+
+<p>The second half shows the other direction — your own code can
+<code>throw</code>. The <code>divide</code> function checks its input
+and throws an <code>Error</code> with a clear message rather than
+letting nonsense flow onward. Always throw <code>Error</code>
+instances — throwing bare strings or numbers loses the stack trace.
+Know the built-in types too: <code>TypeError</code>,
+<code>ReferenceError</code>, <code>SyntaxError</code>,
+<code>RangeError</code> each signal a different kind of mistake, and
+<code>instanceof</code> tells you which one you caught (the try-it
+demonstrates).</p>
 
 <pre class="code">try {
   // code that might fail
@@ -943,21 +1236,11 @@ try {
   console.log(e.message);   // "Cannot divide by zero!"
 }</pre>
 
-<ul>
-<li><b>throw</b> — signal an error; you can throw anything, but always
-throw <code>Error</code> instances</li>
-<li><b>catch(error)</b> — receives the thrown error object
-(<code>error.message</code>, <code>error.stack</code>)</li>
-<li><b>finally</b> — cleanup code that runs regardless of success or
-failure</li>
-<li><b>Error types:</b> <code>TypeError</code>,
-<code>ReferenceError</code>, <code>SyntaxError</code>,
-<code>RangeError</code> — or make your own with
-<code>class MyError extends Error</code></li>
-</ul>
-
-<p>Don't catch-and-ignore: an empty <code>catch {}</code> hides bugs.
-Log the error or re-throw it.</p>
+<p><b>Gotcha:</b> never write an empty <code>catch {}</code> — it
+swallows the error and hides the bug from yourself; you will end up
+debugging ghosts. Log it or re-throw it. And note that try/catch has
+limits: it cannot catch syntax errors, and an error thrown later
+inside an async callback escapes it entirely.</p>
 """,
                 "tryit": """// Basic try/catch
 try {

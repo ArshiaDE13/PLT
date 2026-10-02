@@ -14,11 +14,20 @@ CHAPTERS_CT_C = [
 computed at runtime — allocated on the stack when the declaration
 executes:</p>
 
+<p>Why does this matter? User input decides buffer sizes constantly — reading
+n numbers, building a matrix of given dimensions. Before C99 you reached for
+<code>malloc</code> even when the array only needed to live for one function
+call.</p>
+
 <pre class="code">int n = 4;
 int arr[n];                 // a VLA — size from a variable
 for (int i = 0; i &lt; n; i++) arr[i] = i * 3;
 
 printf("%zu\\n", sizeof(arr));   // 16 — sizeof works at runtime too</pre>
+
+<p><code>sizeof(arr)</code> runs at runtime too and answers 16 — four ints.
+The array disappears when the block ends: no <code>free</code>, no leak, no
+NULL check.</p>
 
 <p>Before C99 this was impossible: array sizes had to be constants, and
 runtime-sized memory meant <code>malloc</code>. VLAs are perfect for
@@ -35,6 +44,11 @@ two-dimensional matrices with real dimensions:</p>
     }
 }</pre>
 
+<p>The parameter list reads: <code>rows</code> and <code>cols</code> are
+declared first, then used as the dimensions of <code>m</code>. C99 lets a
+parameter borrow earlier parameters — the same function now works for any
+matrix.</p>
+
 <p>The caveats Beej emphasises:</p>
 
 <ul>
@@ -46,24 +60,31 @@ allowed; longjmp out of a function with VLAs is dicey.</li>
 <li>C11 made VLAs optional — real compilers may need a flag to enable
 them.</li>
 </ul>
+
+<p>Rule of thumb: VLA for small, routine-sized buffers (a few KB at most);
+<code>malloc</code> the moment the size can be big or must outlive the
+function. And never write <code>int arr[n]</code> without bounding
+<code>n</code> first.</p>
 """,
                 "tryit": """#include <stdio.h>
 
-void print_matrix(int rows, int cols, int m[rows][cols]) {
+// VLA parameters CAN be 2-D (int m[rows][cols]) on a real compiler,
+// but this sandbox limits them to one dimension -- so flatten:
+void print_flat(int rows, int cols, int *m) {
     for (int r = 0; r < rows; r++) {
-        for (int c = 0; c < cols; c++) printf("%d ", m[r][c]);
+        for (int c = 0; c < cols; c++) printf("%d ", m[r * cols + c]);
         printf("\\n");
     }
 }
 
 int main(void) {
     int n = 4;
-    int arr[n];
+    int arr[n];                      // a 1-D VLA -- size from a variable
     for (int i = 0; i < n; i++) arr[i] = i * 3;
     printf("sizeof(arr) = %zu\\n", sizeof(arr));
 
-    int m[2][3] = {{1, 2, 3}, {4, 5, 6}};
-    print_matrix(2, 3, m);
+    int flat[6] = {1, 2, 3, 4, 5, 6};
+    print_flat(2, 3, flat);          // the same bytes, viewed as 2x3
     return 0;
 }
 """,
@@ -74,12 +95,21 @@ int main(void) {
 <p>A <b>compound literal</b> creates an unnamed object on the fly —
 cast-like syntax followed by an initializer list:</p>
 
+<p>Think of it as inline object construction: the value is written exactly
+where it is used, which keeps call sites tight and temporaries
+nameless.</p>
+
 <pre class="code">struct point { double x, y; };
 
 draw((struct point){3.0, 9.0});   // pass a struct without a variable
 
 int *a = (int[]){7, 8, 9};        // an unnamed array
 printf("%d\\n", a[2]);             // 9</pre>
+
+<p>Walk it: <code>(struct point){3.0, 9.0}</code> builds a real struct value
+with x=3 and y=9 and hands it to <code>draw</code> — no named variable ever
+exists. The second line makes an anonymous three-int array and points
+<code>a</code> at it.</p>
 
 <p>Before C99 you had to build a named temporary for every such value.
 Compound literals are handy for:</p>
@@ -93,10 +123,17 @@ long as its enclosing block</li>
 
 <pre class="code">p = (struct point){.x = 1.0, .y = 2.0};   // compound literal with designators</pre>
 
+<p>Designators (<code>.x =</code>, <code>.y =</code>) name the fields being
+set, so order no longer matters and unmentioned fields become zero.</p>
+
 <p>Unlike a cast, a compound literal is a real object — you can take its
 address (<code>&amp;(struct point){0, 0}</code>) and its fields can be
 modified. Its lifetime follows the enclosing block: at file scope it
 lives for the whole program; inside a function, until the block ends.</p>
+
+<p>Gotcha: a pointer to a block-scope compound literal dangles once the block
+ends — the same rules as a local variable. Never return
+<code>&amp;(struct point){0, 0}</code> from the function that created it.</p>
 
 <p>The pointer form <code>(int[]){...}</code> is how many C programs
 build small lookup tables right where they are used.</p>
@@ -127,6 +164,11 @@ int main(void) {
 expression based on a value's <i>type</i> — compile-time overloading for
 macros:</p>
 
+<p>Why? Because C macros are type-blind: <code>ABS(x)</code> calling
+<code>abs(x)</code> works for int and breaks for double. <code>_Generic</code>
+lets one macro name dispatch to the right expression per type — without
+generating any code of its own.</p>
+
 <pre class="code">#define TYPENAME(x) _Generic((x), \\
     int: "int", \\
     double: "double", \\
@@ -135,6 +177,10 @@ macros:</p>
 
 printf("%s\\n", TYPENAME(42));      // int
 printf("%s\\n", TYPENAME(3.14));    // double</pre>
+
+<p><code>TYPENAME(42)</code> sees an int and becomes <code>"int"</code>;
+<code>TYPENAME(3.14)</code> sees a double. Only the matching expression is
+used — the rest is discarded at compile time.</p>
 
 <p>How to read it: <code>_Generic(control, type1: expr1, type2: expr2,
 ...)</code> — the compiler looks at the control expression's type and
@@ -154,10 +200,19 @@ family unified:</p>
 
 printf("%d %g\\n", ABS(-5), ABS(-2.5));</pre>
 
+<p><code>ABS(-5)</code> expands to <code>abs(-5)</code>;
+<code>ABS(-2.5)</code> to <code>fabs(-2.5)</code>. One macro name, two
+different library calls — chosen by type, before compilation.</p>
+
 <p>Compare with C++ overloading: <code>_Generic</code> selects an
 expression at compile time inside a macro — no functions are generated,
 and C stays C. The control expression itself is not evaluated, only its
 type inspected.</p>
+
+<p>Gotcha: <code>_Generic</code> matches exact types after lvalue conversion —
+<code>char</code> and <code>short</code> promote to <code>int</code>, so list
+them under int. And every type you might receive needs a branch or a
+<code>default:</code>, or the program is ill-formed.</p>
 """,
                 "tryit": """#include <stdio.h>
 #include <stdlib.h>
@@ -191,9 +246,17 @@ int main(void) {
 its size or layout. You get one by declaring a struct without a
 body:</p>
 
+<p>Why would you want an incomplete type on purpose? Two reasons: to break
+circular references between types, and to hide implementation details —
+both are daily tools in real C projects.</p>
+
 <pre class="code">struct widget;          // incomplete: forward declaration
 struct widget *w;       // fine — all POINTERS have the same size
 // struct widget w;     // error: incomplete type!</pre>
+
+<p>Line 1 announces the name; line 2 succeeds because a pointer's size is
+known no matter what it points at; line 3 fails because a struct variable
+needs a real size.</p>
 
 <p>You can always use pointers to an incomplete type; you just cannot
 create one, dereference it, or take its size — until the type is
@@ -206,6 +269,10 @@ lists, trees:</p>
     int value;
     struct node *next;    // pointer to own (still incomplete) type
 };</pre>
+
+<p>The definition is still being read at the moment <code>next</code> is
+declared — the struct is incomplete right there. The pointer does not
+care.</p>
 
 <p>Inside its own definition, <code>struct node</code> is incomplete —
 but a pointer to it is fine, which is all <code>next</code> needs.</p>
@@ -224,6 +291,10 @@ void   stack_push(stack *s, int v);
 
 <p>The FILE* type from stdio.h works exactly this way: you hold it, you
 pass it, but you never open it up.</p>
+
+<p>Gotcha: with opaque types every access must go through your API — callers
+will inevitably try <code>sizeof</code> and field access, and each attempt is
+a compile error doing exactly its job.</p>
 """,
             },
             {
@@ -239,6 +310,10 @@ function:</p>
 }
 cleanup:
 free_resources();</pre>
+
+<p>Read the jump: <code>error_at(i)</code> fires deep inside two nested loops,
+and <code>cleanup</code> runs immediately — a <code>break</code> could only
+have left the inner loop.</p>
 
 <p>Beej's guide is refreshingly honest about goto: it is both infamous
 and genuinely useful — the problem is <i>unstructured</i> jumps, not the
@@ -256,10 +331,17 @@ ubiquitous in the Linux kernel.</li>
     result = try_operation();
     if (result == RETRY_ME) goto restart;</pre>
 
+<p>Retry loops read the same way: jump back to the label and try again. Keep
+the retry condition explicit, or the loop can spin forever.</p>
+
 <p>The rules: you can jump within a function, but not over a VLA
 declaration, and jumping into a scope past initialisation leaves
 variables in an iffy state. Keep jumps <b>forward</b> and downward to
 cleanup, and the code stays readable:</p>
+
+<p>Gotcha: never jump backwards into a loop body, and never jump over an
+initialisation you then rely on — the variable exists but holds nothing
+sensible.</p>
 
 <pre class="code">FILE *f = fopen(path, "r");
 if (!f) goto fail;
@@ -270,6 +352,11 @@ close_file:
     fclose(f);
 fail:
     return err;</pre>
+
+<p>Walk the chain: <code>malloc</code> fails, so we jump to
+<code>close_file</code>, which closes f and falls through to
+<code>fail</code> — each label cleans up only what has actually succeeded so
+far. That discipline is the kernel's error-handling style.</p>
 """,
                 "tryit": """#include <stdio.h>
 #include <stdlib.h>
@@ -318,6 +405,10 @@ int main(void) {
     }
 }</pre>
 
+<p>The output is "jumped 42": <code>deep(0)</code> triggers the longjmp, five
+call frames vanish in one step, and main's <code>setjmp</code> returns
+again — this time with 42 instead of 0.</p>
+
 <p><code>setjmp(env)</code> marks the spot and returns 0. Any later
 <code>longjmp(env, val)</code> unwinds back to that spot, and
 <code>setjmp</code> then returns <code>val</code> — which is why the
@@ -339,6 +430,14 @@ block, like goto).</li>
 
 <p>Where you will meet it: implementers of interpreters, exception
 libraries, and coroutine frameworks.</p>
+
+<p>The volatile rule comes from the abstract machine: after a longjmp, locals
+without <code>volatile</code> have indeterminate values — the compiler was
+free to keep them only in registers.</p>
+
+<p>Rule of thumb: setjmp/longjmp is a framework author's tool, not an
+application tool. In ordinary code, return codes plus <code>goto</code>
+cleanup say the same thing and stay readable.</p>
 """,
                 "tryit": """#include <stdio.h>
 #include <setjmp.h>
@@ -425,6 +524,10 @@ int main(void) {
 <p><code>main</code> can take parameters — the <b>command line</b> your
 program was launched with:</p>
 
+<p>Why does this matter? Almost every serious tool takes arguments — file
+names, flags, sizes. <code>argv</code> is your first and most important
+interface with the person running your program.</p>
+
 <pre class="code">int main(int argc, char *argv[]) {
     printf("program: %s\\n", argv[0]);   // the program's own name
     for (int i = 1; i &lt; argc; i++) {
@@ -432,6 +535,10 @@ program was launched with:</p>
     }
     return 0;
 }</pre>
+
+<p>For <code>./app hello 42</code> the loop prints <code>arg 1: hello</code>
+and <code>arg 2: 42</code> — user arguments start at index 1, because
+<code>argv[0]</code> holds the program name.</p>
 
 <ul>
 <li><code>argc</code> — argument <b>count</b>: how many strings, including
@@ -441,11 +548,19 @@ the program name itself.</li>
 guaranteed to be <code>NULL</code> — which lets you loop with
 <code>while (*argv++)</code> instead of counting.</li>
 </ul>
+<p>argc is always at least 1 — even with no arguments, <code>argv[0]</code>
+names the program.</p>
 
 <p>Running <code>./app hello 42</code> gives
 <code>argc = 3</code>, <code>argv = {"./app", "hello", "42"}</code>.
 Note everything arrives as <b>strings</b> — convert with
 <code>atoi</code>/<code>strtol</code>:</p>
+
+<p><code>argv[1]</code> is the string <code>"42"</code>; <code>atoi</code>
+turns it into the number 42 and squaring works. Had the user typed
+<code>abc</code>, <code>atoi</code> would quietly return 0 —
+<code>strtol</code> is the version that lets you detect and report
+that.</p>
 
 <pre class="code">if (argc &gt; 1) {
     int n = atoi(argv[1]);
@@ -455,6 +570,10 @@ Note everything arrives as <b>strings</b> — convert with
 <p>Real programs check <code>argc</code> first and print a usage message
 when the user got it wrong — the first defensive habit of system
 programming.</p>
+
+<p>Gotcha: never index argv beyond argc — there is no bounds checking.
+<code>argv[argc]</code> being NULL is safe to <i>test</i>, fatal to print
+with <code>%s</code>.</p>
 """,
             },
             {
@@ -464,12 +583,20 @@ programming.</p>
 <code>PATH</code>, <code>HOME</code>, <code>LANG</code> and friends,
 set by the shell or the parent process:</p>
 
+<p>Why care? Programs find their configuration through this channel — which
+editor to launch, where the home directory is, which language to speak.
+Reading it is the same in every C program.</p>
+
 <pre class="code">#include &lt;stdlib.h&gt;
 
 char *home = getenv("HOME");
 if (home != NULL) {
     printf("home is %s\\n", home);
 }</pre>
+
+<p>If HOME is set, <code>home</code> points at a string like
+<code>/home/ada</code>; if not, you get NULL — so the check is not
+optional.</p>
 
 <p><code>getenv</code> returns a pointer to the variable's value, or
 <code>NULL</code> if it is not set — always check before using. The
@@ -485,10 +612,19 @@ parameter on most systems:</p>
     }
 }</pre>
 
+<p>Each entry is a <code>KEY=value</code> string; the array ends at a NULL
+pointer, which is exactly what the loop tests.</p>
+
 <p>Setting variables <i>for your own children</i> is done with
 <code>setenv("NAME", "value", 1)</code> (or the simpler
 <code>putenv</code>) — changes only affect processes you spawn, never
 the shell that launched you.</p>
+
+<p>Gotcha: the result of <code>getenv</code> can go stale if
+<code>setenv</code> runs later — copy anything you plan to keep. Rules of
+thumb: read the environment once at startup, treat everything in it as
+untrusted input (the user controls it), and prefer command-line arguments
+for anything the program cannot run without.</p>
 
 <p>The browser sandbox in this course has no real environment —
 <code>getenv</code> there returns NULL for most names, which is itself
@@ -517,6 +653,11 @@ at exit (in reverse registration order)</li>
 <code>assert</code> does)</li>
 </ul>
 
+<p>The list is a politeness spectrum: <code>return</code> and
+<code>exit</code> run their handlers and flush stdio;
+<code>quick_exit</code> skips the flushing; <code>_Exit</code> and
+<code>abort</code> skip everything.</p>
+
 <pre class="code">#include &lt;stdlib.h&gt;
 
 void save_state(void) { printf("saving...\\n"); }
@@ -526,6 +667,11 @@ int main(void) {
     printf("running\\n");
     exit(0);            // prints "saving..." then exits
 }</pre>
+
+<p>The output is <code>running</code> then <code>saving...</code> —
+<code>exit(0)</code> runs the registered handler before stopping. Register
+three handlers and they run last-registered-first, stack order, so cleanup
+mirrors construction.</p>
 
 <p>Exit status conventions: <code>EXIT_SUCCESS</code> (0) and
 <code>EXIT_FAILURE</code> (usually 1) from <code>&lt;stdlib.h&gt;</code>
@@ -537,6 +683,10 @@ line, then aborts — a runtime sanity check you can disable in release
 builds by defining <code>NDEBUG</code>:</p>
 
 <pre class="code">assert(divisor != 0);   // screams if violated</pre>
+
+<p>Gotchas: never put required work inside an <code>assert</code> expression —
+with NDEBUG defined the whole call vanishes, and the work with it. And
+calling <code>exit</code> from inside an atexit handler is undefined.</p>
 """,
             },
             {
@@ -547,6 +697,10 @@ asynchronously: Ctrl-C sends <code>SIGINT</code>, division by zero may
 raise <code>SIGFPE</code>, kill sends <code>SIGTERM</code>, and so
 on.</p>
 
+<p>Why care? Graceful shutdown is signal handling: a server catches SIGTERM
+to flush state, an editor restores the terminal after Ctrl-C. Programs that
+ignore signals get killed mid-write.</p>
+
 <pre class="code">#include &lt;signal.h&gt;
 
 void on_interrupt(int sig) {
@@ -555,6 +709,10 @@ void on_interrupt(int sig) {
 }
 
 signal(SIGINT, on_interrupt);   // install the handler</pre>
+
+<p>From this line on, Ctrl-C no longer kills the program — it calls
+<code>on_interrupt</code> instead. That is both the power and the
+danger.</p>
 
 <p><code>signal(sig, handler)</code> registers a function to run when
 that signal arrives. What handlers may safely do is severely limited —
@@ -576,11 +734,20 @@ int main(void) {
     }
 }</pre>
 
+<p>The handler writes the signal number into <code>got_signal</code> and
+returns immediately. The main loop notices between iterations and exits
+cleanly — no library calls from inside the handler, nothing racy.</p>
+
 <p>The default behaviour for most signals terminates the program. You
 can also ignore a signal (<code>signal(SIGINT, SIG_IGN)</code>) or
 restore the default (<code>SIG_DFL</code>). Real signals need an
 operating system to deliver them — the browser sandbox cannot generate
 them, so this chapter's lesson code runs on a real machine, not here.</p>
+
+<p>Rule of thumb: a handler should do nothing but set a
+<code>sig_atomic_t</code> flag. <code>printf</code> inside a handler can
+deadlock the very stream it interrupted — that is why the flag pattern above
+exists.</p>
 """,
             },
         ],
@@ -644,11 +811,20 @@ UTF-32</li>
 <li><b>Glyph</b> — what the user sees on screen</li>
 </ul>
 
+<p>One glyph can even need several code points — accents can be separate
+combining marks — which is why "character count" is not always one
+number.</p>
+
 <p>C's plain <code>char</code> holds <i>bytes</i>, not characters. A
 string like <code>"héllo"</code> in a UTF-8 file really contains the
 bytes <code>68 C3 A9 6C 6C 6F 00</code> — <code>é</code> is
 <i>two</i> bytes. C functions like <code>strlen</code> count bytes, so
 <code>strlen("héllo")</code> is 6, not 5.</p>
+
+<p>Decode that example byte by byte: <code>h</code> is 68, <code>é</code> is
+the pair C3 A9, then 6C 6C 6F and the terminator — six bytes, five
+characters. Every "character" question in C is really two questions: bytes
+or code points?</p>
 
 <p>The good news: <b>UTF-8 is byte-transparent</b> — bytes that belong
 together never contain bytes that look like ASCII, and the NUL
@@ -660,6 +836,9 @@ need encoding awareness.</p>
 <code>char32_t</code> (from <code>&lt;uchar.h&gt;</code>) — plus
 <code>u"..."</code>, <code>U"..."</code> and <code>u8"..."</code> string
 literals that promise specific encodings.</p>
+
+<p>Rule of thumb: keep your source files UTF-8, treat every string as bytes,
+and decode only when you must count, slice, or fold case.</p>
 """,
             },
             {
@@ -699,9 +878,18 @@ minimal code-point decoder walks the lead byte to learn the length:</p>
     return 1;                         // stray byte — skip
 }</pre>
 
+<p>Test it: <code>'A'</code> is 0x41, under 0x80, so 1 byte.
+<code>'é'</code> starts with 0xC3, which matches the 0xC0 mask, so 2 bytes.
+A stray 0xFF matches no mask and is skipped.</p>
+
 <p>Always validate: truncated sequences and overlong encodings are how
 attackers sneak bytes past naive parsers (Beej devotes a section to
 this; the fix is to decode rather than trust).</p>
+
+<p>Two rules to keep: <code>strlen</code> gives bytes — right for memory, wrong
+for display; decide which you need before writing the loop. And never trust
+user-supplied bytes as UTF-8 without validating — one bad sequence and your
+downstream counting splits characters.</p>
 """,
             },
             {
@@ -726,10 +914,17 @@ char32_t *u32 = U"utf-32";   // one code point per unit — easy indexing
 wprintf(L"wide: %ls\\n", ws);      // note %ls for wide strings
 size_t n = wcslen(ws);            // wcs* mirrors str*</pre>
 
+<p>The prefixes: <code>L</code> makes a wide literal, <code>u</code> UTF-16 and
+<code>U</code> UTF-32. And note <code>%ls</code> — printing a wide string with
+plain <code>%s</code> is a bug the compiler usually warns about.</p>
+
 <p>The wide world in one table: <code>strlen→wcslen</code>,
 <code>strcpy→wcscpy</code>, <code>strcmp→wcscmp</code>,
 <code>printf→wprintf</code>, <code>scanf→wscanf</code>. UTF-32 strings
 even give O(1) indexing — each element is one code point.</p>
+
+<p>The <code>wcs*</code> functions mirror the <code>str*</code> ones one for
+one, so the habits transfer — the units change, not the patterns.</p>
 
 <p>The trade-offs Beej points out: wide strings double or quadruple
 memory, <code>wchar_t</code>'s size is platform-dependent (16 bits on
@@ -741,6 +936,10 @@ side until reopened. That is why mixing <code>printf</code> and
 <p>Modern consensus: store and transmit UTF-8 in plain
 <code>char</code> strings; use <code>char32_t</code> when you need to
 <i>compute</i> on individual code points.</p>
+
+<p>Gotcha: switching a stream's orientation by accident is the classic
+wide-char bug — pick byte or wide for each stream near program start and
+stay there.</p>
 """,
             },
             {
@@ -756,6 +955,10 @@ symbol? Which order do names print in? C models this with
 setlocale(LC_ALL, "");     // adopt the user's environment settings
 setlocale(LC_ALL, "C");    // the default minimal locale
 setlocale(LC_ALL, NULL);   // just query the current one</pre>
+
+<p>Empty string adopts the user's environment; <code>"C"</code> resets to the
+minimal default; NULL only asks. <code>setlocale</code> returns the new (or
+current) locale's name, or NULL on failure.</p>
 
 <p>Categories can be switched individually:</p>
 
@@ -779,9 +982,16 @@ facts — decimal point, thousands separator, currency symbol:</p>
 <pre class="code">struct lconv *lc = localeconv();
 printf("decimal point: '%s'\\n", lc-&gt;decimal_point);</pre>
 
+<p>In the <code>"C"</code> locale that prints a period; on a German machine it
+would print a comma — the whole point of the exercise.</p>
+
 <p>Locale-aware code is a contract with your users; locale-unaware code
 is a bug report waiting to happen. (The sandbox here stays in the
 "C" locale — real machines are where <code>""</code> comes alive.)</p>
+
+<p>Gotcha: call <code>setlocale(LC_ALL, "")</code> early in <code>main</code>
+or not at all — switching locale mid-program changes printf output and
+parsing both, a nasty trap for file readers.</p>
 """,
                 "tryit": """#include <stdio.h>
 #include <locale.h>
@@ -858,6 +1068,10 @@ int main(void) {
 a complex type out of any floating-point type, and <code>complex</code>
 is a friendlier macro for it:</p>
 
+<p>Why native complex? Because computing z1 * z2 by hand with separate real
+and imaginary parts is exactly the error-prone bookkeeping the compiler can
+do for you.</p>
+
 <pre class="code">#include &lt;complex.h&gt;
 #include &lt;stdio.h&gt;
 
@@ -865,6 +1079,10 @@ double complex z = 3.0 + 4.0 * I;    // 3 + 4i
 
 printf("re=%g im=%g\\n", creal(z), cimag(z));   // parts
 printf("|z|=%g\\n", cabs(z));                   // magnitude = 5</pre>
+
+<p><code>z</code> holds two doubles: real 3, imaginary 4. <code>creal</code>
+and <code>cimag</code> read the parts back, and <code>cabs</code> computes
+sqrt(9+16) = 5 — the magnitude Pythagoras promises.</p>
 
 <p>The <code>I</code> constant is the imaginary unit. Arithmetic is
 native — the operators just work:</p>
@@ -876,6 +1094,9 @@ double complex sum = a + b;        // 4 + 1i
 double complex prod = a * b;       // 5 + 5i — (1+2i)(3-1i)
 printf("prod = %g + %gi\\n", creal(prod), cimag(prod));</pre>
 
+<p>Check the product by hand: (1+2i)(3-1i) = 3 - 1i + 6i - 2i² = 5 + 5i. The
+operators do the algebra; you just read the result.</p>
+
 <p>The math library comes along: <code>cexp</code>, <code>clog</code>,
 <code>csqrt</code>, <code>csin</code>, <code>cpow</code> — complex
 versions of every transcendental function, plus
@@ -885,6 +1106,10 @@ versions of every transcendental function, plus
 part stored after the real one — so passing and returning them is as
 cheap as a two-element struct. Electrical engineering, signal
 processing and fractal renderers are the classic customers.</p>
+
+<p>Gotchas: complex works with floating types only — there is no complex int.
+And <code>I</code> is a macro from the header, so a variable named I in your
+own code is asking for trouble.</p>
 """,
             },
             {
@@ -900,6 +1125,10 @@ two representations:</p>
 day, month, year (year − 1900!), weekday and more</li>
 </ul>
 
+<p>Why two forms? <code>time_t</code> is for storage and arithmetic — one
+number, trivially compared. <code>struct tm</code> is for humans — named
+fields. Real code converts between the two constantly.</p>
+
 <pre class="code">#include &lt;time.h&gt;
 
 time_t now = time(NULL);              // right now, in seconds
@@ -908,6 +1137,10 @@ struct tm *gt = gmtime(&amp;now);         // broken down, UTC
 
 printf("year: %d\\n", lt-&gt;tm_year + 1900);
 printf("month: %d\\n", lt-&gt;tm_mon + 1);    // months are 0-11!</pre>
+
+<p>Both functions take a pointer to <code>time_t</code> and return a pointer
+to an internal struct — the <i>next</i> call overwrites it, so copy it if
+you need localtime and gmtime at the same time.</p>
 
 <p>Conversions run both ways: <code>localtime</code>/<code>gmtime</code>
 turn a <code>time_t</code> into a <code>struct tm</code>;
@@ -927,6 +1160,12 @@ fills a <code>struct timespec</code> with seconds
 <strong>and</strong> nanoseconds; <code>clock()</code> measures
 processor time used by the program — the classic stopwatch for
 benchmarking a loop.</p>
+
+<p>Gotchas worth tattooing: <code>tm_year</code> counts from 1900 and
+<code>tm_mon</code> from 0 — the two classic off-by-constants bugs, both
+visible in the tryit example. And <code>mktime</code>'s normalising makes
+date arithmetic easy: stuff today+90 days into a struct roughly, and
+<code>mktime</code> lands you on the real calendar date.</p>
 """,
                 "tryit": """#include <stdio.h>
 #include <time.h>
@@ -958,6 +1197,10 @@ int main(void) {
 header is missing (POSIX <code>pthread</code> is the classic
 alternative with the same shapes).</p>
 
+<p>Why threads? One core per heavy task: one thread decodes video while
+another serves the network and a third repaints the UI. Threads are how one
+process does several things at once.</p>
+
 <pre class="code">#include &lt;threads.h&gt;
 
 int worker(void *arg) {
@@ -969,6 +1212,11 @@ int worker(void *arg) {
 thrd_t t;
 thrd_create(&amp;t, worker, &amp;some_arg);   // start
 thrd_join(t, NULL);                   // wait for it</pre>
+
+<p><code>thrd_create</code> starts <code>worker</code> and returns
+immediately — two streams of execution now share the process's memory.
+<code>thrd_join</code> blocks until the thread finishes, collecting its
+return code, like a join in Python or Rust.</p>
 
 <p>The mental model: each thread runs the given function concurrently
 with the rest of the program, sharing the same global memory. That
@@ -992,6 +1240,10 @@ return an <code>int</code> code collected by <code>thrd_join</code>.</li>
 the shared data, and guard every access. The browser sandbox is
 single-threaded by design — threads are a real-operating-system
 feature — so this chapter is reading, not running.</p>
+
+<p>Gotcha: passing <code>&amp;local_variable</code> to a thread that outlives
+the block is the classic race — the thread reads dead stack. Allocate or
+copy whatever the thread needs to own.</p>
 """,
             },
             {

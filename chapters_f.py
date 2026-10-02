@@ -98,6 +98,15 @@ print(p1)               # -&gt; Point(3, 4)      (thanks to __repr__)
 p1 == p2                # -&gt; True             (thanks to __eq__)
 p1 + p2                 # -&gt; Point(6, 8)      (thanks to __add__)</pre>
 
+<p>Walk through it: <code>Point(3, 4)</code> triggers
+<code>__init__</code>; <code>print(p1)</code> triggers
+<code>__repr__</code> and shows <code>Point(3, 4)</code> instead of
+<code>&lt;__main__.Point object at 0x...&gt;</code>;
+<code>p1 == p2</code> calls <code>__eq__</code>, comparing coordinates
+instead of identities; and <code>p1 + p2</code> calls
+<code>__add__</code>, which builds and returns a <em>new</em> Point.
+Every line of syntax maps to exactly one method call.</p>
+
 [[diag:dunder_power]]
 
 <p>The most useful ones, and the syntax they power:</p>
@@ -111,9 +120,19 @@ __contains__           # x in obj             membership
 __call__               # obj()                callable objects
 __eq__ / __lt__        # == &lt;                comparisons</pre>
 
+<p>Notice the pattern: each line pairs a piece of syntax with the
+method that implements it. You rarely implement all of them — a value
+class needs <code>__init__</code>, <code>__repr__</code> and
+<code>__eq__</code>; a container adds <code>__len__</code> and
+<code>__getitem__</code>; anything you loop over needs
+<code>__iter__</code>.</p>
+
 <p>That's the whole trick behind dataclasses (chapter 21): the
 decorator writes these methods for you. When you see a built-in
-type doing something, some dunder is doing the work.</p>
+type doing something, some dunder is doing the work. One caution:
+never call dunders directly in normal code — write
+<code>len(obj)</code>, not <code>obj.__len__()</code>; the built-ins
+handle edge cases and are faster.</p>
 """,
             },
         ],
@@ -335,8 +354,10 @@ exceptions.</p>
                 "title": "Operator precedence — who binds first?",
                 "html": """
 <p>Expressions are the sentences of Python, and operators decide
-how they're grouped. The reference's precedence table, from the
-tightest binding to the loosest:</p>
+how they're grouped. Precedence answers "when two operators could
+grab the same operand, who wins?" — and the reference's table, from
+the tightest binding to the loosest, explains every result that ever
+surprised you:</p>
 
 <pre class="code">( )  [ ]  { }     atoms: literals, names, calls, indexing
 **                 power (right-associative!)
@@ -355,12 +376,25 @@ if – else          conditional expression
 :=                 assignment expression (walrus)
 lambda             anonymous functions</pre>
 
+<p>Don't memorize the table — internalize its shape. Arithmetic binds
+tighter than comparisons, comparisons tighter than <code>not</code>,
+<code>not</code> tighter than <code>and</code>, and <code>and</code>
+tighter than <code>or</code>. That is why
+<code>a or b and c</code> means <code>a or (b and c)</code>.</p>
+
 [[diag:operator_precedence]]
 
 <p>Two lines trip people up more than any others:</p>
 
 <pre class="code">2 ** 3 ** 2      # -&gt; 512    ** is RIGHT-associative: 2 ** (3 ** 2)
 -3 ** 2          # -&gt; -9     unary minus binds looser than **: -(3 ** 2)</pre>
+
+<p>Walk the surprises: <code>**</code> is the only right-associative
+operator, so <code>2 ** 3 ** 2</code> computes <code>3 ** 2</code>
+first — 2 to the 9th is 512. And <code>-3 ** 2</code> is
+<code>-9</code>, because the unary minus sits below <code>**</code> in
+the table; if you meant <code>(-3) ** 2</code>, write the
+parentheses.</p>
 
 <p>Comparisons <b>chain</b> like math — one <code>x</code>, two
 checks, evaluated left to right:</p>
@@ -369,10 +403,16 @@ checks, evaluated left to right:</p>
 0 &lt; x &lt; 10       # -&gt; True    (0 &lt; x and x &lt; 10, x evaluated once)
 'a' &lt; 'b' &lt; 'c'  # -&gt; True    works on strings too</pre>
 
+<p>Chaining is not just shorthand: <code>x</code> is evaluated
+<em>once</em>, and the chain means <code>(0 &lt; x) and (x &lt; 10)</code>
+— exactly the "between" test from math class.</p>
+
 <p>Truthiness decides <code>and</code>/<code>or</code>:
 <code>and</code> returns the first falsy value, else the last;
 <code>or</code> returns the first truthy value, else the last.
-That's why <code>name or 'guest'</code> works as a default.</p>
+That's why <code>name or 'guest'</code> works as a default — and why
+a falsy-but-valid value like <code>0</code> or <code>''</code> gets
+replaced too, which is the trap to watch.</p>
 """,
             },
             {
@@ -381,7 +421,8 @@ That's why <code>name or 'guest'</code> works as a default.</p>
 <p>At the bottom of every expression sit the <b>atoms</b>: literals
 (<code>42</code>, <code>'hi'</code>, <code>[1,2]</code>,
 <code>{'a':1}</code>), names, and parenthesized groups. Everything
-else is built on them.</p>
+else is built on them — operators glue atoms together, and even a
+function call is just an atom with parentheses attached.</p>
 
 <p>Comprehensions deserve their own mention in the reference
 because they're functions in disguise: each has its <b>own
@@ -395,6 +436,14 @@ n                                     # -&gt; NameError (contained!)
 pairs = {(a, b) for a in 'xy' for b in range(2)}   # set of tuples
 total = sum(n for n in range(101))                # generator</pre>
 
+<p>Walk through it: the comprehension builds <code>[0, 1, 4, 9]</code>
+and then its <code>n</code> is gone — asking for it afterward raises
+<code>NameError</code>. The second line nests two <code>for</code>
+clauses: for each <code>a</code> in 'xy', <code>b</code> runs 0 and 1,
+producing four tuples. The last line is a generator expression — same
+syntax, lazy evaluation, one value at a time; <code>sum()</code> pulls
+them as it needs them.</p>
+
 <p>The <b>walrus</b> <code>:=</code> assigns and returns in one
 step — the reference added it in 3.8 and it earns its place in
 loops and conditions:</p>
@@ -402,6 +451,12 @@ loops and conditions:</p>
 <pre class="code">line = input('&gt; ')
 while (line := input('&gt; ')) != 'quit':
     print('you said', line)</pre>
+
+<p>Read the condition: assign the next input to <code>line</code>
+<em>and</em> test it — the classic read-until-sentinel loop, which used
+to be three lines with a duplicated <code>input()</code> call, is now
+one line with no repetition. Use it sparingly: a walrus inside an
+already-dense expression costs readability.</p>
 
 <p>Slices are expressions too: <code>s[i:j]</code> is
 <code>s[slice(i, j)]</code> — that's why custom classes implement
@@ -517,6 +572,13 @@ package and runs when the package is imported):</p>
 import mypkg.utils          # full path
 from mypkg.models.user import User</pre>
 
+<p>The tree maps directly onto dotted names: the file
+<code>mypkg/utils.py</code> <em>is</em> the module
+<code>mypkg.utils</code>, and <code>models/user.py</code> is
+<code>mypkg.models.user</code>. The first import of
+<code>mypkg</code> runs its <code>__init__.py</code> before anything
+inside becomes usable — shared setup goes there.</p>
+
 <p>Inside a package, <b>relative imports</b> use dots — one dot for
 the current package, two for the parent:</p>
 
@@ -525,6 +587,12 @@ from . import helpers           # mypkg/helpers.py
 from ..models import user       # parent package's models
 
 # WRONG: plain 'import helpers' would look in sys.path, not the package</pre>
+
+<p>The last line is the classic error: inside
+<code>mypkg/utils.py</code>, a bare <code>import helpers</code>
+searches <code>sys.path</code> — the whole machine — not the package
+next door, and either fails or imports the wrong file. Relative
+imports make the intent explicit: "my sibling", "my parent".</p>
 
 <p>Every script you run becomes the module <code>__main__</code> —
 and that's the secret behind the most common idiom in Python:</p>
@@ -535,13 +603,15 @@ and that's the secret behind the most common idiom in Python:</p>
 if __name__ == '__main__':   # only when run directly
     main()</pre>
 
-<p>Run directly (<code>python tool.py</code>):
+<p>Walk the guard: run directly (<code>python tool.py</code>) and
 <code>__name__</code> is <code>'__main__'</code>, so
-<code>main()</code> runs. Imported by another file:
-<code>__name__</code> is <code>'tool'</code>, so nothing runs —
-the file acts as a library. The same guard makes scripts safe to
-test and reuse. And <code>python -m mypkg.utils</code> runs a
-module "as main" — the -m flag you met in chapter 17.</p>
+<code>main()</code> runs. Imported by another file and
+<code>__name__</code> is <code>'tool'</code>, so nothing runs — the
+file acts as a library. That is what makes scripts safe to test and
+reuse: one file, both roles, decided by who loads it. And
+<code>python -m mypkg.utils</code> runs a module "as main" — the -m
+flag you met in chapter 17, the same machinery that makes
+<code>python -m unittest</code> find and run your tests.</p>
 """,
             },
         ],

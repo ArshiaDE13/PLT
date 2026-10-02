@@ -50,6 +50,21 @@ it and the main content still makes sense.</li>
 <li><b><code>&lt;footer&gt;</code></b> — closing matter: author, copyright,
 related links.</li>
 </ul>
+
+<p>Walk the sample page in the demo: <code>&lt;header&gt;</code> holds the
+newspaper's name, <code>&lt;nav&gt;</code> the section links,
+<code>&lt;main&gt;</code> the story with its <code>&lt;article&gt;</code>,
+an <code>&lt;aside&gt;</code> for related items, and
+<code>&lt;footer&gt;</code> closes with the address. Swap each for a
+styled div and the pixels are identical — but the map a screen reader
+draws of your page disappears.</p>
+
+<p>Two gotchas: don't nest <code>&lt;main&gt;</code> inside an
+<code>&lt;article&gt;</code>, <code>&lt;aside&gt;</code>,
+<code>&lt;header&gt;</code>, <code>&lt;footer&gt;</code> or
+<code>&lt;nav&gt;</code> — it belongs directly in the body. And use
+<code>&lt;section&gt;</code> only when the group has a heading; a section
+without one is usually a div in disguise.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -115,6 +130,19 @@ only for pure grouping. Two smells of "div soup":</p>
 <p>A modern layout usually looks like: semantic skeleton (header/main/
 article/footer) with a few divs inside for the grid — meaning on the
 outside, containers on the inside.</p>
+
+<p>Walk the demo: the <code>&lt;div class="card"&gt;</code> draws the box —
+a layout concern no HTML element claims — while the two
+<code>&lt;span&gt;</code>s mark the badge and the price inside flowing
+text without disturbing the paragraph. Neither element adds a whisper of
+meaning; CSS looks at their classes and styles them.</p>
+
+<p>Gotcha: the clickable div. If it navigates, it is an
+<code>&lt;a&gt;</code>; if it performs an action, it is a
+<code>&lt;button&gt;</code>. Divs can't receive keyboard focus by
+default, so a "clickable div" is a control keyboard users can never
+trigger. And don't reach for div/span when a semantic element fits —
+<code>&lt;ul&gt;</code> for lists, <code>&lt;p&gt;</code> for prose.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -173,6 +201,16 @@ outline: to them it's an undifferentiated wall of text.</p>
 <li>Lists for lists, tables for data, <code>&lt;label&gt;</code> for
 every form field</li>
 </ul>
+
+<p>How to internalise it: write the HTML first, then look at the page
+with CSS switched off and ask "does it still make sense?" Semantic
+pages do — they degrade gracefully everywhere, from search bots to
+smart speakers. Div-based pages fall apart.</p>
+
+<p>Gotcha: semantics are not all-or-nothing, and retrofitting is normal.
+Replace the clickable div with a button, give the footer its element,
+label the form fields. Each fix is small, and each one buys real
+accessibility and SEO for free.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -254,6 +292,12 @@ belong together: schedules, prices, comparisons. The trio:</p>
   &lt;/tr&gt;
 &lt;/table&gt;</pre>
 
+<p>Read the block top-down: <code>&lt;table&gt;</code> opens; each
+<code>&lt;tr&gt;</code> is one row; inside it, <code>&lt;th&gt;</code>
+cells label the columns and <code>&lt;td&gt;</code> cells carry the
+data. Three rows, two columns: Earth has 1 moon, Mars 2. Note the
+browser draws no lines by default — structure first, looks later.</p>
+
 <p>Anatomy, per MDN:</p>
 
 <ul>
@@ -275,6 +319,14 @@ child of <code>&lt;table&gt;</code>:</p>
 <p>Two warnings from experience: tables are for <b>data</b>, never for
 page layout (a 2003 habit that makes pages inaccessible); and raw tables
 come unstyled — borders and spacing are CSS's job.</p>
+
+<p>Rule of thumb: if it wouldn't survive as a spreadsheet — if the
+"cells" are really paragraphs, or you want to merge things for design
+reasons — it isn't table data. And always give the table a
+<code>&lt;caption&gt;</code>: screen readers announce it on entry, so
+visitors know what they are about to hear before the first cell. Keep
+the caption short and factual — "Planets and their moon counts" beats
+"Table 3".</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -321,6 +373,11 @@ across several rows or columns.</p>
 <p>Beyond structure, the sections enable repeated headers when printing,
 sticky headers when scrolling, and clearer targeting for styling.</p>
 
+<p>Use <code>&lt;thead&gt;</code> even for short tables — it costs one
+line and pays for itself the moment you add styling, printing or sticky
+headers. Keep <code>&lt;tfoot&gt;</code> for genuine summary rows
+(totals, averages); a random closing row belongs in the body.</p>
+
 <p><b>Spanning</b> merges cells:</p>
 
 <ul>
@@ -328,11 +385,21 @@ sticky headers when scrolling, and clearer targeting for styling.</p>
 <li><code>rowspan="3"</code> — this cell occupies <b>3 rows</b></li>
 </ul>
 
+<p>In the demo, "Total" spans the Qty and Price columns, so its row holds
+two cells, not three — and the single <code>$9</code> still lines up
+under "Price".</p>
+
 <p>The rule that keeps tables honest: whatever you span, the other rows
 must not also contain those cells — a merged cell is <i>shared</i>, not
 duplicated. Span carefully: deeply merged tables are unreadable both to
 screen readers and to the human three weeks later who has to fix
 them.</p>
+
+<p>Gotcha: even if you write no <code>&lt;tbody&gt;</code>, the browser
+inserts one — so a CSS selector like <code>table &gt; tr</code> matches
+nothing, while <code>tbody &gt; tr</code> works. Also mind the order for
+validation: caption on top, then thead, then the body and foot
+groups.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -404,6 +471,18 @@ there</li>
 <li>Keep it simple: if you need cells nested inside cells, the data
 wants to be several small tables (or a list)</li>
 </ul>
+
+<p>Walk the demo's source: each header declares <code>scope</code> —
+columns in the top row, rows in the first column — so "February,
+$1,850" is heard with both labels attached. To feel the difference,
+imagine hearing only "February, $1,850" with no column names: that is
+the unscoped experience.</p>
+
+<p>Gotcha: bold text is not a header. A
+<code>&lt;td style="font-weight: bold"&gt;</code> looks like a header but
+announces as ordinary data — semantics live in the element, not the
+styling. And keep tables narrow: a table wider than the viewport forces
+horizontal scrolling that hides headers entirely on phones.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -501,9 +580,22 @@ the label, the field focuses; screen readers announce the label when the
 field is entered. Every input gets a label — no exceptions</li>
 </ul>
 
+<p>Walk the form: the label's <code>for="email"</code> matches the input's
+<code>id="email"</code> — that pairing is both the click target and the
+screen-reader announcement. The input's <code>name="email"</code> is
+what arrives on the server: <code>email=you@example.com</code>. The
+button, typed <code>submit</code>, ships the fields to
+<code>/signup</code> by POST.</p>
+
 <p><code>&lt;button&gt;</code> submits the form by default
 (<code>type="submit"</code>); give it
 <code>type="button"</code> when it should do something else.</p>
+
+<p>Gotchas: never rely on <code>placeholder</code> as a label — it
+vanishes at the first keystroke and is easy to confuse with a value.
+And don't strip focus outlines with CSS; keyboard users need to see
+where they are. One more: a <code>&lt;form&gt;</code> cannot nest inside
+another form — split it or handle it with JavaScript.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -543,6 +635,13 @@ with the right keyboard, validation and mobile UI:</p>
 &lt;input type="file"&gt;      upload picker
 &lt;input type="hidden"&gt;    invisible — machine data only</pre>
 
+<p>Each type is a different control wearing the same tag:
+<code>type="email"</code> validates an @ on submit and pulls the email
+keyboard on phones; <code>type="date"</code> opens a calendar;
+<code>type="range"</code> slides; <code>type="hidden"</code> carries
+server-side bookkeeping invisibly. The browser does the work — you
+declare intent, not behaviour.</p>
+
 <p>Radio buttons group by sharing the same <code>name</code>; each also
 needs a <code>value</code> (that's what gets submitted) and its own
 label:</p>
@@ -557,6 +656,20 @@ label:</p>
 
 <p>Checkboxes, by contrast, are independent — same name is fine, and
 each carries its own on/off state.</p>
+
+<p>Read the radio group again: both inputs share <code>name="size"</code>,
+so picking one deselects the other; the <code>value</code>s ("s", "m")
+are what actually get submitted; each has its own label. The
+<code>&lt;fieldset&gt;</code> and <code>&lt;legend&gt;</code> frame the
+whole question — "Size" — which screen readers announce before the
+options (more in two lessons). That is also why surveys say "select all
+that apply" with checkboxes and "choose your size" with radios.</p>
+
+<p>Gotcha: the text-style types (<code>text</code>, <code>email</code>,
+<code>search</code>...) are single-line only — for multiple lines you
+need <code>&lt;textarea&gt;</code>, the next lesson. And never fake a
+native type with <code>type="text"</code> plus JavaScript checking: the
+native types work before any script loads, on any device.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -627,6 +740,21 @@ text input, still free-typed — an "autocomplete" with no JavaScript:</p>
   &lt;option value="Mars"&gt;
   &lt;option value="Venus"&gt;
 &lt;/datalist&gt;</pre>
+
+<p>Walk the pieces: the textarea ships with "Prefilled text here" because
+its content <i>is</i> its initial value — and whitespace inside the tags
+counts, so start the content on the same line as the opening tag. In the
+select, "— choose —" carries <code>value=""</code>, a common pattern for
+forcing a real choice, while <code>selected</code> pre-picks Titan. The
+datalist input still accepts any text — suggestions are offers, not
+limits.</p>
+
+<p>Gotchas: an <code>&lt;option&gt;</code> without an explicit
+<code>value</code> submits its <i>text</i> instead — surprising when the
+text is formatted, like "$4.50/kg". And a multi-select is a usability
+trap: most visitors have never held Ctrl to pick several options;
+checkboxes are the friendlier tool when choices are few. If you must
+use one, label it clearly — "pick as many as you like".</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -689,6 +817,18 @@ long forms become scannable chapters.</li>
 <p>Fieldsets can also take <code>disabled</code> — disabling every
 control inside at once, the standard trick for freezing a whole section
 while, say, "use billing address" is checked.</p>
+
+<p>Walk the demo: <code>&lt;legend&gt;Payment method&lt;/legend&gt;</code>
+names the frame; inside, three radios share <code>name="pay"</code> so
+only one can win, each with its own label. Tab into the group and a
+screen reader announces "Payment method, credit card, checked, 1 of 3"
+— the legend is doing that work.</p>
+
+<p>Gotcha: don't wrap everything in fieldsets — single fields with their
+own labels don't need a frame; groups do. And style the legend with
+care: it is one of the few elements browsers have historically
+restyled oddly (padding quirks around the border), so test your theme
+in real browsers.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -746,9 +886,21 @@ submission</b>, and not focusable</li>
 &lt;input name="coupon" placeholder="SUMMER10" required&gt;
 &lt;button disabled&gt;Unavailable&lt;/button&gt;</pre>
 
+<p>Walk the block: the readonly order code arrives at the server like any
+field but resists editing; the required coupon refuses to submit while
+empty, and the browser explains why; the disabled button greys out and
+swallows clicks. Three kinds of "not editable", three different
+contracts.</p>
+
 <p>disabled vs readonly is a favourite interview question and a real UX
 decision: disabled means "this doesn't apply to you right now";
 readonly means "look but don't touch — it still counts".</p>
+
+<p>Gotcha: <code>placeholder</code> disappears on typing and typically
+renders in low-contrast grey — a failing combination for accessibility
+guidelines. Keep visible labels, and use placeholder only for format
+hints like "SUMMER10". Also remember disabled controls are skipped by
+Tab, so never park important information in one.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -781,7 +933,7 @@ style the outcome via <code>:valid</code>, <code>:invalid</code>,
 &lt;input title="3 letters + 4 digits" pattern="..."&gt;</pre>
 
 <p>When a constraint fails, submission is blocked and the browser shows a
-<bubble</b> — styled with the <code>::invalid</code> state and explained
+<b>bubble</b> — styled with the <code>::invalid</code> state and explained
 by the <code>title</code> attribute or built-in messages. MDN calls this
 whole system the <b>constraint validation API</b>.</p>
 
@@ -802,6 +954,18 @@ anything that changes something (signups, orders)</li>
 you can show your own; <code>form.addEventListener("submit", ...)</code>
 with <code>event.preventDefault()</code> handles the data yourself —
 the standard pattern behind AJAX-style forms.</p>
+
+<p>Walk the demo: type "abc" in the username field and the border turns
+red (<code>:invalid</code>) before you press anything; submit anyway and
+the browser blocks, quoting the <code>title</code>. The age field's
+<code>min</code>/<code>max</code> police its range. All of it happened
+with zero JavaScript.</p>
+
+<p>Gotcha: client-side validation is a courtesy, not security — anyone
+can bypass it with browser devtools, so the server must check everything
+again. And write errors for humans: "3 letters followed by 4 digits"
+beats "Invalid input", and tying the message to the field itself helps
+screen-reader users find and fix the problem.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -915,10 +1079,29 @@ classes, and one element can carry several (space-separated):</p>
 .note   { font-style: italic; }      all notes
 .urgent { color: crimson; }          the urgent ones</pre>
 
+<p>Walk both blocks: the id example shows four consumers of one name —
+CSS, fragment links, label pairing and JavaScript lookup. The class
+example shows one class styling two paragraphs, and a second class
+<i>adding</i> urgency on top: classes compose, ids can't.</p>
+
+<p>See it again in the demo: <code>id="mission"</code> colours the
+heading via <code>#mission</code> and powers the jump link at the
+bottom; <code>class="note"</code> draws the callout border on two
+paragraphs, and the extra <code>urgent</code> class recolours just one
+of them. One name, one element; many names, a family.</p>
+
 <p>The design rule of thumb: <code>id</code> for "this exact thing"
 (targets, labels, JS handles); <code>class</code> for "things like
 this" (styling categories). When a page needs a CSS hook, most teams
 reach for classes first — they compose.</p>
+
+<p>Gotcha: names should describe meaning, not appearance —
+<code>class="red"</code> breaks the day the design turns green;
+<code>class="warning"</code> survives. And one id, one page: duplicate
+it and fragment links, <code>getElementById</code> and label association
+all start guessing. Naming conventions worth adopting early: lowercase,
+hyphens between words (<code>page-title</code>), consistent across the
+project.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -975,6 +1158,20 @@ hyphenation, spellcheck and font selection:</p>
 <code>rtl</code> for right-to-left scripts like Persian and Arabic, or
 <code>auto</code> (guess from the first strong character). Essential for
 bilingual pages — this very site uses both.</p>
+
+<p>Walk the demo: the abbreviation grows a tooltip on hover; the
+inline-styled paragraph wears its colours; the Persian word
+<span lang="fa" dir="rtl">وب</span> reads right-to-left inside a
+left-to-right sentence thanks to <code>lang="fa" dir="rtl"</code>, while
+the punctuation and neighbouring Latin text stay put. That is the point
+of <code>dir</code>: direction is set per element, not per page.</p>
+
+<p>Gotcha: don't put information users must have inside
+<code>title</code> — touch users can't hover and keyboard users may
+never trigger it; essential text belongs in the page. And always set
+<code>lang</code> on the <code>&lt;html&gt;</code> element itself: a
+missing page-level language is one of the most common accessibility
+failures reported.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1033,6 +1230,21 @@ them</li>
 </ul>
 
 <pre class="code">&lt;p contenteditable="true" spellcheck="false"&gt;Edit me!&lt;/p&gt;</pre>
+
+<p>Walk the demo: clicking the button reads its own
+<code>data-product-id</code> and <code>data-stock</code> through
+<code>dataset</code> — note the name conversion, the hyphenated
+<code>data-product-id</code> came back as camelCase <code>productId</code>
+— then un-hides the paragraph by flipping the <code>hidden</code>
+property. The editable paragraph accepts typing right in the page, no
+framework in sight.</p>
+
+<p>Gotcha: <code>hidden</code> loses to explicit CSS — if a stylesheet
+sets <code>display: flex</code> on that element, the attribute silently
+stops working; the standard fix is
+<code>[hidden] { display: none !important; }</code> in your base styles.
+And keep <code>tabindex</code> to <code>0</code> and <code>-1</code>:
+positive values scramble the tab order users have learned to trust.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">

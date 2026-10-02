@@ -973,13 +973,15 @@ function renderLesson(ch) {
   applyDir(body, !!lesson.__fa);
   card.appendChild(body);
 
-  // try-it playground — HTML/CSS render live; JS runs with console output;
-  // C and C++ lessons ship seed code for the engine; Python keeps its
-  // always-present box
+  // try-it playground — HTML/CSS render live; JS runs with console output,
+  // except browser-lesson seeds that are full HTML documents (they render
+  // live like the HTML ones); C/C++ ship seed code for the engine; Python
+  // keeps its always-present box
   if (activeSubject === "html" || activeSubject === "css") {
     card.appendChild(renderTryItHtml(lesson.tryit));
   } else if (activeSubject === "js") {
-    card.appendChild(renderTryItJs(lesson.tryit));
+    card.appendChild(/^\s*<(!DOCTYPE|html)/i.test(lesson.tryit || "")
+      ? renderTryItHtml(lesson.tryit) : renderTryItJs(lesson.tryit));
   } else if (activeSubject === "python" || lesson.tryit) {
     card.appendChild(renderTryIt(lesson.tryit));
   }
@@ -1064,7 +1066,7 @@ function renderTryItJs(seedCode) {
   runBtn.textContent = t("run");
   const out = document.createElement("div");
   out.className = "run-output show";
-  function run() {
+  async function run() {
     const logs = [];
     const origLog = console.log;
     const origWarn = console.warn;
@@ -1079,6 +1081,9 @@ function renderTryItJs(seedCode) {
     } catch (e) {
       logs.push("✗ " + e.message);
     } finally {
+      // async lessons log from microtasks and timers — keep the hooks
+      // installed briefly so their output lands in the box too
+      await new Promise((r) => setTimeout(r, 300));
       console.log = origLog;
       console.warn = origWarn;
       console.error = origError;

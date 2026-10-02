@@ -35,6 +35,18 @@ structure there is nothing to present or make interactive.</p>
 <p>"Markup" means you annotate ordinary content with special markers
 (<b>elements</b>) that tell the browser what each piece <i>is</i>. The
 browser reads your markup and builds the page you see.</p>
+
+<p>So what actually happens when you open an <code>.html</code> file? The
+browser reads your text from top to bottom, recognises each element, and
+builds an internal tree of the page — then paints it. You write plain
+text; the browser does the construction. That is why no special tools are
+needed: any text editor can write HTML, and every browser can read it.</p>
+
+<p>One clarification before we begin: HTML is <b>not a programming
+language</b>. It has no variables, loops or conditions — it is a
+<i>markup</i> language, describing what things <i>are</i>, not what steps
+to perform. The behaviour layer comes later, in JavaScript. HTML has no
+verbs; it is all nouns.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -86,6 +98,20 @@ opening tag as <code>name="value"</code> pairs:</p>
 one element) and its sibling <code>class</code> (group membership) — you
 will meet them everywhere, especially once CSS and JavaScript join the
 party.</p>
+
+<p>Two details worth fixing early. First, attribute values go in quotes —
+<code>href="..."</code> — single or double, but stay consistent; unquoted
+values survive until they contain a space, and then quietly break the
+page. Second, tags never render: the browser shows <i>content</i>, not
+markers. If you can see <code>&lt;p&gt;</code> on the page itself, a raw
+<code>&lt;</code> leaked through unescaped somewhere.</p>
+
+<p>The classic beginner bug is the <b>missing closing tag</b>: write
+<code>&lt;div&gt;</code>, forget <code>&lt;/div&gt;</code>, and every
+element after it silently becomes that div's child. The page still
+renders — HTML is forgiving — but the structure is wrong in ways that
+surface later as styling and scripting bugs. The free W3C validator
+catches these in seconds; run your pages through it while you learn.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -118,6 +144,10 @@ how every page is built. The one iron rule: tags must close in the
 
 &lt;p&gt;This is &lt;strong&gt;important&lt;/p&gt;&lt;/strong&gt;        ✗ overlapping</pre>
 
+<p>If the tail of your page suddenly renders bold, hunt for the
+<code>&lt;strong&gt;</code> you never closed — unclosed or overlapping
+tags leak structure onto everything after them.</p>
+
 <p>Browsers recover from mistakes (usually), but overlapping tags produce
 surprising structures — always close what you opened, in order.
 Indentation is not required by HTML (unlike Python!) but it makes nesting
@@ -131,6 +161,12 @@ visible:</p>
   &lt;/li&gt;
 &lt;/ul&gt;</pre>
 
+<p>Why does nesting matter so much? Because the browser turns it into a
+<b>tree</b>: the <code>&lt;ul&gt;</code> is a branch, each
+<code>&lt;li&gt;</code> a smaller branch, and the text inside them the
+leaves. CSS and JavaScript both work on this tree — get the nesting
+right and everything downstream gets easier.</p>
+
 <p><b>Comments</b> are notes for humans that the browser ignores
 completely. They start with <code>&lt;!--</code> and end with
 <code>--&gt;</code>:</p>
@@ -143,6 +179,12 @@ completely. They start with <code>&lt;!--</code> and end with
 
 <p>Comments are also the standard way to "switch off" a line of markup
 while testing — wrap it, refresh, unwrap it.</p>
+
+<p>One comment rule trips everyone eventually: comments <b>cannot
+nest</b>. The <i>first</i> <code>--&gt;</code> closes the comment, so a
+"comment inside a comment" leaves the rest visible as markup. And
+remember what comments are <i>not</i> for: hiding secrets. Anyone can
+read them with View Source — they ship to every visitor.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -198,8 +240,20 @@ and more. Nothing here renders in the page body.</li>
 sees.</li>
 </ul>
 
+<p>Why separate head from body? The head answers questions <i>about</i>
+the page — its name, its language, its character encoding — before a
+single pixel is drawn. The body <i>is</i> the content. Browsers will
+render even sloppy structure, but this separation keeps metadata
+findable and the content clean.</p>
+
+<p>Two beginner traps: never skip <code>&lt;meta charset="utf-8"&gt;</code>
+— without it, characters like é, 中 or «» can arrive as gibberish. And
+don't put visible content inside <code>&lt;head&gt;</code>; it doesn't
+belong there and validators flag it.</p>
+
 <p>The <code>&lt;title&gt;</code> is required and is what appears in the tab,
-bookmarks and search results. A page without a title is incomplete.</p>
+bookmarks and search results. A page without a title is incomplete —
+it is the single most common validator warning in the wild.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -274,7 +328,9 @@ bookmarks and search results. A page without a title is incomplete.</p>
 
 <p>Think of them as a <b>table of contents</b>, not as font sizes — you can
 make any heading any size with CSS, so choose the level by
-<i>structure</i>, not by how big it looks.</p>
+<i>structure</i>, not by how big it looks. Surveys of screen-reader users
+consistently rank proper heading structure among the most valued
+accessibility features.</p>
 
 <p>Two rules that keep pages accessible:</p>
 
@@ -285,6 +341,18 @@ document.</li>
 <code>h1 → h4</code>. Screen-reader users navigate by jumping between
 headings, and skipped levels make the outline lie.</li>
 </ul>
+
+<p>What the browser does with them: every heading gets a default size and
+weight, largest at h1 — but treat that as a courtesy, not the point. The
+real consumers are <b>screen readers</b> and <b>search engines</b>: both
+build the same table of contents you wrote, and both hand it to their
+users. A well-headed page can be navigated by its headings alone.</p>
+
+<p>Classic misuse: picking <code>&lt;h4&gt;</code> because it "looks right"
+beside a big h1, or dropping a heading inside a paragraph as a bold
+subtitle. Ask instead: "where does this sit in the outline?" The answer
+picks the level; CSS decides how it looks. Short pages may only need h1
+and h2 — depth should follow content, not ambition.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -327,6 +395,20 @@ it is by design: <i>meaning</i> lives in elements, not in whitespace.</p>
 automatically — that gap is CSS's default margin, not an empty
 paragraph. Never press Enter twice to "add space"; that is styling, and
 styling belongs to CSS.</p>
+
+<p>Walk the code once more: in the first <code>&lt;p&gt;</code>, the newline
+after "Line one" and the run of spaces before "still" all collapse to
+single spaces — one continuous line. The second <code>&lt;p&gt;</code>
+starts a genuinely new block with its own margin. This is also why you
+can wrap and indent your source freely: format it for <i>humans</i>, and
+HTML re-flows it for the <i>browser</i>.</p>
+
+<p>Two habits to drop: pasting straight from word processors (hidden
+non-breaking spaces and "smart quotes" come along for the ride), and
+stacking empty <code>&lt;p&gt;&lt;/p&gt;</code> pairs as spacers. Rule of
+thumb: every visible chunk of prose belongs in a <code>&lt;p&gt;</code>
+or another text element — bare text in the body renders, but carries no
+structure at all.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -362,12 +444,30 @@ styling belongs to CSS.</p>
 H&lt;sub&gt;2&lt;/sub&gt;O            subscript
 x&lt;sup&gt;2&lt;/sup&gt;             superscript</pre>
 
+<p>Walk the list: <code>&lt;b&gt;</code> and <code>&lt;i&gt;</code> change
+only the voice — bold and italic with no deeper claim.
+<code>&lt;mark&gt;</code> paints the yellow highlight you know from search
+results: "relevant in this context". <code>&lt;small&gt;</code> is fine
+print. <code>&lt;del&gt;</code> strikes through and
+<code>&lt;ins&gt;</code> underlines — revisions and price changes.
+<code>&lt;sub&gt;</code> and <code>&lt;sup&gt;</code> drop or raise text
+for chemistry and maths, like H₂O and x². Screen readers give
+<code>&lt;strong&gt;</code> vocal stress, so the meaning is heard, not
+just seen.</p>
+
 <p>The difference between <code>&lt;strong&gt;</code> and
 <code>&lt;b&gt;</code> is <b>meaning</b>, not looks: strong tells screen
 readers and search engines "this matters"; <code>&lt;b&gt;</code> only says
 "draw it bold". Same for <code>&lt;em&gt;</code> vs <code>&lt;i&gt;</code>.
 Prefer the meaningful one when in doubt — the visual default can always
 be restyled with CSS.</p>
+
+<p>Gotcha: reaching for <code>&lt;b&gt;</code> or <code>&lt;i&gt;</code> for
+pure decoration is the beginner reflex. The semantic twins
+(<code>&lt;strong&gt;</code>, <code>&lt;em&gt;</code>) carry their meaning
+into the accessibility tree, where assistive technology acts on it; the
+visual twins do not. And if all you want is an effect with zero meaning,
+that is a CSS job, not a tag's.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -397,6 +497,13 @@ violets are blue.&lt;/p&gt;
 &lt;p&gt;123 Main Street&lt;br&gt;
 Springfield&lt;/p&gt;</pre>
 
+<p>Read the first block: the poem keeps two short lines inside one
+paragraph — one element, a hard wrap between them, no paragraph gap.
+The address does the same. That tight spacing is the tell:
+<code>&lt;br&gt;</code> continues the paragraph, it does not start a new
+one. Screen readers also pause briefly at a paragraph boundary — one
+more reason <code>&lt;br&gt;</code> is a poor paragraph substitute.</p>
+
 <p>For everything else — separating <i>topics</i>, <i>paragraphs</i>,
 <i>sections</i> — <code>&lt;br&gt;</code> is the wrong tool. Two addresses
 in a poem: perfect. Gaps between paragraphs: use new paragraphs and CSS
@@ -415,6 +522,13 @@ between topics, not the line:</p>
 &lt;p&gt;The morning brought news.&lt;/p&gt;</pre>
 
 <p>Both are void elements: no closing tag, no content, nothing inside.</p>
+
+<p>Rules of thumb: stacking <code>&lt;br&gt;&lt;br&gt;</code> means you
+really want a new paragraph or a CSS margin. And don't fake lists with
+<code>&lt;br&gt;</code>-separated lines — screen readers run them
+together into one sentence. Use <code>&lt;hr&gt;</code> only for a
+genuine shift of topic: assistive technology announces it as a
+separator, so a decorative divider in every gap gets noisy fast.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -457,11 +571,26 @@ an article), not the author's name.</li>
 &lt;p&gt;As the guide says, &lt;q&gt;HTML defines meaning and structure&lt;/q&gt;
 for the web.&lt;/p&gt;</pre>
 
+<p>Walk the block: the <code>&lt;cite&gt;</code> line renders the book title
+in italics. The <code>&lt;blockquote&gt;</code> becomes its own indented
+chunk — it may hold several paragraphs, even headings, because it is
+block-level. The <code>&lt;q&gt;</code> stays inside the sentence, and
+the browser adds the marks itself — curly quotes in English, other
+marks in other languages. And because <code>&lt;q&gt;</code> is inline,
+it never forces the quote onto its own line.</p>
+
 <p>Both <code>&lt;blockquote&gt;</code> and <code>&lt;q&gt;</code> accept a
 <code>cite="URL"</code> <i>attribute</i> pointing at the source — machine-
 readable provenance that doesn't render visually. The
 <code>&lt;cite&gt;</code> <i>element</i>, meanwhile, marks up the work's
 title in text. Attribute and element, same name, different jobs.</p>
+
+<p>Beginner mistakes: typing your own quotation marks inside
+<code>&lt;q&gt;</code> (you get doubled marks), and using
+<code>&lt;blockquote&gt;</code> to indent text that is not a quote —
+that is a styling job, and CSS margins do it without mislabelling the
+content. Keep quotes for real quotations, and the attribution stays
+honest for everyone, machines included.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -511,9 +640,25 @@ meaning:</p>
 &lt;p&gt;The program prints &lt;samp&gt;Hello, Ada&lt;/samp&gt; when
 &lt;var&gt;name&lt;/var&gt; is Ada.&lt;/p&gt;</pre>
 
+<p>Walk the block: the <code>&lt;pre&gt;&lt;code&gt;</code> pair renders the
+two-line function exactly as typed, in monospace. The
+<code>&lt;kbd&gt;</code> line says "press these keys",
+<code>&lt;samp&gt;</code> quotes what the program printed, and
+<code>&lt;var&gt;</code> names the variable. Five elements, one coherent
+story about code.</p>
+
 <p>Careful: because <code>&lt;pre&gt;</code> preserves everything, the
 source must start the code on the line right after the opening tag —
 otherwise your indentation becomes part of the output.</p>
+
+<p>Two more traps. <code>&lt;code&gt;</code> alone is inline: it flows
+within a sentence and preserves nothing — multi-line listings need the
+<code>&lt;pre&gt;</code> wrapper. And inside <code>&lt;pre&gt;</code> you
+must still escape <code>&lt;</code> as <code>&amp;lt;</code> and
+<code>&amp;</code> as <code>&amp;amp;</code>, or the browser tries to
+parse your sample code as real markup. Why the extra elements at all?
+Meaning, as always: tools can tell user input from program output, and
+CSS can style each part differently.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -616,6 +761,22 @@ pages.</li>
 <pre class="code">&lt;a href="chapter2.html"&gt;Next chapter&lt;/a&gt;   relative
 &lt;a href="#top"&gt;Back to top&lt;/a&gt;             fragment
 &lt;h2 id="top"&gt;The Guide&lt;/h2&gt;                 the target</pre>
+
+<p>Walk the second block: the first link resolves
+<code>chapter2.html</code> sitting next to the current page — no
+protocol, so the browser fills in the current address. The second jumps
+to the element carrying <code>id="top"</code> on this same page; note
+the <code>#</code>. The heading underneath is that target. Fragment
+links scroll instantly and update the address bar, so visitors can
+share a URL that lands on the exact spot.</p>
+
+<p>Accessibility rule: link text must make sense out of context, because
+screen readers offer a "list of links" pulled straight from the page.
+Write <code>&lt;a href="..."&gt;the HTML guide&lt;/a&gt;</code>, never
+<code>&lt;a href="..."&gt;click here&lt;/a&gt;</code> — "click here" tells
+nobody anything. And don't ship live pages with empty
+<code>href=""</code> or <code>href="#"</code> placeholders; they look
+like links but go nowhere.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -667,6 +828,17 @@ the good habit. Other <code>rel</code> values describe relationships:
 <p>Style note: use <code>target="_blank"</code> sparingly — visitors
 decide with Ctrl+Click or right-click whether they want a new tab.
 Reserve it for keeping the visitor's place (docs, references).</p>
+
+<p>Walk the second block: the URL is the same as the first example; only
+<code>target="_blank"</code> changed the destination — a fresh tab — and
+<code>rel="noopener"</code> rides along invisibly, closing the
+<code>window.opener</code> channel we just discussed. Two attributes,
+no visual difference, all the difference under the hood.</p>
+
+<p>Gotcha: new tabs break expectations, especially on phones where tabs
+hide behind a button and the Back gesture does nothing for the original
+page. If the visitor did not ask for a new tab, don't force one — link
+normally and let Ctrl+Click be the opt-in.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -718,6 +890,21 @@ pages:</p>
 <p>Note the pattern: <code>href</code> accepts any URL <i>scheme</i> —
 <code>https:</code>, <code>mailto:</code>, <code>tel:</code> — the
 element itself never changes.</p>
+
+<p>Walk-throughs: the first download link saves <code>report.pdf</code>
+under its server-side name; the second suggests
+<code>sales-2026.csv</code> whatever the file is actually called. The
+email link opens the visitor's mail client with "Hello" pre-filled —
+note how the space became <code>%20</code> in the URL. The
+<code>tel:</code> link displays a human-formatted number but dials the
+full international form: put the complete number with country code in
+<code>href</code>, the pretty version in the link text.</p>
+
+<p>Gotchas: <code>mailto:</code> only helps visitors who have a mail
+client configured — many don't, so never make it the only contact
+route; show the address as plain text too. And <code>download</code> is
+ignored for files from another domain unless that server opts in — it
+is not a "download anything" switch.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -805,11 +992,27 @@ not matter (bullet points). Shopping lists, feature lists, menus.</li>
   &lt;li&gt;Bake for 30 minutes&lt;/li&gt;
 &lt;/ol&gt;</pre>
 
+<p>Render it: the <code>&lt;ul&gt;</code> draws a bullet before each item
+and indents the block; the <code>&lt;ol&gt;</code> numbers its items
+1, 2, 3. The browser generates those numbers, so insert or reorder an
+item and the numbering repairs itself — no typed digits to maintain,
+ever. And <code>start="5"</code> is more useful than it looks: it
+continues a list that a paragraph or an image had to interrupt.</p>
+
 <p><code>&lt;ol&gt;</code> understands two handy attributes:
 <code>start="5"</code> begins counting at 5, and
 <code>reversed</code> counts down. Choose <code>ul</code> vs
 <code>ol</code> by <i>meaning</i>: would reordering the items change
 anything? If yes, it's an <code>ol</code>.</p>
+
+<p>Beginner mistakes: placing text directly inside
+<code>&lt;ul&gt;</code> without an <code>&lt;li&gt;</code> wrapper
+(invalid — only <code>&lt;li&gt;</code> may sit directly in a list), or
+faking lists with typed hyphens and <code>&lt;br&gt;</code>s, which
+screen readers hear as one run-on sentence. And grabbing
+<code>&lt;ol&gt;</code> because you prefer numbers is the classic abuse:
+the numbering must carry meaning, or restyle a <code>&lt;ul&gt;</code>
+with CSS instead.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -839,7 +1042,9 @@ anything? If yes, it's an <code>ol</code>.</p>
 <p>The third list element is the one everyone forgets:
 <code>&lt;dl&gt;</code>, the <b>description list</b> — for pairs of terms
 and their descriptions. A glossary, metadata, FAQs, product
-specifications:</p>
+specifications. (Older books call it a <i>definition list</i>; the
+current spec says name–value groups, because the pairs are not always
+definitions.):</p>
 
 <pre class="code">&lt;dl&gt;
   &lt;dt&gt;HTML&lt;/dt&gt;
@@ -861,11 +1066,27 @@ defined)</li>
 <li><code>&lt;dd&gt;</code> — <b>description</b> (indented under the term)</li>
 </ul>
 
+<p>Trace the example: each <code>&lt;dt&gt;</code> renders on its own
+line, and each <code>&lt;dd&gt;</code> hangs indented beneath its term.
+The URL entry shows the "two descriptions" case — both
+<code>&lt;dd&gt;</code>s attach to that single <code>&lt;dt&gt;</code>.
+Screen readers announce the grouping, so the term–description pairing
+survives even without the visual indent. The <code>&lt;dl&gt;</code>
+itself carries no bullets and no numbering — structure comes from the
+pairing.</p>
+
 <p>Two legal flexibilities make it fit real data: one term can have
 <b>multiple descriptions</b> (two <code>&lt;dd&gt;</code>s after one
 <code>&lt;dt&gt;</code>, as above), and one description can serve
 <b>multiple terms</b> (several <code>&lt;dt&gt;</code>s in a row —
 "TLA" and "Three-Letter Acronym" sharing one definition).</p>
+
+<p>Gotcha: the trio only works as a set — <code>&lt;dt&gt;</code> and
+<code>&lt;dd&gt;</code> must be direct children of
+<code>&lt;dl&gt;</code>, with no stray wrappers in between. Reach for it
+whenever genuine term–description pairs appear: glossaries, product
+specifications, metadata, Q&amp;A pages. It is the semantic tool, and
+unlike a table it implies no grid.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -925,7 +1146,21 @@ differently for you.</p>
 
 <p>Navigation menus are lists of links <i>semantically</i> — screen
 readers announce "list, 2 items", which tells the visitor what to
-expect before they hear the links.</p>
+expect before they hear the links. Sites that skip the list wrapper
+lose that announcement.</p>
+
+<p>Gotcha: the inner list must sit <i>inside</i> the
+<code>&lt;li&gt;</code>, never after it — write
+<code>&lt;li&gt;Fruits&lt;/li&gt;&lt;ul&gt;…&lt;/ul&gt;</code> and
+validators reject the page, because a <code>&lt;ul&gt;</code> may only
+contain <code>&lt;li&gt;</code> children. The mirror mistake is closing
+the outer <code>&lt;li&gt;</code> before the nested list starts. Indent
+as you nest, and neither bug ever appears.</p>
+
+<p>Rule of thumb: two levels deep, maybe three. If a menu genuinely
+needs four, the information architecture — not the markup — needs
+attention; deep nesting exhausts readers with or without a screen
+reader.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1035,6 +1270,20 @@ before it loads, so the page doesn't jump around:</p>
 its place — which is exactly why alt text should describe the
 <i>information</i> ("A sliced grapefruit"), not the file
 ("grapefruit.jpg").</p>
+
+<p>Two more rules of thumb. Decorative images — flourishes, borders,
+spacer graphics — take <code>alt=""</code> (empty), which tells screen
+readers "skip me"; omitting the attribute entirely is <i>not</i> the
+same, because screen readers may fall back to announcing the filename.
+And write alt as you would describe the image over the phone: short,
+specific, no "image of..." padding — the screen reader already says
+"image".</p>
+
+<p><code>&lt;figure&gt;</code> is not just for photos: any self-contained
+content — a chart, a code listing, a diagram — can wear one. The
+<code>&lt;figcaption&gt;</code> must be the first or last child of the
+figure, and it adds a visible caption while <code>alt</code> stays the
+invisible text alternative. Both, doing different jobs.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1078,6 +1327,13 @@ same image; it picks based on the screen:</p>
 otherwise 800px</li>
 </ul>
 
+<p>How the browser decides: it reads <code>sizes</code>, learns the image
+will be about 400 CSS pixels wide on a phone, multiplies by the
+screen's device pixel ratio, and downloads the smallest candidate that
+covers it — on a 2× phone that is the 800w file, on a desktop the
+1600w. The plain <code>src</code> stays for browsers that never heard
+of <code>srcset</code>.</p>
+
 <p><b><code>&lt;picture&gt;</code></b> goes further: it lets you swap the
 <i>artwork</i> itself — different crops, or a modern format with a
 fallback:</p>
@@ -1094,6 +1350,15 @@ the mandatory fallback — and it's the element that carries
 <code>alt</code>. Rules of thumb: same image, different sizes →
 <code>srcset</code> alone; genuinely different files →
 <code>&lt;picture&gt;</code>.</p>
+
+<p>Gotchas: <code>400w</code> is a width <i>descriptor</i>, not a CSS
+length — write <code>400w</code>, never <code>400px</code>, in
+<code>srcset</code>. If you use <code>w</code> descriptors,
+<code>sizes</code> is mandatory; without it browsers assume the image
+fills 100% of the viewport width and may fetch something huge. And
+<code>&lt;picture&gt;</code> must contain exactly one
+<code>&lt;img&gt;</code> — it is both the fallback and the element that
+actually renders; the <code>&lt;source&gt;</code>s are only offers.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1156,6 +1421,20 @@ no source could play. And <code>&lt;track&gt;</code> adds
 <pre class="code">&lt;video src="lecture.mp4" controls&gt;
   &lt;track src="en.vtt" kind="subtitles" label="English" srclang="en"&gt;
 &lt;/video&gt;</pre>
+
+<p>Walk the middle block: the browser tries <code>cat.webm</code> first;
+if it cannot decode WebM it moves on to <code>cat.mp4</code>; if
+nothing plays, the text after the sources appears. List the most modern
+format first and the universally supported one last — MP4 with H.264
+video is the safe floor every current browser plays.</p>
+
+<p>Accessibility and UX notes: never omit <code>controls</code> — a media
+element without them is unplayable for keyboard users unless you build
+your own UI. Ship <code>&lt;track&gt;</code> captions for anything
+spoken; deaf visitors and noisy environments both need them. And
+respect the autoplay rule: if video must start by itself, it must also
+be <code>muted</code> (and ideally <code>playsinline</code>), or
+browsers will block it.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">

@@ -10,9 +10,23 @@ CHAPTERS_JS_B = [
             {
                 "title": "Functions & Parameters",
                 "html": """
-<p>Functions package behaviour behind a name. JS functions are
-<b>first-class citizens</b> — they can be stored in variables, passed as
-arguments, and returned from other functions:</p>
+<p>Copy-pasting the same five lines three times is how programs rot:
+you fix a bug in one copy and forget the other two. <b>Functions</b>
+solve this — they package behavior behind a name so you write it once
+and call it anywhere. They are also <b>first-class citizens</b> in JS,
+meaning a function is a value like a number or a string: you can
+store it in a variable, pass it to another function, and return it
+from one. That single idea powers callbacks, array methods, and the
+entire async chapter later on.</p>
+
+<p>Walk the block. The declaration <code>function greet(name)</code>
+defines a function with one <b>parameter</b>, <code>name</code> — a
+placeholder. Calling <code>greet("Ada")</code> passes the
+<b>argument</b> "Ada": the placeholder becomes the real value, the
+body runs, and <code>return</code> hands "Hello, Ada!" back to the
+caller, where <code>console.log</code> prints it.
+<code>add(2, 3)</code> shows two parameters working the same way —
+predict the printed result before reading the comment.</p>
 
 <pre class="code">// declaration
 function greet(name) {
@@ -28,11 +42,18 @@ function add(a, b) {
 }
 console.log(add(2, 3));        // 5</pre>
 
-<p>Parameters are the named placeholders in the definition
-(<code>a, b</code>); arguments are the actual values passed in
-(<code>2, 3</code>). JS doesn't enforce parameter counts — missing
-arguments become <code>undefined</code>, extras are ignored (but
-accessible via <code>arguments</code> or rest params).</p>
+<p>Keep the parameter/argument vocabulary straight: parameters are the
+named slots in the definition; arguments are the actual values in
+the call. And JS is loose about counts — missing arguments arrive as
+<code>undefined</code>, extra arguments are ignored (but still
+reachable via rest parameters, later in this chapter). That
+looseness is convenient, but it pushes validation onto you.</p>
+
+<p><b>Gotcha:</b> defining a function does nothing visible — there is
+no output until you call it. Beginners write a perfect function, run
+the file, see nothing, and panic. A function is a recipe; you still
+have to cook. If your code "does nothing", first check whether you
+actually called it.</p>
 """,
                 "tryit": """function greet(name, greeting = "Hello") {
   return `${greeting}, ${name}!`;
@@ -56,8 +77,21 @@ callTwice(greet, "MDN");
             {
                 "title": "Return Values",
                 "html": """
-<p><code>return</code> sends a value back to the caller and exits the
-function immediately:</p>
+<p>Printing is not the same as computing. A function that only
+<code>console.log</code>s hands its result to the console and to
+nobody else — you cannot add it, store it, or test it.
+<code>return</code> is what makes a function reusable: it sends a
+value back to wherever the function was called, and it exits the
+function immediately.</p>
+
+<p>Read the first block. In <code>add</code>, <code>return a +
+b;</code> computes 3 and sends it back, so
+<code>console.log(add(1, 2))</code> prints 3. The line below it —
+<code>console.log("never runs")</code> — is dead code: <code>return</code>
+already left the function. That "return exits immediately" fact is a
+feature: the early-return pattern checks bad input first and bails
+out before doing any real work. The try-it's <code>classify</code>
+does exactly this, three times in a row.</p>
 
 <pre class="code">function add(a, b) {
   return a + b;      // exits here
@@ -73,14 +107,29 @@ function log(msg) {
 }
 console.log(log("hi"));  // undefined</pre>
 
-<p>Functions can return any type — including other functions, objects,
-arrays. Multiple values come back as an object or array:</p>
+<p>What about a function with no return at all, like <code>log</code>
+in the block? It still returns something: <code>undefined</code>.
+Predict the output of <code>console.log(log("hi"))</code> before
+running — you will see "hi" first (the function logs while it
+runs), then undefined (its return value).</p>
 
 <pre class="code">function getStats(numbers) {
   return { min: Math.min(...numbers), max: Math.max(...numbers) };
 }
 const { min, max } = getStats([3, 1, 4, 1, 5]);
 console.log(min, max);   // 1 5</pre>
+
+<p>One return value per function feels limiting until you remember
+objects: the second block returns <code>{ min, max }</code> in a
+single object, and the caller destructures both into variables on
+one line. Returning an object or array is the standard way to hand
+back multiple results.</p>
+
+<p><b>Gotcha:</b> JS inserts a semicolon after a <code>return</code>
+that ends its line — writing <code>return</code> on one line and the
+value on the next makes the function silently return
+<code>undefined</code>. Always keep <code>return value;</code> on a
+single line.</p>
 """,
                 "tryit": """function calculateCircle(r) {
   const area = Math.PI * r ** 2;
@@ -104,9 +153,24 @@ console.log(classify(-5), classify(0), classify(7));
             {
                 "title": "Function Expressions & Arrow Functions",
                 "html": """
-<p>Functions can be <b>expressions</b> (assigned to variables) rather
-than declarations. The modern arrow syntax is shorter and has a
-different <code>this</code> binding:</p>
+<p>So far every function had a name in its declaration. But functions
+are values, so they can also appear inside expressions — assigned to
+variables, passed around. That opens the door to <b>arrow
+functions</b>, the compact modern syntax you will see in virtually
+every contemporary codebase.</p>
+
+<p>Read the block as an evolution. The function expression
+<code>const double = function(n) {...}</code> proves a function can
+be a value. The arrow version <code>(n) =&gt; n * 2</code> says the
+same thing with less ceremony. Then the shortcuts kick in: one
+parameter lets you drop the parentheses (<code>n =&gt; n * 3</code>);
+a body that is a single expression lets you drop both the braces and
+the word <code>return</code> — the expression's value is returned
+implicitly. Multiple parameters require parens; no parameters use
+empty ones <code>()</code>.</p>
+
+<p>Predict what <code>double2(5)</code> and <code>hello()</code> each
+give before moving on — 10 and "hello!".</p>
 
 <pre class="code">// function expression
 const double = function(n) { return n * 2; };
@@ -132,10 +196,22 @@ const process = (x) => {
 // returning an object literal → wrap in parens
 const makePair = (a, b) => ({ first: a, second: b });</pre>
 
-<p>Key difference: arrow functions don't have their own
-<code>this</code> — they inherit it from the surrounding scope. This
-makes them perfect for callbacks where you want the outer
-<code>this</code>.</p>
+<p>Two rules close the gallery. A multi-line body needs braces — and
+braces bring back the explicit <code>return</code>; forgetting it
+makes the function return <code>undefined</code>, a classic bug. And
+returning an object literal directly requires parentheses around it:
+<code>() =&gt; ({ first: a })</code> — a bare <code>{</code> would be
+read as the start of a function body.</p>
+
+<p>The deeper difference is <code>this</code>: arrow functions have no
+<code>this</code> of their own — they inherit it from the surrounding
+scope, which makes them ideal inside methods and callbacks. The
+"this" lesson in the Advanced chapter demonstrates it fully.</p>
+
+<p><b>Gotcha:</b> arrows are for expressions and callbacks, not for
+every function you write: <code>function greet() {}</code> is hoisted
+and callable before its line, while a <code>const</code> arrow is
+not — order of execution matters with arrows.</p>
 """,
                 "tryit": """const nums = [1, 2, 3, 4, 5];
 
@@ -164,8 +240,20 @@ console.log(labeled);
             {
                 "title": "Default & Rest Parameters",
                 "html": """
-<p><b>Default parameters</b> provide fallback values when an argument
-is <code>undefined</code>:</p>
+<p>Two small features remove enormous amounts of boilerplate:
+defaults handle "the caller did not provide this", and rest handles
+"the caller provided an unknown amount". Both make functions
+flexible without <code>if</code>-checks cluttering the top of the
+body.</p>
+
+<p>A default parameter names a fallback used only when the argument is
+<code>undefined</code>. In the first block, <code>greet()</code> with
+no arguments uses both defaults and prints "Hello, guest!";
+<code>greet("Ada")</code> fills the first slot and keeps the second
+default; <code>greet("Ada", "Hi")</code> overrides both. Note the
+trigger is specifically <code>undefined</code> — passing
+<code>null</code> or <code>""</code> counts as a real value and
+skips the default.</p>
 
 <pre class="code">function greet(name = "guest", greeting = "Hello") {
   return `${greeting}, ${name}!`;
@@ -174,8 +262,15 @@ console.log(greet());           // "Hello, guest!"
 console.log(greet("Ada"));     // "Hello, Ada!"
 console.log(greet("Ada", "Hi")); // "Hi, Ada!"</pre>
 
-<p><b>Rest parameters</b> (<code>...name</code>) collect remaining
-arguments into a real array:</p>
+<p>Rest parameters (<code>...name</code>) collect all remaining
+arguments into a genuine array. <code>sum(...numbers)</code> accepts
+2, 5 or a hundred arguments; inside the function,
+<code>numbers</code> is a real array, so <code>reduce</code> works
+on it directly — the second block sums 1+2 to 3, then 1 through 5 to
+15. The mixed form shows the ordering rule: named parameters first,
+rest last, so <code>introduce("Hi", "Ada", "Grace")</code> peels
+"Hi" off as the greeting and gathers the rest into
+<code>names</code>.</p>
 
 <pre class="code">function sum(...numbers) {
   return numbers.reduce((acc, n) => acc + n, 0);
@@ -189,9 +284,16 @@ function introduce(greeting, ...names) {
 }
 console.log(introduce("Hi", "Ada", "Grace"));</pre>
 
-<p>Rest parameters must be the <b>last</b> parameter. They replace the
-legacy <code>arguments</code> object with a real array that has
-<code>map</code>, <code>filter</code>, etc.</p>
+<p><b>Gotchas:</b> rest must be the last parameter —
+<code>function f(...nums, last)</code> is a syntax error. And prefer
+rest over the legacy <code>arguments</code> object:
+<code>arguments</code> is array-<i>like</i> but has no
+<code>map</code>, <code>filter</code> or friends — a difference that
+bites the first time you call a method on it. One more habit:
+calling <code>sum()</code> with no arguments gives an empty array —
+check for it, as the try-it's <code>average</code> does, or
+<code>reduce</code> will throw on an empty list without an initial
+value.</p>
 """,
                 "tryit": """// Default parameters
 function power(base, exponent = 2) {
@@ -220,9 +322,27 @@ createPost("Hello World", "js", "tutorial", "2026");
             {
                 "title": "Spread Syntax",
                 "html": """
-<p>Spread (<code>...</code>) "unpacks" an iterable into individual
-elements — the mirror of rest parameters. It expands arrays, strings,
-and objects in places where multiple elements are expected:</p>
+<p>Spread (<code>...</code>) is the mirror image of rest: where rest
+<i>collects</i> many values into an array, spread <i>unpacks</i> an
+array into many individual values. Same three dots, opposite
+directions — the context decides which one you are writing.</p>
+
+<p>The killer use case is in the first lines: <code>Math.max</code>
+accepts numbers, not arrays, so <code>Math.max([3, 1, 4])</code> is
+useless, but <code>Math.max(...nums)</code> becomes
+<code>Math.max(3, 1, 4)</code> and returns 4. Predict that before
+reading the comment — this one-liner is the most common spread
+pattern you will meet.</p>
+
+<p>The other three patterns appear everywhere in modern code.
+<code>[...nums]</code> copies an array — a new array you can sort or
+reverse without touching the original. <code>[...a, ...b]</code>
+merges arrays, and you can slip new elements in between.
+Spreading an object (<code>{ ...defaults, theme: "dark" }</code>)
+builds a new object from an old one with selected overrides — the
+standard pattern for "start from defaults, apply user settings".
+Watch the order: later properties win, so <code>theme</code> ends up
+"dark" while <code>lang</code> survives from the defaults.</p>
 
 <pre class="code">// spread in function calls
 const nums = [3, 1, 4];
@@ -240,9 +360,16 @@ const defaults = { theme: "light", lang: "en" };
 const user = { ...defaults, theme: "dark" };  // override theme
 // { theme: "dark", lang: "en" }</pre>
 
-<p>Spread creates <b>shallow</b> copies — nested objects are still
-shared references. For deep copies, use
-<code>structuredClone()</code>.</p>
+<p>Spread also works on strings: <code>[..."abc"]</code> gives
+<code>["a", "b", "c"]</code>, because strings are iterable — the
+try-it demonstrates.</p>
+
+<p><b>Gotcha — the big one:</b> spread makes a <b>shallow</b> copy.
+The top level is new, but nested objects are still <i>shared
+references</i>. In the try-it, copying <code>nested</code> and
+editing <code>copy.inner.val</code> changes the original too —
+predict that, then run it and watch. When you need a fully
+independent copy, use <code>structuredClone()</code>.</p>
 """,
                 "tryit": """const arr1 = [1, 2, 3];
 const arr2 = [4, 5, 6];
@@ -272,9 +399,14 @@ console.log(nested.inner.val);  // 99 — still shared!
             {
                 "title": "Scope & Closures",
                 "html": """
-<p><b>Scope</b> determines where variables are visible. JS has:
-<b>global</b> scope, <b>function</b> scope, and <b>block</b> scope
-(let/const):</p>
+<p>Where can a variable be seen from? That question is <b>scope</b>.
+JS has global scope (everywhere), function scope (inside a
+function), and block scope — the <code>{ }</code> territory that
+<code>let</code>/<code>const</code> respect. The lookup rule: when
+code reads a name, JS checks the innermost scope first, then walks
+outward. That is why <code>inner</code> in the first block can read
+<code>outerVar</code> and <code>global</code> — the search goes
+inside-out, never the other way. Code outside cannot see in.</p>
 
 <pre class="code">const global = "everywhere";
 
@@ -287,9 +419,16 @@ function outer() {
   inner();
 }</pre>
 
-<p>A <b>closure</b> is a function that remembers the variables from
-where it was created, even after that scope has exited. It's one of
-JS's most powerful features:</p>
+<p>Now the payoff of that machinery: a <b>closure</b>. When a function
+is created, it keeps a live link to the variables of the scope it
+was born in — even after that scope has finished running. The second
+block builds one: <code>makeCounter</code> declares
+<code>count</code>, then returns a small function that increments
+it. After <code>makeCounter()</code> finishes, <code>count</code>
+should be gone... but it is not. The returned function holds the
+link, so <code>counter()</code> prints 1, 2, 3 across separate
+calls. Calling <code>makeCounter()</code> again builds a
+<i>fresh</i> count, so <code>counter2()</code> starts at 1.</p>
 
 <pre class="code">function makeCounter() {
   let count = 0;              // private variable!
@@ -307,10 +446,19 @@ console.log(counter());   // 3 — count persists!
 const counter2 = makeCounter();
 console.log(counter2());  // 1 — independent counter!</pre>
 
-<p>Closures enable <b>data privacy</b> (count is invisible from
-outside), <b>factories</b> (makeCounter creates independent
-instances), and <b>partial application</b>. Every callback that
-references outer variables is using a closure.</p>
+<p>Read those consequences carefully: <code>count</code> is
+effectively <b>private</b> — nothing outside can touch it except
+through the returned function. This is how JS does data privacy and
+factory functions, and it is why every callback that mentions an
+outer variable works at all. The try-it builds a wallet whose
+<code>balance</code> cannot be reached except through deposit and
+withdraw.</p>
+
+<p><b>Gotcha:</b> a closure captures the <i>variable</i>, not a
+snapshot of its value — if the variable changes later, the closure
+sees the new value. The <code>let</code>-in-a-loop example at the
+bottom of the try-it shows the one case where each iteration gets a
+fresh variable instead of a shared one.</p>
 """,
                 "tryit": """// Closure: a private counter
 function makeWallet(startingBalance) {
@@ -344,9 +492,29 @@ console.log(functions.map(f => f()));  // [0, 1, 2] — not [3, 3, 3]!
             {
                 "title": "Callbacks",
                 "html": """
-<p>A <b>callback</b> is a function passed as an argument to another
-function, to be called later. Callbacks are the foundation of
-event handling, array methods, and async code:</p>
+<p>How does code react to things it cannot predict — a click, a
+timer, data arriving from a server? It hands over a <b>callback</b>:
+a function passed as an argument to another function, to be called
+when the moment comes. This is the single most important pattern in
+browser JS — event handling, array methods and all async code are
+built on it.</p>
+
+<p>The block shows three flavors. Array methods call their callback
+once per element, synchronously: <code>nums.map(n =&gt; n * 2)</code>
+runs the arrow on each item and collects the results into
+<code>[2, 4, 6]</code>. <code>setTimeout</code> schedules its
+callback for about 1000 ms later and moves on immediately, which
+makes it asynchronous — the surrounding code does not wait. The
+third example is the pattern in its purest form: <code>process</code>
+accepts two callbacks and calls exactly one, depending on the data —
+the success path or the error path.</p>
+
+<p>Because functions are values (previous lesson), passing them costs
+nothing special — you are literally handing an object to another
+function. When the callee decides <i>when</i> and <i>how many
+times</i> to call back, you get flexible, decoupled code:
+<code>process</code> knows nothing about logging or retrying; its
+callers decide.</p>
 
 <pre class="code">// callback in array methods
 const nums = [1, 2, 3];
@@ -369,10 +537,13 @@ process({ msg: "hello" },
   (err) =&gt; console.log("error:", err)
 );</pre>
 
-<p>Callbacks can be <b>synchronous</b> (called immediately, like in
-map) or <b>asynchronous</b> (called later, like setTimeout). Nested
-callbacks for sequential async operations lead to
-<b>callback hell</b> — the problem Promises solve (Async chapter).</p>
+<p><b>Gotchas:</b> nesting callbacks for sequential async steps
+("get data, then use it to get more data...") piles indentation
+into what veterans call <b>callback hell</b> — hard to read and
+harder to error-handle; Promises and async/await are the cure,
+covered in the async chapter. And remember: an error thrown inside a
+timer's callback cannot be caught by a try/catch sitting outside the
+call — the error must be handled inside the callback itself.</p>
 """,
                 "tryit": """// callbacks with array methods
 const words = ["hello", "world", "js"];
@@ -454,8 +625,26 @@ divide(10, 2, (err, result) => {
             {
                 "title": "Arrays",
                 "html": """
-<p>Arrays are ordered, zero-indexed collections. They can hold any mix
-of types and grow dynamically:</p>
+<p>A shopping list, a set of open tabs, a player's inventory —
+programs are full of collections. The <b>array</b> is JS's core one:
+an ordered, zero-indexed list that can grow and shrink at runtime and
+hold any mix of types. If you learn one data structure well, make it
+this one.</p>
+
+<p>Indexing starts at 0, so in the block <code>fruits[0]</code> is
+"apple", and the <i>last</i> item sits at <code>length - 1</code> —
+an idiom worth memorizing. Predict each line's result as you read:
+length is 3, first is "apple", last is "cherry".</p>
+
+<p>The four workhorse methods add and remove at the ends:
+<code>push</code> appends to the end and returns the new length,
+<code>pop</code> removes from the end and returns the removed item,
+and <code>unshift</code>/<code>shift</code> do the same pair at the
+front. Then come the searchers: <code>indexOf</code> gives the
+position (or -1 if missing), <code>includes</code> gives a clean
+true/false. Note the last two lines: <code>slice(1, 3)</code> copies
+a section <i>without</i> touching the original, while
+<code>join(", ")</code> glues the array into a single string.</p>
 
 <pre class="code">const fruits = ["apple", "banana", "cherry"];
 
@@ -477,9 +666,15 @@ fruits.slice(1, 3)       // ["banana", "cherry"]
 // joining
 fruits.join(", ")        // "apple, banana, cherry"</pre>
 
-<p>Arrays are actually objects with numeric keys —
-<code>typeof fruits</code> returns <code>"object"</code>. Use
-<code>Array.isArray()</code> to check.</p>
+<p><b>Gotchas:</b> <code>fruits[10]</code> on a 3-item array is not
+an error — it is politely <code>undefined</code>, which then poisons
+whatever math you do next. And keep straight which methods mutate:
+<code>push</code>, <code>pop</code>, <code>shift</code>,
+<code>unshift</code> change the array; <code>slice</code>,
+<code>indexOf</code>, <code>includes</code>, <code>join</code> do
+not. When a method surprises you by changing your data, check this
+list first. (Also: <code>typeof []</code> says "object" — test for
+arrays with <code>Array.isArray()</code>.)</p>
 """,
                 "tryit": """const todo = ["learn JS", "build projects", "get a job"];
 
@@ -506,9 +701,29 @@ console.log("original:", todo);
             {
                 "title": "Array Methods",
                 "html": """
-<p>The three essential array methods — <code>map</code>,
-<code>filter</code>, <code>reduce</code> — transform data without
-mutating the original:</p>
+<p>Loop-plus-push is the beginner's reflex for transforming a list —
+it works, but it buries the intent under bookkeeping. The functional
+trio <code>map</code>, <code>filter</code>, <code>reduce</code>
+states the <i>intent</i> directly and never mutates the original.
+They are the most-used methods in modern JS, so this lesson is worth
+extra practice time.</p>
+
+<p>Read the block as three questions. <code>map</code> asks "what
+should each element become?" — it calls your arrow once per element
+and collects the returns into a <i>new</i> array:
+<code>[1,2,3,4,5]</code> becomes <code>[2,4,6,8,10]</code>.
+<code>filter</code> asks "which elements survive?" — it keeps those
+where the arrow returns true: the evens <code>[2, 4]</code>.
+<code>reduce</code> asks "what single value does the whole array boil
+down to?" — it carries an accumulator from element to element; here
+the accumulator starts at 0 and eats each number, ending at 15.</p>
+
+<p>The helpers cover the smaller questions: <code>find</code> returns
+the first matching element (4) or undefined; <code>some</code> is
+true if at least one element passes; <code>every</code> demands all
+of them. Then the trap: <code>sort()</code> <b>mutates</b> the
+original array — the spread copy <code>[...nums].sort(...)</code> in
+the block is the defensive idiom that avoids it.</p>
 
 <pre class="code">const nums = [1, 2, 3, 4, 5];
 
@@ -531,9 +746,17 @@ nums.every(n =&gt; n &gt; 0);      // true (all of them)
 // sort: MUTATES the original! Use [...arr].sort() to avoid
 const sorted = [...nums].sort((a, b) =&gt; b - a);  // descending</pre>
 
-<p><code>map</code>, <code>filter</code>, and <code>reduce</code> are
-the functional programming trio — they chain beautifully:
-<code>nums.filter(n =&gt; n &gt; 2).map(n =&gt; n * 10).reduce((a, b) =&gt; a + b)</code></p>
+<p>The superpower is chaining, because each method returns an array:
+<code>nums.filter(...).map(...).reduce(...)</code> reads like a
+pipeline of transformations. The try-it runs a realistic chain over
+product objects — filter to in-stock items, map to names, join into
+a printable string.</p>
+
+<p><b>Gotcha:</b> always pass the initial value to
+<code>reduce</code> — on an empty array, <code>reduce</code> without
+one throws. And a multi-line arrow body (with braces) needs an
+explicit <code>return</code>; forgetting it makes <code>map</code>
+silently produce an array of <code>undefined</code>s.</p>
 """,
                 "tryit": """const products = [
   { name: "Laptop", price: 999, inStock: true },
@@ -571,8 +794,23 @@ console.log("shopping list:", result);
             {
                 "title": "Destructuring",
                 "html": """
-<p><b>Destructuring</b> unpacks values from arrays and objects into
-distinct variables — cleaner than manual assignment:</p>
+<p>Objects and arrays bundle values together — but half your code
+exists to un-bundle them into single variables. <b>Destructuring</b>
+is the syntax for that: it pulls values out of arrays and objects
+straight into variables in one line, replacing three or four lines
+of <code>const x = obj.x</code> bookkeeping.</p>
+
+<p>Array destructuring matches by position: <code>const [first,
+second] = [1, 2, 3]</code> gives first=1 and second=2, ignoring the
+rest. The extras are what make it shine: an empty slot skips a
+position, <code>= default</code> covers missing values, and the swap
+trick <code>[x, y] = [y, x]</code> exchanges two variables with no
+temporary. Object destructuring matches by <i>name</i>:
+<code>const { name, age } = user</code> grabs the properties with
+those exact keys. Renaming is <code>{ name: fullName }</code> — read
+it as "extract name, call it fullName". Nesting works to any depth:
+the last line of the block pulls <code>host</code> and
+<code>port</code> out of the inner <code>db</code> object.</p>
 
 <pre class="code">// array destructuring
 const [first, second] = [1, 2, 3];
@@ -599,13 +837,24 @@ const { name: fullName } = user; // fullName="Ada"
 const config = { db: { host: "localhost", port: 5432 } };
 const { db: { host, port } } = config;</pre>
 
-<p>Destructuring also works in function parameters — the pattern for
-options objects:</p>
+<p>The second block shows the pattern you will meet in every modern
+library: destructuring in the parameter list. <code>connect({
+port: 8080 })</code> — the signature documents exactly which options
+the function wants, and each can carry its own default. Callers
+pass a plain options object; predict the printed result
+("localhost:8080") before running.</p>
 
 <pre class="code">function connect({ host = "localhost", port = 3000 }) {
   console.log(`${host}:${port}`);
 }
 connect({ port: 8080 });   // "localhost:8080"</pre>
+
+<p><b>Gotchas:</b> destructuring <code>null</code> or
+<code>undefined</code> throws — guard a possibly-missing object with
+<code>const { name } = maybeUser || {}</code>. And read the array
+syntax carefully: in <code>const [, third]</code> the bare comma is
+the skipped slot — it looks strange until you parse it as "skip one,
+take the next".</p>
 """,
                 "tryit": """// Array destructuring
 const rgb = [255, 128, 0];
@@ -632,8 +881,28 @@ printUser({ name: "Admin", role: "admin", email: "admin@x.io" });
             {
                 "title": "Objects, Properties & Methods",
                 "html": """
-<p>Objects are key-value collections — the fundamental data structure
-of JS. Almost everything is an object:</p>
+<p>Arrays are for ordered lists; <b>objects</b> are for things with
+named attributes: a user with a name and age, a book with a title
+and author. An object is a set of key–value pairs — the fundamental
+structure of JS, and the shape of almost every piece of data the web
+sends you.</p>
+
+<p>Walk the block. Properties are written <code>key: value</code>
+inside <code>{ }</code>; a function stored as a property is a
+<b>method</b>, and the shorthand <code>greet() { ... }</code> is how
+you will usually write them. Notice <code>"has-pets": true</code> —
+keys that are not valid identifiers need quotes, and reading them
+needs brackets. That is the general access rule: dot for normal keys
+(<code>user.name</code>), brackets when the key sits in a variable
+or contains odd characters (<code>user[key]</code>,
+<code>user["has-pets"]</code>).</p>
+
+<p>Objects stay open for business after creation: the block adds
+<code>email</code> with plain assignment, updates <code>age</code>,
+and deletes <code>email</code> with <code>delete</code>. Existence
+checks come in two flavors — <code>"name" in user</code> tests any
+key, and <code>user.email?.length</code> reads a property that might
+be gone without crashing.</p>
 
 <pre class="code">const user = {
   name: "Ada",              // property
@@ -659,10 +928,18 @@ delete user.email;         // remove
 user.hasOwnProperty("age") // true
 user.email?.length         // undefined (already deleted)</pre>
 
-<p><code>this</code> inside a method refers to the object the method is
-called on — that's how <code>this.name</code> works above. The value of
-<code>this</code> depends on HOW the function is called, not where it's
-defined (the Advanced chapter covers this deeply).</p>
+<p>Then <code>this</code>: inside a method, it refers to the object
+the method was called on — <code>this.name</code> in
+<code>greet</code> is whatever object stood before the dot. That
+single rule makes one method definition work for many objects, and
+it is the foundation constructor functions and classes build on
+later.</p>
+
+<p><b>Gotcha:</b> reading a missing property is harmless —
+<code>user.email</code> is just <code>undefined</code> — but chaining
+off it crashes: <code>user.email.length</code> throws a TypeError.
+This is exactly the problem optional chaining (next lesson)
+fixes.</p>
 """,
                 "tryit": """const book = {
   title: "Eloquent JavaScript",
@@ -698,11 +975,20 @@ console.log("values:", Object.values(book));
             {
                 "title": "Optional Chaining & Nullish Coalescing",
                 "html": """
-<p>Two modern operators that make null-safety elegant instead of
-messy.</p>
+<p>Real-world data is full of holes: a user has no profile, a profile
+has no social links. Two modern operators — both from 2020 — turn
+the resulting pyramid of null-checks into one clean line, and you
+should reach for them daily.</p>
 
-<p><b><code>?.</code> (optional chaining)</b> — safely access nested
-properties without checking each level:</p>
+<p>Optional chaining <code>?.</code> short-circuits a property chain
+the moment something is null/undefined, yielding
+<code>undefined</code> instead of throwing. The old way checks every
+level by hand (<code>user &amp;&amp; user.profile &amp;&amp;
+user.profile.email</code>); the new way is
+<code>user?.profile?.email</code>. It also works for methods
+(<code>data?.find?.(...)</code>) and indexes (<code>list?.[0]</code>)
+— see the end of the block. Predict what the "after" line prints
+when <code>user</code> is null: undefined, no crash.</p>
 
 <pre class="code">// before: the pyramid of doom
 if (user &amp;&amp; user.profile &amp;&amp; user.profile.email) {
@@ -716,8 +1002,14 @@ console.log(user?.profile?.email);   // undefined, no crash!
 const result = data?.find?.(x =&gt; x.id === 1);
 const first = list?.[0];</pre>
 
-<p><b><code>??</code> (nullish coalescing)</b> — default value for
-null/undefined only (not 0 or ""):</p>
+<p>Nullish coalescing <code>??</code> supplies a default <i>only</i>
+for null/undefined. That precision is the whole point: in the second
+block, <code>volume</code> is 0 — a real, meaningful value.
+<code>volume || 50</code> wrongly replaces it with 50 because 0 is
+falsy; <code>volume ?? 50</code> correctly keeps 0. When a
+legitimate value can be 0, <code>""</code> or <code>false</code>,
+choosing <code>??</code> is not a style preference — it is the
+difference between right and wrong.</p>
 
 <pre class="code">const volume = 0;
 volume || 50    // 50 (0 is falsy — WRONG!)
@@ -726,9 +1018,17 @@ volume ?? 50    // 0  (0 is not nullish — correct!)
 const name = null;
 name ?? "Anonymous"   // "Anonymous"</pre>
 
-<p>They chain: <code>user?.settings?.volume ?? 50</code> — safe access
-with a sensible default. These two operators eliminate most null-check
-boilerplate.</p>
+<p>They compose: <code>user?.settings?.volume ?? 50</code> reads as
+"get the volume if the whole path exists, otherwise 50". The try-it
+loops over users with differently-shaped profiles — watch each line
+degrade gracefully from a real value down to the default.</p>
+
+<p><b>Gotcha:</b> <code>?.</code> does not guard the <i>final</i>
+property — in <code>user.profile?.email</code>, a null
+<code>user</code> still throws; every link in the chain needs its own
+<code>?.</code>. And do not blanket-replace every <code>||</code>
+with <code>??</code> mechanically — sometimes "treat 0 as missing"
+really is what you want. Choose per case, and know why.</p>
 """,
                 "tryit": """const users = [
   { name: "Ada", profile: { bio: "Programmer", social: { twitter: "@ada" } } },
@@ -805,9 +1105,20 @@ console.log(volume ?? 50);   // 0 (0 is not nullish — right!)
             {
                 "title": "this",
                 "html": """
-<p><code>this</code> is one of JS's most confusing features. Its value
-depends on <b>how</b> a function is called, not where it's
-defined:</p>
+<p><code>this</code> is the JS concept that generates the most
+confusion — and the confusion evaporates once you learn the one
+rule: <b>this is decided by how a function is called, not where it
+is written</b>. It is a runtime question ("who invoked me?"), not a
+property of the code's location.</p>
+
+<p>Walk the first block. <code>user.greet()</code> calls the function
+<i>as a method</i>, with <code>user</code> before the dot, so
+<code>this</code> is <code>user</code> and the log prints "Hi, Ada".
+The next two lines copy that same function into a variable and call
+it bare. Now nothing stands before the dot, so <code>this</code> is
+undefined in strict mode — "Hi, undefined". Same function, different
+call, different this. Predict both outputs before reading the
+comments.</p>
 
 <pre class="code">const user = {
   name: "Ada",
@@ -819,16 +1130,19 @@ user.greet();        // "Hi, Ada" — this = user
 const greeting = user.greet;
 greeting();          // "Hi, undefined" — this = global/undefined</pre>
 
-<ul>
-<li><b>Method call</b> (<code>obj.fn()</code>) — <code>this</code> = the
-object before the dot</li>
-<li><b>Standalone call</b> (<code>fn()</code>) — <code>this</code> =
-undefined (strict) or global</li>
-<li><b>Arrow function</b> — <code>this</code> = inherited from the
-enclosing scope (no own <code>this</code>)</li>
-<li><b>new</b> — <code>this</code> = the newly created object</li>
-<li><b>call/apply/bind</b> — explicitly set <code>this</code></li>
-</ul>
+<p>The full call-site checklist: method call <code>obj.fn()</code> →
+this is obj. Standalone <code>fn()</code> → undefined (strict) or
+the global object. <code>new</code> → the freshly created object.
+<code>call/apply/bind</code> → whatever you pass explicitly. And
+arrow functions: no own <code>this</code> at all — they inherit the
+enclosing one, which is often exactly what you want.</p>
+
+<p>The second block fixes the classic bug: a regular function used as
+a callback gets its own useless <code>this</code>; an arrow inherits
+the method's. In the timer, <code>setInterval(() =&gt; {...})</code>
+— the arrow means <code>this.seconds</code> still points at
+<code>timer</code>. Swap the arrow for <code>function() {...}</code>
+and the code breaks.</p>
 
 <pre class="code">// arrow functions inherit this — perfect for callbacks
 const timer = {
@@ -840,6 +1154,12 @@ const timer = {
     }, 1000);
   },
 };</pre>
+
+<p><b>Gotcha:</b> extracting a method into a variable
+(<code>const g = user.greet; g();</code>) silently disconnects it
+from its object — this sits behind most "works alone, fails in a
+callback" stories. Use an arrow, or reattach the object with
+<code>bind</code>.</p>
 """,
                 "tryit": """const team = {
   name: "Web Dev",
@@ -876,9 +1196,25 @@ console.log(introduce.bind(person)("Paris"));
             {
                 "title": "Prototypes & Prototype Chain",
                 "html": """
-<p>JavaScript uses <b>prototypes</b> for inheritance — every object has
-a hidden link to a prototype object. When you access a property that
-doesn't exist on the object, JS looks up the <b>prototype chain</b>:</p>
+<p>Where do methods really live? When you call <code>array.map()</code>,
+your array has no <code>map</code> inside it — so how does it work?
+The answer is <b>prototypes</b>, JS's inheritance mechanism: every
+object has a hidden link to a prototype object, and property lookups
+climb that link whenever the property is not found directly.</p>
+
+<p>The block builds a chain by hand. <code>Object.create(animal)</code>
+makes a new object whose prototype is <code>animal</code>, then
+<code>dog.bark</code> is added as an <i>own</i> property. Now walk
+the lookup for <code>dog.eat()</code>: check <code>dog</code> itself
+— no <code>eat</code>; follow the hidden link to <code>animal</code>
+— found, call it. For <code>dog.bark()</code> the very first check
+succeeds. That is the entire mechanism: own first, then prototype,
+then the prototype's prototype, until <code>null</code> ends the
+chain: <code>dog → animal → Object.prototype → null</code>.</p>
+
+<p>Predict before reading the comments: both calls succeed — "woof!"
+from the object itself, "eating..." inherited from the
+prototype.</p>
 
 <pre class="code">const animal = {
   eat() { return "eating..."; },
@@ -892,16 +1228,20 @@ dog.eat();    // "eating..." — found on prototype!
 
 // the chain: dog → animal → Object.prototype → null</pre>
 
-<p>When you call <code>dog.eat()</code>:</p>
-<ol>
-<li>Is <code>eat</code> on <code>dog</code> itself? No</li>
-<li>Is it on <code>dog</code>'s prototype (<code>animal</code>)? Yes! Call it</li>
-</ol>
+<p>This explains the standard library too: <code>map</code>,
+<code>filter</code> and <code>push</code> live on
+<code>Array.prototype</code>, and every array links to it — one copy
+of each method shared by millions of arrays, not millions of
+copies. Strings, numbers and plain objects work the same way, which
+is why <code>"abc".toUpperCase()</code> needs no import and no
+setup.</p>
 
-<p>Built-in methods like <code>array.map()</code> work this way — they
-live on <code>Array.prototype</code>, and every array inherits from
-it. That's why you can call <code>map</code> on any array without
-defining it.</p>
+<p><b>Gotcha:</b> mutating built-in prototypes
+(<code>Array.prototype.foo = ...</code>) technically works and is
+widely considered harmful — your "feature" silently leaks into every
+script on the page. Read the chain with
+<code>Object.getPrototypeOf()</code>, do not rewrite it; for shared
+behavior, classes (two lessons ahead) are the supported tool.</p>
 """,
                 "tryit": """const vehicle = {
   start() { return "starting engine..."; },
@@ -930,9 +1270,29 @@ console.log(car.start());   // "vroom!" — prototype was modified!
             {
                 "title": "Constructor Functions",
                 "html": """
-<p>Before classes existed, <b>constructor functions</b> were how you
-created multiple objects with shared behaviour. They're still used in
-older code and explain what classes do under the hood:</p>
+<p>Before ES6 classes existed, the way to stamp out many objects with
+shared behavior was the <b>constructor function</b> — a normal
+function called with <code>new</code>. You will still meet them in
+older codebases and tutorials, and they show exactly what classes do
+under the hood, which is why this lesson exists.</p>
+
+<p>Read the block with the <code>new</code> mechanics in mind — it
+performs four steps: create an empty object, link its prototype to
+<code>Person.prototype</code>, call the function with
+<code>this</code> set to that object, and return it. So
+<code>this.name = name</code> inside the function writes onto the
+fresh object, and <code>new Person("Ada", 36)</code> hands it back.
+Both <code>ada</code> and <code>grace</code> get their own
+name/age copies.</p>
+
+<p>Now the crucial design detail: methods go on
+<code>Person.prototype</code>, not inside the function. Why? Predict
+what <code>ada.greet === grace.greet</code> prints — it is
+<code>true</code>. Both instances share the <i>one</i> function via
+the prototype chain from the previous lesson. If instead you wrote
+<code>this.greet = function() {...}</code> inside the constructor,
+every person would carry a separate copy — slower and
+memory-hungrier for no benefit.</p>
 
 <pre class="code">function Person(name, age) {
   // 'new' creates {} and sets 'this' to it
@@ -954,13 +1314,16 @@ console.log(ada instanceof Person);  // true
 // shared method — both instances use the SAME function
 console.log(ada.greet === grace.greet);  // true (on prototype!)</pre>
 
-<p>The <code>new</code> keyword does 4 things:</p>
-<ol>
-<li>Creates an empty object <code>{}</code></li>
-<li>Sets its prototype to <code>Person.prototype</code></li>
-<li>Calls the function with <code>this</code> = the new object</li>
-<li>Returns the object (unless the function returns its own object)</li>
-</ol>
+<p><code>instanceof</code> answers "was this object built by
+Person?" — true for <code>ada</code>. And the naming convention —
+constructor functions start with a capital letter — exists purely to
+remind you to call them with <code>new</code>.</p>
+
+<p><b>Gotcha:</b> calling a constructor <i>without</i>
+<code>new</code> does not fail loudly: <code>this</code> becomes the
+global object and the properties leak onto it — a nasty legacy bug.
+Modern classes (next lesson) throw in that situation, which is one
+more reason to prefer them.</p>
 """,
                 "tryit": """function Animal(name, sound) {
   this.name = name;
@@ -995,8 +1358,25 @@ console.log(cat.describe());
             {
                 "title": "Classes",
                 "html": """
-<p><b>Classes</b> (ES6/ES2015) are syntactic sugar over constructor
-functions + prototypes — but cleaner and less error-prone:</p>
+<p>The constructor-plus-prototype dance works, but it scatters one
+object's definition across several places and lets you forget
+<code>new</code>. <b>Classes</b> (ES6, 2015) gather everything into
+one clean block — they are syntactic sugar over the same prototypes,
+but the sugar prevents real bugs.</p>
+
+<p>Walk the block. <code>constructor(name, sound)</code> runs
+automatically on <code>new</code> — it is the same "set up this"
+step as before, now labeled. Methods like <code>speak()</code> are
+written directly in the class body; behind the scenes they still
+land on <code>Animal.prototype</code>, shared by all instances. The
+<code>static</code> keyword is new: <code>compare</code> belongs to
+the class itself, called as <code>Animal.compare(a, b)</code>, not
+on instances — useful for utilities that need no specific
+object.</p>
+
+<p>Predict the two console lines before running: "Whiskers says
+meow", then the result of comparing two names with
+localeCompare.</p>
 
 <pre class="code">class Animal {
   constructor(name, sound) {
@@ -1017,13 +1397,20 @@ const cat = new Animal("Whiskers", "meow");
 console.log(cat.speak());
 console.log(Animal.compare(cat, new Animal("Rex", "woof")));</pre>
 
-<p>Everything a constructor function does, a class does — but with
-enforced <code>new</code> (calling without <code>new</code> throws),
-cleaner method syntax, and support for <code>extends</code>,
-<code>super</code>, <code>static</code>, and private fields.</p>
+<p>What the syntax buys you: calling a class without
+<code>new</code> is now a hard error (old constructors silently
+corrupted global state); the method syntax is terser; and the door
+opens to <code>extends</code>, <code>super</code>, static members
+and <code>#private</code> fields — the next lessons. The try-it
+builds a bank account with a private <code>#balance</code> and
+shows <code>return this</code> enabling chaining:
+<code>acct1.deposit(50).withdraw(30)</code>.</p>
 
-<p>Under the hood, it's still prototypes. <code>class</code> is
-syntactic sugar — but it's very good sugar.</p>
+<p><b>Gotcha:</b> class declarations are <i>not</i> hoisted the way
+function declarations are — using a class before its definition line
+throws a ReferenceError. Also, everything inside a class body is
+automatically strict mode, which can surface errors that sloppy-mode
+code never showed.</p>
 """,
                 "tryit": """class BankAccount {
   #balance = 0;         // private field (next lesson covers this deeply)
@@ -1065,8 +1452,30 @@ BankAccount.printAll(acct1, acct2);
             {
                 "title": "Inheritance",
                 "html": """
-<p><b>Inheritance</b> lets a class build on another class using
-<code>extends</code> and <code>super</code>:</p>
+<p>Copy-pasting methods across similar classes — Dog and Cat both
+needing <code>eat()</code>, Circle and Rectangle both needing
+<code>describe()</code> — is where <b>inheritance</b> comes in. A
+child class <code>extends</code> a parent: it inherits all methods
+for free, then adds or overrides only what makes it different. That
+is how class hierarchies stay small and readable.</p>
+
+<p>Walk the block. <code>class Dog extends Animal</code> means every
+Dog instance can call <code>eat()</code> and <code>describe()</code>
+with zero re-declaration. Inside Dog's constructor,
+<code>super(name)</code> calls the parent's constructor to set up
+<code>this.name</code> — and it is <b>required</b>: in a subclass
+constructor you must call <code>super()</code> before touching
+<code>this</code>, or JS throws a ReferenceError. The logic is
+fair: the parent initializes the shared part before the child adds
+its own (<code>breed</code>).</p>
+
+<p>Overriding is the second half of the story: Dog defines its own
+<code>describe()</code>, replacing Animal's version. But look inside
+— <code>super.describe()</code> calls the <i>parent's</i> version
+and extends its result. That "extend, don't duplicate" pattern is
+the idiomatic override. Predict the output of
+<code>dog.describe()</code>: "Rex is an animal — specifically a
+Golden Retriever".</p>
 
 <pre class="code">class Animal {
   constructor(name) {
@@ -1099,11 +1508,16 @@ dog.eat();        // inherited from Animal
 dog.speak();      // own method
 dog.describe();   // overridden — uses super.describe()</pre>
 
-<p><code>super()</code> must be called before using <code>this</code>
-in the constructor. <code>super.method()</code> calls the parent's
-version. The <b>prototype chain</b> is set up automatically:
-<code>dog</code> → <code>Dog.prototype</code> →
-<code>Animal.prototype</code> → <code>Object.prototype</code>.</p>
+<p>Under the hood this is the prototype chain again, now built for
+you: <code>dog → Dog.prototype → Animal.prototype →
+Object.prototype</code>. Method lookup walks it exactly as the
+earlier prototype lesson described.</p>
+
+<p><b>Gotchas:</b> forgetting <code>super()</code> in a child
+constructor is the number-one inheritance error — the error message
+mentions "super" explicitly, so read it. And keep hierarchies
+shallow: three levels are usually fine, five usually means the
+design wants composition instead of inheritance.</p>
 """,
                 "tryit": """class Shape {
   constructor(color = "black") {
@@ -1146,9 +1560,27 @@ shapes.forEach(s => console.log(s.describe()));
             {
                 "title": "Getters, Setters & Private Fields",
                 "html": """
-<p><b>Getters</b> and <b>setters</b> look like properties but run code.
-<b>Private fields</b> (prefixed with <code>#</code>) are truly
-invisible from outside the class:</p>
+<p>Two upgrades make classes feel like well-designed data types
+instead of bags of fields. <b>Getters and setters</b> let a property
+run code on access — so <code>temp.fahrenheit</code> can be computed
+on the fly, and every assignment can be validated. <b>Private
+fields</b> (the <code>#</code> prefix) make internal state genuinely
+invisible, so nobody can bypass your validation.</p>
+
+<p>Walk the block. <code>#celsius</code> is the real storage — note
+that the <code>#</code> appears everywhere the field is used; it is
+part of the name, not decoration. The getter <code>get
+celsius()</code> runs whenever you read <code>temp.celsius</code>;
+the setter <code>set celsius(value)</code> runs whenever you
+<i>assign</i> to it — and it validates, throwing below absolute
+zero. Assignment syntax triggering validation is the whole point:
+callers write plain property code while the object stays in charge.
+<code>fahrenheit</code> is a <i>computed</i> pair: reading it
+converts, writing it converts back — no storage needed.</p>
+
+<p>Predict the output of <code>temp.celsius = 25;
+console.log(temp.fahrenheit)</code>: the setter stores 25, the
+getter computes 25 × 9 / 5 + 32 = 77.</p>
 
 <pre class="code">class Temperature {
   #celsius = 0;              // private — invisible outside!
@@ -1178,10 +1610,19 @@ temp.celsius = 25;           // calls the setter
 console.log(temp.fahrenheit); // 77 — computed getter
 // temp.#celsius              // SyntaxError — truly private!</pre>
 
-<p>Private fields with <code>#</code> are enforced by the language —
-unlike the old underscore convention (<code>_private</code>) which was
-just a naming hint. They can't be accessed, enumerated, or seen in
-JSON.</p>
+<p>The <code>#</code> fields are enforced by the language itself:
+<code>temp.#celsius</code> from outside is a SyntaxError — not a
+convention like the old underscore <code>_private</code>, which any
+code could ignore. Private fields also vanish from
+<code>JSON.stringify</code> and <code>for...in</code>, keeping
+internals out of serialized data. The try-it's store exposes its
+access log through a getter that returns a <i>copy</i> — read-only
+by design.</p>
+
+<p><b>Gotcha:</b> a setter that throws turns <code>obj.x = bad</code>
+from "silently accepted" into "crash at the assignment line" — that
+is the feature, but it means every call site can now throw. Validate
+deliberately, and document what the property accepts.</p>
 """,
                 "tryit": """class SecureStore {
   #data = new Map();
@@ -1220,8 +1661,20 @@ console.log(store.log);          // ["SET name", "SET role", "GET name"]
             {
                 "title": "Static Members & Symbols",
                 "html": """
-<p><b>Static members</b> belong to the class itself, not to instances
-— they're utility methods and properties:</p>
+<p>Not everything belongs to an instance. Conversion helpers, shared
+constants, counters — these belong to the <b>class itself</b>.
+<code>static</code> members are accessed on the class
+(<code>MathHelper.clamp(...)</code>), never through instances, and
+inside a static method <code>this</code> is the class, not an
+object. You have already used statics on the built-ins:
+<code>Array.from()</code>, <code>Object.keys()</code> and
+<code>Number.isInteger()</code> all work this way.</p>
+
+<p>Walk the first block: a static constant <code>PI</code>, a static
+method that reads it via <code>this.PI</code>, and a pure utility
+<code>clamp</code>. Predict the three outputs before reading the
+comments: 3.14159, then 12.57 (the area of a circle with radius 2),
+then 10 (15 clamped to the maximum).</p>
 
 <pre class="code">class MathHelper {
   static PI = 3.14159;         // static property
@@ -1242,8 +1695,16 @@ console.log(MathHelper.clamp(15, 0, 10)); // 10
 
 // const m = new MathHelper();  // not useful — no constructor</pre>
 
-<p><b>Symbols</b> create unique identifiers that never collide — even
-two symbols with the same description are different:</p>
+<p><b>Symbols</b> solve a different problem: unique keys. Every
+<code>Symbol("id")</code> call creates a brand-new value — two
+symbols with identical descriptions are still different (the block
+proves it: <code>id1 === id2</code> is false). Used as object keys,
+symbol properties are <i>hidden</i> from <code>for...in</code>,
+<code>Object.keys()</code> and <code>JSON.stringify</code> — see the
+second block, where <code>user</code> prints only "name" while
+<code>user[id1]</code> still works. That makes symbols the tool for
+attaching metadata that must not collide with, or leak into, normal
+data.</p>
 
 <pre class="code">const id1 = Symbol("id");
 const id2 = Symbol("id");
@@ -1258,14 +1719,20 @@ console.log(user[id1]);      // 12345
 console.log(Object.keys(user)); // ["name"] — symbol is invisible!
 console.log(JSON.stringify(user)); // {"name":"Ada"}</pre>
 
-<p>Symbols are used for metaprogramming
-(<code>Symbol.iterator</code>, <code>Symbol.toStringTag</code>) and
-adding "hidden" properties to objects that won't interfere with other
-code.</p>
+<p>You have already met the metaprogramming side: well-known symbols
+like <code>Symbol.iterator</code> tell the language how your objects
+behave — the generators lesson closes that loop with a custom
+iterable in its try-it.</p>
+
+<p><b>Gotcha:</b> symbols are <i>not</i> private fields — anyone
+holding the symbol can read the property. When you need true
+encapsulation, use <code>#fields</code>; reach for symbols when the
+goal is uniqueness and non-collision.</p>
 """,
                 "tryit": """class Vector {
+  static #instanceCount = 0;      // must be declared BEFORE ZERO below —
+                                  // static fields initialize in text order
   static ZERO = new Vector(0, 0);
-  static #instanceCount = 0;
 
   constructor(x, y) {
     this.x = x;
@@ -1303,10 +1770,24 @@ console.log(Object.keys(obj));   // ["name"] — symbol invisible!
             {
                 "title": "Iterators & Generators",
                 "html": """
-<p><b>Iterators</b> are objects with a <code>next()</code> method that
-returns <code>{ value, done }</code>. <b>Generators</b>
-(<code>function*</code>) create iterators with the <code>yield</code>
-keyword — they can pause and resume:</p>
+<p>Why does <code>for...of</code> work on arrays and strings? Because
+they implement a protocol: the object exposes a method (keyed by
+<code>Symbol.iterator</code>) that returns an <b>iterator</b> — an
+object whose <code>next()</code> hands back <code>{ value, done
+}</code>, one step at a time. Writing that by hand is tedious, so JS
+added <b>generators</b>: functions declared with
+<code>function*</code> that build iterators using <code>yield</code>
+to pause and resume.</p>
+
+<p>Walk the block. Calling <code>countdown(3)</code> does not run the
+body — it returns a paused iterator. Each <code>.next()</code> runs
+the body until the next <code>yield</code>, returns that value with
+<code>done: false</code>, and freezes everything until the next
+call. Predict the four outputs before reading the comments: 3, 2,
+1, then <code>{ value: undefined, done: true }</code> when the body
+finishes. The <code>for...of</code> lines show that the loop is just
+<code>next()</code> behind the scenes — it stops at
+<code>done: true</code>.</p>
 
 <pre class="code">// generator: lazy, pausable sequence
 function* countdown(from) {
@@ -1342,10 +1823,21 @@ console.log(fib.next().value);  // 1
 console.log(fib.next().value);  // 1
 console.log(fib.next().value);  // 2</pre>
 
-<p>Generators are memory-efficient (lazy evaluation), can represent
-infinite sequences, and enable custom iteration protocols. Any object
-with a <code>[Symbol.iterator]</code> method is iterable and works with
-<code>for...of</code>, spread, and destructuring.</p>
+<p>The second generator, <code>fibonacci()</code>, shows why this
+matters: it is an <i>infinite</i> sequence, and that is fine —
+generators are lazy, computing one value only when asked. No array
+of a million numbers is ever built. Pull a few <code>next()</code>s
+and you get 0, 1, 1, 2.</p>
+
+<p>Where you will actually use this: paginating a long list without
+slicing it all at once (the try-it's <code>pageGenerator</code>),
+custom iterables via <code>*[Symbol.iterator]()</code>, and — in the
+async chapter — async generators for streams of data.</p>
+
+<p><b>Gotcha:</b> generators are one-shot — a finished iterator
+cannot be restarted; call the generator function again for a fresh
+run. And <code>yield</code> is illegal in regular functions and in
+arrow functions: the star and the pause are a package deal.</p>
 """,
                 "tryit": """// generator for paginated data
 function* pageGenerator(items, pageSize) {

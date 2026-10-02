@@ -18,13 +18,21 @@ CHAPTERS_C = [
                 "title": "The python command",
                 "html": """
 <p>Every Python session starts the same way: you run the
-<code>python</code> command. What it does next depends on what you
-give it:</p>
+<code>python</code> command. It is one program wearing four hats &mdash;
+run a file, run a string, run a module, or just talk to you. What it does
+next depends on what you give it:</p>
 
 <pre class="code">python hello.py             # run a script file
 python -c "print(2 + 2)"    # run a short command
 python -m http.server       # run a module as a script
 python                      # drop into the interactive shell</pre>
+
+<p>Walk through it: the first line is the everyday case &mdash; execute
+<code>hello.py</code> top to bottom. <code>-c</code> takes the next quoted
+string and runs it immediately, answering <code>4</code>. <code>-m</code>
+is the sleeper hit: it locates a module through the normal import
+machinery and runs it as the main program &mdash; hundreds of built-in
+tools work exactly this way.</p>
 
 [[diag:invoke_flow]]
 
@@ -43,12 +51,20 @@ is handy for piping.</p>
 <pre class="code">import sys
 print(sys.argv)
 # python hello.py one two   →   ['hello.py', 'one', 'two']</pre>
+
+<p>Run that file as <code>python hello.py one two</code> and it prints
+<code>['hello.py', 'one', 'two']</code> &mdash; the file name first, then
+the user's words, all as strings. Gotcha: <code>-m</code> takes the
+module's dotted name <em>without</em> the <code>.py</code> &mdash; write
+<code>python -m http.server</code>, never
+<code>python -m http.server.py</code>.</p>
 """,
             },
             {
                 "title": "Options and environment variables",
                 "html": """
-<p>The interpreter understands a set of command-line options. The most
+<p>The interpreter understands a set of command-line options. You won't
+memorize them; you'll learn the handful that come up every week. The most
 useful ones to know early:</p>
 
 <pre class="code">python -V             # print the version and exit
@@ -58,6 +74,16 @@ python -O script.py   # strip assert statements
 python -u script.py   # unbuffered output (logs appear at once)
 python -E script.py   # ignore all PYTHON* environment variables
 python -W error       # turn warnings into errors</pre>
+
+<p>Walk through them: <code>-V</code> answers "which Python am I talking
+to?" &mdash; always check it before debugging anything version-related.
+<code>-i</code> drops you into the shell after your script ends or
+crashes, with its variables still alive &mdash; a superb debugging trick.
+<code>-O</code> strips <code>assert</code> statements for optimized runs.
+<code>-u</code> makes output appear immediately, vital when it goes
+through a pipe or a log file. <code>-E</code> ignores PYTHON* variables,
+useful when one of them is causing weird behavior. <code>-W error</code>
+upgrades warnings to errors so each one comes with a traceback.</p>
 
 <p>Environment variables configure Python before your code even
 starts. The big ones:</p>
@@ -77,6 +103,12 @@ variables. And since 3.13 you can control traceback colours directly:
 <code>PYTHON_COLORS=0</code> turns them off, <code>NO_COLOR</code>
 disables colour for all tools, <code>FORCE_COLOR</code> forces it
 on.</p>
+
+<p>Practical combo: set <code>PYTHONUTF8=1</code> on Windows to end
+encoding surprises for good, and use <code>-E</code> when a poisoned
+<code>PYTHONPATH</code> makes imports misbehave. Rule of thumb: options
+govern one run, environment variables govern every run on that
+machine.</p>
 """,
             },
         ],
@@ -138,6 +170,11 @@ three commands:</p>
 py          # manage and run several versions
 pymanager   # unambiguous version of py</pre>
 
+<p>Why three? <code>python</code> is the friendly front door: it launches
+whatever runtime you marked as default. <code>py</code> is the power tool
+for juggling versions. <code>pymanager</code> spells the same program out
+in full &mdash; same job, unambiguous name.</p>
+
 [[diag:py_launcher]]
 
 <p>Just type <code>python</code> and the current version runs; if
@@ -151,20 +188,37 @@ py list --online 3.14   # what can be installed
 py install 3.14         # add a runtime
 py uninstall 3.14       # remove one</pre>
 
+<p>Read the subcommands as a lifecycle: <code>list</code> shows what's
+installed, <code>list --online</code> shows what's available, and
+<code>install</code> / <code>uninstall</code> add and remove runtimes.
+<code>py -V:3.14</code> pins the exact version &mdash; crucial when a
+project needs 3.12 and your default is 3.14.</p>
+
 <p><code>pyw</code> and <code>pythonw</code> are windowless versions
 for GUI scripts. The install manager updates itself, and uninstalling
 it leaves your runtimes in place.</p>
+
+<p>Gotcha: older guides describe the Microsoft Store stub or manual PATH
+editing &mdash; with the install manager you skip all of that. If typing
+<code>python</code> still opens the Store, install the manager from
+python.org and it takes over the name.</p>
 """,
             },
             {
                 "title": "Virtual environments and shebangs",
                 "html": """
 <p>The recommended workflow on Windows (and everywhere else): one
-virtual environment per project.</p>
+virtual environment per project. Before running anything, make sure the
+project has its own:</p>
 
 <pre class="code">python -m venv myenv     # create the environment
 myenv\\Scripts\\Activate   # turn it on (Windows)
 pip install requests     # packages go into myenv only</pre>
+
+<p>Line by line: create <code>myenv</code>, activate it &mdash; note the
+Windows path goes through <code>Scripts</code> &mdash; then install. Every
+package lands inside <code>myenv</code>, never in your global
+Python.</p>
 
 [[diag:win_venv]]
 
@@ -181,6 +235,13 @@ portable between Windows and Unix:</p>
 
 <pre class="code">#! /usr/bin/env python3
 print("Hello from any platform!")</pre>
+
+<p>Why this matters: a file with that first line runs via
+<code>./script.py</code> on Unix, and by double-click or
+<code>py script.py</code> on Windows &mdash; each platform resolves its
+own interpreter. Rule of thumb: the venv handles dependencies, the
+shebang handles portability. Use both and the same file works
+everywhere.</p>
 """,
             },
         ],
@@ -250,6 +311,11 @@ preinstalled or one command away:</p>
 <pre class="code">sudo apt install python3        # Debian / Ubuntu
 sudo dnf install python3        # Fedora</pre>
 
+<p>One command, done &mdash; the package manager tracks updates and
+security fixes for you. Check what you got with
+<code>python3 --version</code>; distros sometimes lag a release or two
+behind python.org.</p>
+
 <p>To run a script by name without typing <code>python3</code> every
 time, make it executable and give it a shebang line that searches the
 PATH:</p>
@@ -257,6 +323,11 @@ PATH:</p>
 <pre class="code">chmod +x hello.py
 #! /usr/bin/env python3
 print("Hello, Unix!")</pre>
+
+<p><code>chmod +x</code> adds the execute permission; from then on
+<code>./hello.py</code> runs the file directly &mdash; the kernel reads
+the <code>#!</code> line and hands the file to the interpreter it finds
+in PATH.</p>
 
 [[diag:shebang_unix]]
 
@@ -272,18 +343,30 @@ your system's <code>python3</code>.</p>
 <p>Python ships with <b>IDLE</b> &mdash; the Integrated Development
 and Learning Environment &mdash; a simple editor with a built-in
 shell. It's perfect for your first programs: write, press F5, see the
-output.</p>
+output. It also colorizes code and highlights matching brackets, so it
+is already more than Notepad.</p>
 
 <p>As you grow, any serious editor works: VS Code, PyCharm, Sublime
 Text, Neovim... Good tools give you syntax highlighting, debugging,
 and PEP 8 checks, but remember &mdash; the interpreter is the same no
-matter what you type into.</p>
+matter what you type into. Choosing an editor is taste; learning
+Python is the actual work.</p>
 
 <pre class="code"># a 'hello' in any editor
 def greet(name):
     return f"Hello, {name}!"
 
 print(greet("world"))</pre>
+
+<p>Type this into any editor, save it as <code>hello.py</code>, run it
+&mdash; same result everywhere. What the editor changes is comfort, not
+correctness.</p>
+
+<p>Picking practically: VS Code with the Python extension is the safe
+default today &mdash; free, light, with an excellent debugger. PyCharm
+suits large projects out of the box. One tip every editor shares: set
+the project's virtual environment as its interpreter, so autocomplete,
+run and debugging all match what actually executes.</p>
 
 <p>One last trick from the tutorial's appendix: a startup file. Set
 <code>PYTHONSTARTUP</code> to a file of commands and they run

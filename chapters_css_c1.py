@@ -10,29 +10,47 @@ CHAPTERS_CSS_C = [
             {
                 "title": "display & Normal Flow",
                 "html": """
-<p>Without any CSS, pages already lay themselves out — that's <b>normal
-flow</b>: block boxes stack vertically, inline content flows
-horizontally, everything reads top-to-bottom. The
-<code>display</code> property is the switchboard that changes what kind
-of box each element is, and it's the first property to reach for in
-layout.</p>
+<p>Without any CSS at all, a page already lays itself out — headings on
+their own lines, paragraphs stacked below, links flowing inside
+sentences. That default arrangement is <b>normal flow</b>, and
+<code>display</code> is the property that changes what kind of box each
+element generates. It is the first property to reach for whenever a
+layout question appears.</p>
 
 <p>The two ancestors of everything:</p>
 
 <ul>
 <li><code>display: block</code> — a box that takes the <b>full width
 available</b> and stacks vertically: headings, paragraphs, divs</li>
-<li><code>display: inline</code> — a box that flows <b>inside text</b>:
-spans, links, strong. Width/height don't apply; margins only work
-horizontally</li>
+<li><code>display: inline</code> — a box that flows <b>inside text</b>,
+like a word in a sentence: spans, links, strong. Width/height don't
+apply; margins only work horizontally</li>
 </ul>
 
-<p>Everything else is a variation: <code>flex</code>,
-<code>grid</code>, <code>none</code> (remove entirely), plus
-<code>list-item</code>, <code>table</code>... The layout chapters turn
-<code>flex</code> and <code>grid</code> into whole disciplines — but the
+<p>Why care? Because most "why is this element behaving strangely"
+questions in week one are really "what kind of box is this?" A link
+refuses a width — it's inline. A div won't sit beside another div —
+both are block. Name the box type and the behaviour stops being
+mysterious. Everything else is a variation on the theme:
+<code>flex</code> and <code>grid</code> are whole layout systems (later
+chapters), <code>none</code> removes the box entirely — no space is
+kept, screen readers skip it too — and further values like
+<code>list-item</code> and <code>table</code> serve special cases. The
 flow underneath never leaves: block-in-flow, inline-in-text, on every
 page ever made.</p>
+
+<p>Compare the sibling property: <code>visibility: hidden</code> hides
+the element but <i>keeps its space</i> in the layout, while
+<code>display: none</code> erases it completely. Choose by whether the
+gap should remain.</p>
+
+<p>Gotcha: <code>display</code> overrides the browser's built-in choice
+for a tag — set an <code>li</code> to inline and it loses its bullet;
+set a <code>div</code> to inline and it behaves like a span. The markup
+suggests a default; display has the final word. Predict the Try-it: the
+two blue blocks stack, the yellow inline boxes share one line (their
+padding paints without pushing neighbours), and the "hidden" paragraph
+is gone without leaving a hole.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -62,17 +80,25 @@ page ever made.</p>
             {
                 "title": "Block, Inline & Inline-block",
                 "html": """
-<p>The three everyday box behaviours, compared precisely:</p>
+<p>The three everyday box behaviours, compared precisely — internalise
+this trio and a decade of beginner confusion evaporates:</p>
 
 <ul>
 <li><b>block</b> — full width by default, stacks, respects all
 box-model properties (width, height, all margins)</li>
 <li><b>inline</b> — sits in the text line, sizes to content,
 <strong>ignores width/height</strong>, vertical margins and vertical
-padding behave oddly (they overlap rather than push)</li>
+padding behave oddly (they paint over the neighbouring lines rather
+than pushing them apart)</li>
 <li><b>inline-block</b> — the hybrid: flows in the text line like
-inline, but accepts width/height and full box model like block</li>
+inline, but accepts width/height and the full box model like block</li>
 </ul>
+
+<p>See the hybrid at work. The chip declares <code>inline-block</code>:
+it continues the line after the previous word like inline, yet its
+padding is real space that moves surrounding content — and it would
+honour an explicit width just the same. That combination is exactly
+what a tag, badge, or button-in-a-row needs:</p>
 
 <pre class="code">.chip {
   display: inline-block;    /* sits inline BUT can be sized */
@@ -80,12 +106,21 @@ inline, but accepts width/height and full box model like block</li>
   width: auto;              /* or a fixed width — your choice */
 }</pre>
 
-<p>inline-block is the classic answer for "sized things that sit next to
-each other": chips, badges, buttons-in-a-row. The modern toolkit often
-replaces these hacks with flexbox (a row of flex items is easier), but
-inline-block remains everywhere in the wild — and it's the honest way to
-understand what display really does: it's not about looks, it's about
-<i>which box rules apply</i>.</p>
+<p>inline-block is the classic answer for "sized things that sit next
+to each other": chips, badges, buttons-in-a-row. The modern toolkit
+often replaces it with flexbox (a row of flex items is easier to
+align), but inline-block remains everywhere in the wild — and it's the
+honest way to understand what display really does: it's not about
+looks, it's about <i>which box rules apply</i>. Predict the Try-it: the
+first two blue boxes stack (block, width honoured); the yellow inline
+span's <code>width: 200px</code> is ignored — it hugs its text; the two
+green inline-blocks are 160px wide <i>and</i> share a line.</p>
+
+<p>Gotcha: the line breaks or spaces between inline-block elements in
+the HTML render as a visible gap — about one space wide — between the
+boxes, and it has defeated many pixel-perfect layouts. Remove the
+whitespace in the markup (or comment it out), or hand the row to
+flexbox and <code>gap</code>.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -115,31 +150,47 @@ understand what display really does: it's not about looks, it's about
             {
                 "title": "Overflow",
                 "html": """
-<p>Content doesn't always fit its box. <code>overflow</code> decides
-what happens then — per axis if needed:</p>
+<p>Content doesn't always fit its box: a fixed-height panel, a long
+URL, a code line too wide for its column. Left alone, overflowing
+content simply spills out and paints over whatever sits below — the
+default value is literally <code>visible</code>. <code>overflow</code>
+decides what happens instead, for the whole box or per axis:</p>
 
 <pre class="code">.panel {
   height: 120px;
   overflow: auto;    /* visible | hidden | scroll | auto | clip */
 }</pre>
 
+<p>Walk it: the panel is 120px tall no matter how much text sits
+inside, and <code>auto</code> means the browser adds a scrollbar only
+when the content actually exceeds that height. The five values in
+full:</p>
+
 <ul>
 <li><b>visible</b> (default) — spills out, drawn over whatever's there</li>
 <li><b>hidden</b> — clipped at the edge, unreachable</li>
-<li><b>scroll</b> — scrollbars always present</li>
+<li><b>scroll</b> — scrollbars always present, even when content fits</li>
 <li><b>auto</b> — scrollbars only when needed (the everyday choice)</li>
 <li><b>clip</b> — like hidden but unscrollable even programmatically;
 harder edge, better for pure clipping</li>
 </ul>
 
 <p>Per-axis controls: <code>overflow-x</code> /
-<code>overflow-y</code> — the code block pattern is
-<code>overflow-x: auto</code> (scroll sideways, never vertically). Two
-consequences worth knowing: an overflow value other than visible makes
-the element a <b>containing block</b> for absolutely-positioned children
-and a scroll container — which is why adding overflow sometimes "fixes"
-or "breaks" a layout mysteriously. And sticky headers need an ancestor
-WITHOUT overflow to stick against the page (Positioning chapter).</p>
+<code>overflow-y</code>. The most useful everyday pattern is
+<code>overflow-x: auto</code> on code blocks and wide tables: long
+lines scroll sideways while the page's vertical rhythm stays intact.
+(Technical footnote: mixing <code>visible</code> with a scrolling axis
+isn't allowed — the visible axis computes to auto.)</p>
+
+<p>Two consequences worth knowing: any overflow value other than
+visible makes the element a <b>containing block</b> for
+absolutely-positioned children and a scroll container — which is why
+adding overflow sometimes "fixes" or "breaks" a layout mysteriously
+(that dropdown clipped, that sticky header unstuck). And sticky
+headers need an ancestor WITHOUT overflow to stick against the page
+(Positioning chapter). Predict the Try-it: the first panel scrolls
+vertically, the second simply amputates its excess text, and the long
+code line scrolls sideways instead of breaking the page.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -202,14 +253,18 @@ WITHOUT overflow to stick against the page (Positioning chapter).</p>
             {
                 "title": "Positioning Schemes",
                 "html": """
-<p><code>position</code> takes an element out of the normal flow's rules
-and hands you coordinates. Five schemes:</p>
+<p>Normal flow is a great default, but some elements need to escape it:
+a badge hanging off a card's corner, a cookie banner pinned to the
+viewport, a table header that stays visible while you scroll.
+<code>position</code> takes an element out of the flow's rules — fully
+or partly — and hands you coordinates. Five schemes:</p>
 
 <ul>
 <li><b>static</b> — default; flow as usual, offsets ignored</li>
-<li><b>relative</b> — flow unchanged, but offsets
-(<code>top/right/bottom/left</code>) <b>nudge it from where it would
-have been</b>; also becomes the reference for absolute children</li>
+<li><b>relative</b> — flow unchanged (neighbours never move), but
+offsets (<code>top/right/bottom/left</code>) <b>nudge it from where it
+would have been</b>; also becomes the reference for absolute
+children</li>
 <li><b>absolute</b> — removed from flow entirely, positioned against
 its nearest <b>positioned ancestor</b> (or the page)</li>
 <li><b>fixed</b> — removed from flow, pinned to the <b>viewport</b>;
@@ -230,10 +285,23 @@ sticks (table headers, section labels)</li>
 }
 thead th { position: sticky; top: 0; }</pre>
 
-<p>The absolute pattern memorise-once: <b>parent relative, child
-absolute</b> — the child's offsets then measure from the parent's box.
-Absolute without a positioned ancestor flies to the page corner and
-confuses everyone; the parent-relative move is always the fix.</p>
+<p>Walk the block: the badge is pulled 8px beyond the parent's top-right
+corner — negative offsets are legal and love the corner-hanging look.
+The parent declares relative <i>solely</i> so the badge measures from
+it. The toast sits 16px from the viewport's bottom-right and stays
+there through any amount of scrolling. The table header sticks to the
+top edge only once its row reaches it. The absolute pattern to
+memorise once: <b>parent relative, child absolute</b> — the child's
+offsets then measure from the parent's box. Absolute without a
+positioned ancestor flies to the page corner and confuses everyone;
+the parent-relative move is always the fix.</p>
+
+<p>Predict the Try-it: scroll the preview — the sticky bar rides the
+top, the fixed button hugs the corner, and the red badge hangs off the
+card because the card itself is relative. Gotcha: a relative element
+<i>keeps its original space</i> in the flow — the nudge leaves a hole
+where the element would have been; if you want it truly gone, that's
+absolute's job.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -270,19 +338,27 @@ confuses everyone; the parent-relative move is always the fix.</p>
                 "title": "z-index & Stacking Contexts",
                 "html": """
 <p>When positioned elements overlap, <code>z-index</code> decides who's
-on top — higher wins, negative goes below. But its power comes with the
-web's most-misunderstood rule: z-index only competes <b>within the same
-stacking context</b>.</p>
+on top — higher wins, negative goes below. But its power comes wrapped
+in the web's most-misunderstood rule: z-index only competes <b>within
+the same stacking context</b>. Learn this once and the dreaded "why is
+my modal underneath?" bug dies forever.</p>
 
 <pre class="code">.modal { z-index: 100; }
 .toast { z-index: 50; }      /* fine — siblings in the same context */</pre>
+
+<p>These two are siblings, so their numbers compare directly: 100
+paints over 50. The values don't have to be huge — 1, 2, 3 is enough —
+but teams often leave headroom (10, 20, 30...) so a new layer can slot
+in between existing ones later.</p>
 
 <p>A <b>stacking context</b> is created by (among others): the root
 element, positioned elements with z-index ≠ auto, elements with
 opacity &lt; 1, transforms, filters... Once an element creates a
 context, its descendants' z-index values are <b>trapped inside it</b> —
 z-index: 9999 on a child of a z-index: 1 parent can never rise above a
-sibling of that parent with z-index: 2.</p>
+sibling of that parent with z-index: 2. The whole subtree is flattened
+into one layer at the parent's level before any outside comparison
+happens.</p>
 
 <p>The classic bug: "my z-index: 9999 dropdown is UNDER the card!" —
 because the card has <code>opacity: 0.99</code> or a transform, making
@@ -292,7 +368,13 @@ it's finding which ancestor seals the stack and adjusting there.</p>
 <p>Debugging recipe: in devtools, walk up from the element looking for
 the context creators (opacity, transform, filter, position+z-index),
 then set the z-index at that level. MDN's "stacking context" guide has
-the complete creator list.</p>
+the complete creator list. Predict the Try-it: the three boxes
+overlap in order 1 &lt; 2 &lt; 3, and the faded paragraph — opacity
+below 1 — is its own sealed context: a child with z-index: 9999 inside
+it could never climb above the green box. Gotcha: adding
+<code>position: relative; z-index: 1</code> to a "harmless" wrapper as
+a quick fix silently creates one of these prisons — check the wrappers
+first.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -364,23 +446,38 @@ the complete creator list.</p>
                 "title": "Flex Container & the Two Axes",
                 "html": """
 <p>Flexbox is one-dimensional layout: arrange a row or column of items,
-distribute space, align them — the daily driver of modern UI. Flip it on
-on the <b>parent</b>:</p>
+distribute the space between them, align them — the daily driver of
+modern UI. It solves the problems the float hacks never could:
+equal-height cards in a row, a toolbar whose buttons space themselves,
+a footer that stays at the bottom. Flip it on — on the <b>parent</b>,
+not the children:</p>
 
 <pre class="code">.toolbar {
   display: flex;      /* children become flex items in a row */
 }</pre>
 
-<p>From that moment two invisible <b>axes</b> define everything: the
-<b>main axis</b> (the direction items flow) and the
-<b>cross axis</b> (perpendicular). Horizontal row → main axis is
-horizontal; column → main axis is vertical. Every alignment property is
-phrased against these axes, so naming the axes first is half of
+<p>One declaration, and the div's buttons stop stacking as blocks:
+they line up on a single row, each sized to its content. From that
+moment two invisible <b>axes</b> define everything: the <b>main
+axis</b> (the direction items flow) and the <b>cross axis</b>
+(perpendicular to it). A horizontal row → the main axis is horizontal;
+a column → the main axis is vertical. Every alignment property is
+phrased against these axes, so naming them first is half of
 understanding flexbox.</p>
 
-<p>The container gets the layout properties; the items get the sizing
-ones. And that's the whole division of knowledge: five container
-properties, four item properties, one gap.</p>
+<p>The division of labour is clean: the <i>container</i> gets the
+layout properties (direction, wrap, gap, justify-content,
+align-items); the <i>items</i> get the sizing ones (flex-grow,
+flex-shrink, flex-basis, align-self). That's the whole subject — five
+container properties, four item properties, one gap — and the next
+lessons walk each in turn.</p>
+
+<p>Predict the Try-it: the middle button carries <code>flex: 1</code>,
+so it stretches to swallow the leftover width while the arrow buttons
+hug their content. Gotcha: <code>display: flex</code> on the parent is
+the only setup step — applying flex properties to children while the
+parent is still a plain block does nothing, a classic misread of
+copied snippets.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -413,18 +510,21 @@ properties, four item properties, one gap.</p>
             {
                 "title": "flex-direction, wrap & gap",
                 "html": """
-<p><b><code>flex-direction</code></b> points the main axis:</p>
+<p>Three container properties set the geometry: direction points the
+flow, wrap decides whether lines may multiply, gap spaces the items.
+<b><code>flex-direction</code></b> points the main axis:</p>
 
 <ul>
 <li><code>row</code> (default) — items left→right</li>
 <li><code>column</code> — items top→bottom</li>
 <li><code>row-reverse</code> / <code>column-reverse</code> — flow
-backwards</li>
+backwards (handy for RTL layouts and chat bubbles)</li>
 </ul>
 
-<p><b><code>flex-wrap</code></b> — by default items shrink to fit one
-line; <code>wrap</code> lets them flow onto the next line instead (the
-responsive default for chip rows and card grids):</p>
+<p><b><code>flex-wrap</code></b> — by default items shrink to squeeze
+onto one line, compressing below their comfortable width; <code>wrap</code>
+lets them flow onto the next line instead (the responsive default for
+chip rows and card strips):</p>
 
 <pre class="code">.chips {
   display: flex;
@@ -432,15 +532,27 @@ responsive default for chip rows and card grids):</p>
   gap: 8px;
 }</pre>
 
+<p>Walk it: the container takes any number of pill chips; when the row
+runs out of width, the next chip starts a second line instead of
+crushing its siblings, and <code>gap</code> spaces both the columns
+and the rows at once.</p>
+
 <p><b><code>gap</code></b> — the space BETWEEN items, replacing the old
-margin-hacks. One value for both axes, or
-<code>gap: 8px 16px</code> (row-gap column-gap). It applies to flex,
-grid, and multi-column alike — and unlike margins it never adds space
-after the last item.</p>
+margin-hacks where every child needed margin-right except the last.
+One value for both axes, or <code>gap: 8px 16px</code> (row-gap
+column-gap). It applies to flex, grid, and multi-column alike — and
+unlike margins it never adds space after the last item or before the
+first, so container padding stays honest.</p>
 
 <p>Note what direction does to alignment vocabulary: in a row,
 justify-content works horizontally; in a column, vertically. The axes
-rotate — the property names don't.</p>
+rotate — the property names don't. Predict the Try-it: the chips wrap
+onto as many lines as needed with even spacing, and below them the
+column example stacks three boxes top-to-bottom with gap still
+working. Gotcha: without <code>wrap</code>, flex items refuse to break
+lines — they instead shrink below their content size (text overlapping,
+buttons crushed), because flex-shrink is on by default. If your row
+"won't wrap", it's because you never asked it to.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -473,7 +585,9 @@ rotate — the property names don't.</p>
             {
                 "title": "justify-content & align-items",
                 "html": """
-<p>The two great alignment properties — one per axis:</p>
+<p>The two great alignment properties — one per axis, and between them
+they answer most of layout's daily questions: where does the extra
+space go, and how do items sit within their line?</p>
 
 <ul>
 <li><b><code>justify-content</code></b> — distribute items along the
@@ -487,6 +601,16 @@ size!), <code>flex-start</code>, <code>center</code>,
 <code>flex-end</code>, <code>baseline</code></li>
 </ul>
 
+<p>The three <code>space-*</code> values differ subtly:
+<code>space-between</code> puts no space at the edges,
+<code>space-around</code> gives each item half-width space at the edges
+(so edge gaps are half the inner gaps), <code>space-evenly</code> makes
+every gap identical. Toolbar with logo left and actions right?
+space-between. Evenly spread icon row? space-evenly. The stretch
+default on align-items explains why flex children in a row grow to
+equal height for free — they're stretching along the cross
+axis:</p>
+
 <pre class="code">.center-anything {
   display: flex;
   justify-content: center;   /* main axis */
@@ -495,12 +619,19 @@ size!), <code>flex-start</code>, <code>center</code>,
 }</pre>
 
 <p>That three-property snippet is the most famous CSS idiom ever —
-perfect centering, both directions, no hacks. (The modern one-liner is
-<code>place-items: center</code> on a grid.) When a single item needs a
-different cross-alignment than its siblings,
-<code>align-self</code> overrides per item; and
-<code>align-content</code> positions the wrapped <i>lines</i> when the
-container has multiple rows (only visible with flex-wrap).</p>
+perfect centering, both directions, no hacks (the container needs a
+size to centre within — that's the height's job). The modern one-liner
+is <code>place-items: center</code> on a grid. When a single item needs
+a different cross-alignment than its siblings, <code>align-self</code>
+overrides per item; and <code>align-content</code> positions the
+wrapped <i>lines</i> when the container has multiple rows (only
+visible with flex-wrap). Predict the Try-it: the stage spreads its
+three dots with space-between and centres them vertically; the blue
+box centres its text on both axes at once. Gotcha:
+<code>justify-content: center</code> with items wider than the
+container clips <i>both</i> ends — and the clipped start becomes
+unreachable when you scroll; use margin: auto centering or smaller
+items.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -533,8 +664,9 @@ container has multiple rows (only visible with flex-wrap).</p>
             {
                 "title": "Flex Items: grow, shrink & basis",
                 "html": """
-<p>The <code>flex</code> shorthand controls how items share the
-container's space: <code>flex: grow shrink basis</code>.</p>
+<p>The container decides the axes; the <code>flex</code> shorthand on
+each item decides how the space is shared: <code>flex: grow shrink
+basis</code>. Three numbers, three questions:</p>
 
 <ul>
 <li><b>flex-grow</b> — when there's <i>extra</i> space, who gets it?
@@ -551,12 +683,29 @@ equal shares; 2 on one, 1 on another = double share</li>
 .equal { flex: 1; }             /* three of these = thirds */
 .grow2 { flex: 2; }             /* twice the share of flex:1 items */</pre>
 
-<p><code>flex: 1</code> is shorthand for <code>1 1 0%</code> — grow
-freely, shrink freely, start from zero so shares are purely
-proportional. The sidebar layout above is the classic two-line flexbox
-app: fixed rail + fluid main. Add <code>min-width: 0</code> to items
-containing long text — flex items refuse to shrink below their content
-by default, and min-width: 0 unlocks shrinking.</p>
+<p>Walk it: the sidebar declares grow 0, shrink 0, basis 200px — a rail
+of exactly 200px that neither yields nor swells; the main content takes
+every remaining pixel. Read <code>flex: 2</code> versus
+<code>flex: 1</code> as "double the share of the leftover", not "double
+the final width" — with a fixed 200px rail subtracted first, the 2:1
+ratio applies only to what remains. <code>flex: 1</code> itself is
+shorthand for <code>1 1 0%</code> — grow freely, shrink freely, start
+from zero so shares are purely proportional; that's why equal flex:1
+items come out equal regardless of their content lengths, a subtle
+difference from basis: auto that you can exploit (or be bitten by).</p>
+
+<p>The sidebar layout above is the classic two-line flexbox app: fixed
+rail + fluid main. Add <code>min-width: 0</code> to items containing
+long text — flex items refuse to shrink below their content's minimum
+size by default (imagine a long unbreakable word blowing out the row),
+and min-width: 0 unlocks shrinking.</p>
+
+<p>Predict the Try-it: the fixed rail stays 110px while the flex: 1 and
+flex: 2 boxes share the rest at 1:2; resize the preview and only the
+shares change. Gotcha: the unitless <code>flex: 1</code> resets basis
+to 0% — an item that looked content-sized can suddenly collapse toward
+nothing once its siblings also have flex; check the basis whenever an
+item "disappears".</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -629,8 +778,10 @@ by default, and min-width: 0 unlocks shrinking.</p>
             {
                 "title": "Grid Tracks & the fr Unit",
                 "html": """
-<p>Grid is two-dimensional layout: rows AND columns at once, with items
-placed into the cells. Flip it on and declare the tracks:</p>
+<p>Flexbox is one-dimensional; <b>Grid</b> is two: rows AND columns at
+once, with items placed into the cells they belong to. For whole-page
+skeletons and card walls it beats flex. Flip it on and declare the
+tracks:</p>
 
 <pre class="code">.board {
   display: grid;
@@ -639,18 +790,35 @@ placed into the cells. Flip it on and declare the tracks:</p>
   gap: 12px;
 }</pre>
 
-<p>Tracks can be fixed (<code>120px</code>), content-sized
-(<code>auto</code>), or fractional — <code>1fr</code> means "one share
-of the leftover space". The fr unit is grid's superpower: </p>
+<p>Read the declaration: three columns — one fixed at 120px, then two
+fractional ones splitting the rest 1:2; two rows — first and last
+sized to their content (<code>auto</code>), the middle taking the
+leftover; a 12px gutter between every cell. Tracks can be fixed
+(<code>120px</code>), content-sized (<code>auto</code>), or fractional
+— <code>1fr</code> means "one share of the leftover space", and like
+flex's fr it divides only what remains after fixed tracks take
+theirs:</p>
 
 <pre class="code">grid-template-columns: repeat(3, 1fr);   /* three equal columns */
 grid-template-columns: 2fr 1fr;          /* two-thirds / one-third */</pre>
 
-<p><code>repeat()</code> is the shorthand for patterned tracks — and
-children flow into the cells automatically in source order, wrapping
-row by row. Twelve children in a repeat(3, 1fr) grid = a 4×3 card wall
-with zero per-item code. Combined with <code>gap</code> (which works in
-both directions), a responsive card grid is three lines of CSS.</p>
+<p><code>repeat()</code> is the shorthand for patterned tracks —
+<code>repeat(3, 1fr)</code> is literally "three tracks of one share
+each", sparing you <code>1fr 1fr 1fr</code>. Children flow into the
+cells automatically in source order, wrapping row by row: twelve
+children in a repeat(3, 1fr) grid = a 4×3 card wall with zero
+per-item code. Combined with <code>gap</code> (which works in both
+directions at once), a responsive card grid is three lines of
+CSS.</p>
+
+<p>Predict the Try-it: six numbered cells pour into a 3-column grid,
+two rows, equal widths, even gaps — no width set on any cell.
+Gotcha: <code>1fr</code> is not "1 fraction of the container" — it's a
+share of the space <i>left after</i> fixed tracks and gaps; a 1000px
+container with <code>200px 1fr 2fr</code> splits what remains (after
+the 200px and the two gutters) in a 1:2 ratio. And rows created
+implicitly by extra children get <code>auto</code> height — set
+<code>grid-auto-rows</code> when card rows come out uneven.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -681,8 +849,9 @@ both directions), a responsive card grid is three lines of CSS.</p>
             {
                 "title": "grid-template-areas",
                 "html": """
-<p>Grid's most readable feature: name your regions in ASCII art, and the
-layout documents itself:</p>
+<p>Grid's most readable feature: name your regions in ASCII art, and
+the layout documents itself. Where column line numbers ("what was line
+3 again?") get opaque fast, areas read like the finished page:</p>
 
 <pre class="code">.page {
   display: grid;
@@ -701,12 +870,26 @@ layout documents itself:</p>
 .page > aside  { grid-area: side; }
 .page > footer { grid-area: footer; }</pre>
 
-<p>Every quote-delimited word is a cell; repeated words span. The grid
-above is a full app shell — header, sidebar, content, aside, footer —
-and rearranging the layout is <b>editing the ASCII art</b>: swap
-"side" and "main" and you're done. Responsive variants become trivial:
-redefine the areas inside a media query and every grid-area assignment
-follows automatically.</p>
+<p>Every quote-delimited word is a cell; repeated words span. Walk it:
+the top row is three cells all named "header" — so the header element
+spans all three columns; the middle row gives nav, main and side one
+cell each, paced 180px / fluid / 220px by the column template; the
+bottom row is the footer across everything. Each child claims its
+region with <code>grid-area: name</code> — one line per element, no
+line numbers anywhere. The grid above is a full app shell — header,
+sidebar, content, aside, footer — and rearranging the layout is
+<b>editing the ASCII art</b>: swap "side" and "main" and you're done,
+no child rule changes at all. Responsive variants become trivial:
+redefine the areas inside a media query (a single stacked column, say)
+and every grid-area assignment follows automatically.</p>
+
+<p>Predict the Try-it: header and footer stretch across both columns,
+the green "side" column takes its 140px, main absorbs the rest — the
+art in the CSS is literally the page you see. Gotcha: the art must
+form a proper rectangle — every row the same number of words — or the
+whole declaration is invalid and dropped silently. A name must also
+occupy one connected block: two separate "main" islands are illegal,
+so truly L-shaped regions need line-number placement instead.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -746,8 +929,10 @@ follows automatically.</p>
             {
                 "title": "Placement & the Grid Gap",
                 "html": """
-<p>When auto-flow isn't enough, place items by line numbers — grid
-counts <b>lines</b>, not cells (a 3-column grid has 4 column lines):</p>
+<p>Auto-flow handles the common case, but real layouts need authority:
+this item spans two columns, that one takes the full row. Grid lets
+you place items by <b>line numbers</b> — note that grid counts lines,
+not cells (a 3-column grid has 4 column lines):</p>
 
 <pre class="code">.featured {
   grid-column: 1 / 3;      /* from line 1 to line 3 = spans 2 columns */
@@ -757,10 +942,16 @@ counts <b>lines</b>, not cells (a 3-column grid has 4 column lines):</p>
 .tall  { grid-row: span 2; }
 .full  { grid-column: 1 / -1; }         /* -1 = the last line: full width */</pre>
 
-<p><code>span n</code> is the human way to say "take n tracks" without
-knowing absolute line numbers. Named lines and named areas also
-participate. Items placed explicitly flow around the auto ones —
-magazine layouts come from sprinkling span-2 items into an auto-flowing
+<p>Walk it: <code>1 / 3</code> means "start at line 1, end at line 3" —
+two tracks wide, since the item crosses two of them. The negative
+index counts from the end, so <code>1 / -1</code> is "first line to
+last line" — the full row, whatever the column count happens to be;
+that's the hero-banner move. <code>span n</code> is the human way to
+say "take n tracks" without knowing absolute line numbers — the
+friendliest form, and the one that survives track changes. Named lines
+and named areas also participate. Items placed explicitly reserve
+their cells first; the auto-flowing ones pour around them — magazine
+layouts come from sprinkling span-2 items into an auto-flowing
 grid.</p>
 
 <p><b>gap</b> in grid is the same property as flexbox's:
@@ -770,6 +961,13 @@ extras: <code>justify-items</code>/<code>align-items</code> align items
 <i>within their cells</i>, <code>justify-content</code>/
 <code>align-content</code> distribute the tracks themselves when the
 grid is smaller than the container.</p>
+
+<p>Predict the Try-it: the featured tile is twice as wide as its
+neighbours, the green bar crosses the entire row, and the plain cells
+auto-flow around both. Gotcha: a <code>span</code> larger than the
+remaining room doesn't overflow — the grid quietly adds an implicit
+extra row (or column) to honour it; if items "fall off the bottom",
+check spans against the track count.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -802,7 +1000,7 @@ grid is smaller than the container.</p>
                 "title": "auto-fit, auto-fill & minmax()",
                 "html": """
 <p>The pattern behind every responsive card grid with <b>zero media
-queries</b>:</p>
+queries</b> — arguably the single most useful line of modern CSS:</p>
 
 <pre class="code">.cards {
   display: grid;
@@ -814,22 +1012,34 @@ queries</b>:</p>
 
 <ul>
 <li><code>minmax(220px, 1fr)</code> — a track at least 220px, at most an
-equal share</li>
+equal share of the free space</li>
 <li><code>auto-fill</code> — cram in as many 220px+ tracks as fit,
 leaving empty ones if items run out</li>
 <li><code>auto-fit</code> — same, but collapse empty tracks so items
 <b>stretch to fill</b> the row</li>
 </ul>
 
-<p>Wide screen: 4 columns. Narrow: 3, 2, then 1 — each card never
-squeezed below 220px, no breakpoints written. The difference between
-fill and fit shows with few items: fill keeps ghost columns
-(alignment), fit stretches items to span the width.</p>
+<p>The browser redoes the arithmetic on every resize: a wide screen
+fits four 220px-plus columns — four it is; narrow — three, then two,
+then one. Every card is never squeezed below its 220px floor, no
+breakpoint is written, and adding a fifth card means touching
+nothing. The difference between fill and fit appears with few items:
+fill keeps the ghost columns (useful when rows must align with each
+other), fit stretches the items to span the full width — usually what
+you want for a card list.</p>
 
-<p>Variations worth knowing: <code>minmax(220px, auto)</code> sizes to
-content; combine with <code>grid-auto-flow: dense</code> to backfill
-holes left by spanning items. This one line is arguably the single most
-useful snippet in modern CSS.</p>
+<p>Variations worth knowing: <code>minmax(220px, auto)</code> sizes
+tracks to content; combine with <code>grid-auto-flow: dense</code> to
+backfill holes left by spanning items; and <code>auto-fill</code> plus
+<code>justify-content: center</code> keeps a small set of cards
+centred instead of stretched edge to edge.</p>
+
+<p>Predict the Try-it: drag the preview narrow and watch four columns
+become three, two, one — every card intact, never below its floor.
+Gotcha: with only one or two cards, auto-fit stretches them absurdly
+wide because the empty tracks collapse; that's the moment to pick
+auto-fill instead, whose ghost tracks hold each card near its
+220px width.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -910,7 +1120,9 @@ useful snippet in modern CSS.</p>
                 "title": "Multi-column Layout",
                 "html": """
 <p>Newspapers flow text down one column and continue at the top of the
-next. CSS does that with <code>columns</code>:</p>
+next — CSS multi-column does exactly that to any block of content. It
+is the one layout module that <i>balances and fills columns of
+text</i> for you:</p>
 
 <pre class="code">.article {
   columns: 3;                /* ideally 3 columns */
@@ -919,21 +1131,38 @@ next. CSS does that with <code>columns</code>:</p>
 }
 h2 { column-span: all; }     /* a heading across all columns */</pre>
 
+<p>Walk it: the browser splits the article's content into three
+balanced columns with 2rem between them and a hairline rule drawn in
+the gap — the rule paints in the gutter, never touching the text. The
+<code>h2</code> escapes the column flow entirely and stretches across
+all of them, the masthead move:</p>
+
 <ul>
 <li><code>columns: 3</code> — a wish: the browser fits 3 columns of at
 least its implied width; <code>columns: 200px</code> instead means
 "columns of ~200px, as many as fit" (the responsive way)</li>
 <li>Content <b>fills column 1 to the bottom, then column 2</b> — true
-text flow, not slicing</li>
+text flow, not slicing: a paragraph reads continuously down one column
+and resumes at the top of the next</li>
 <li><code>break-inside: avoid</code> keeps a card/figure from being
 split across columns</li>
 </ul>
 
 <p>Multi-column is the right tool for <i>long text</i>: articles,
-changelogs, glossaries. For boxed content (cards, products), grid's
-auto-fit is usually better — m-col optimises reading flow, grid
-optimises placement. A fun modern use: a masonry-ish look with
-<code>columns</code> + <code>break-inside: avoid</code> on cards.</p>
+changelogs, glossaries, legal copy. For boxed content (cards,
+products), grid's auto-fit is usually better — m-col optimises reading
+flow, grid optimises placement. A fun modern use: a masonry-ish look
+with <code>columns</code> + <code>break-inside: avoid</code> on cards
+— items keep their height and stack within their columns.</p>
+
+<p>Predict the Try-it: the octopus facts flow into two columns split
+by a dashed rule, the heading riding across both, each boxed fact kept
+whole. Gotcha: a column container is a <i>fragmented</i> flow — a
+child's background stops at each column break and re-paints in the
+next fragment, which looks broken on boxes you expected to be solid;
+that's exactly what break-inside: avoid is for. And on narrow screens
+prefer <code>columns: 200px</code> over a fixed count, or your three
+columns shrink to unreadable slivers.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1000,8 +1229,10 @@ optimises placement. A fun modern use: a masonry-ish look with
             {
                 "title": "Media Queries & Breakpoints",
                 "html": """
-<p>One page, every screen. <b>Media queries</b> apply CSS conditionally —
-by viewport width, and much more:</p>
+<p>One page, every screen — from a 320px phone to a 4K monitor.
+<b>Media queries</b> apply CSS conditionally: the stylesheet asks about
+the viewport (and more), and rules apply only when the answer matches.
+The mobile-first idiom:</p>
 
 <pre class="code">/* mobile-first: base styles = phones */
 .cards { grid-template-columns: 1fr; }
@@ -1012,6 +1243,13 @@ by viewport width, and much more:</p>
 @media (min-width: 960px) {     /* desktops and up */
   .cards { grid-template-columns: repeat(3, 1fr); }
 }</pre>
+
+<p>Walk it: the base rule — no query at all — is what every device
+gets: one column. Then two <code>@media</code> blocks each say "from
+this width upward, override". A small phone matches only the base; a
+700px tablet matches base + 600px (two columns); a desktop matches all
+three (three columns). Because min-width queries only ever <i>add</i>,
+each block stays short and nothing ever needs undoing:</p>
 
 <ul>
 <li><b>min-width queries</b> — the mobile-first pattern: base styles for
@@ -1029,12 +1267,14 @@ your breakpoints never fire</li>
 <code>prefers-color-scheme: dark</code>, <code>hover: none</code>
 (touch devices), <code>orientation</code>... — the tool for adapting to
 the <i>device</i>, while container queries (next chapter) adapt to the
-<i>container</i>.</p>
-
-<p>On <b>breakpoints</b>: don't chase device models; add one when the
-<i>design</i> breaks. With fluid units (rem, %, clamp) and modern layout
-(auto-fit!), most designs need far fewer breakpoints than you'd
-think.</p>
+<i>container</i>. On <b>breakpoints</b>: don't chase device models; add
+one when the <i>design</i> breaks. With fluid units (rem, %, clamp) and
+modern layout (auto-fit!), most designs need far fewer breakpoints than
+you'd think. Predict the Try-it: drag the preview's width and the panel
+recolours as it crosses 480px and 760px. Gotcha: the base styles must
+live OUTSIDE any query — burying them inside the first @media means
+devices that match no query (or one deleted query) get nothing at
+all.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1067,8 +1307,10 @@ think.</p>
             {
                 "title": "Fluid Layouts & Typography",
                 "html": """
-<p>Media queries step; fluid design glides. The stack of techniques from
-earlier chapters combines into pages that adapt <i>continuously</i>:</p>
+<p>Media queries step; fluid design glides. Between the breakpoints
+lies a continuum of screen widths, and fluid techniques make the page
+adapt <i>continuously</i> — nothing jumps at a magic width. The
+techniques from earlier chapters stack into one system:</p>
 
 <ul>
 <li><b>Fluid type</b> — clamp with viewport units:
@@ -1085,11 +1327,27 @@ earlier chapters combines into pages that adapt <i>continuously</i>:</p>
 }
 section { padding-block: var(--space); gap: var(--space); }</pre>
 
+<p>Walk it: the custom property holds one fluid value — a floor of
+1rem, a ceiling of 2.5rem, and a formula that grows with the viewport
+between them. Every section's vertical padding and every gap reads the
+same token, so spacing stays in rhythm everywhere while scaling from
+phone to desktop. The preferred value's <code>0.5rem + 2vw</code> form
+is deliberate: a constant plus a viewport term keeps the value growing
+from the very first pixel instead of sitting clamped at small
+widths.</p>
+
 <p>The modern mindset: base everything on the root font size (rem), let
 clamp handle the in-between zones, and reserve media queries for genuine
 <i>structural</i> changes — a sidebar becoming a row, a grid changing
 its areas. Fewer breakpoints, smoother screens, and every screen between
 the breakpoints looks intentional rather than stretched.</p>
+
+<p>Predict the Try-it: drag the width slowly — padding, gaps, the
+heading, the card columns all move proportionally and never snap.
+Gotcha: viewport units ignore the scrollbar and text-zoom settings;
+tie minimums and maximums to rem (as above) so users with larger text
+preferences keep a usable floor — and never set body text purely in
+vw, which becomes unreadably tiny on phones.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1160,9 +1418,10 @@ the breakpoints looks intentional rather than stretched.</p>
                 "title": "Container Queries",
                 "html": """
 <p>Media queries ask "how wide is the <i>screen</i>?" — but components
-live in sidebars, cards, and grids where the screen is a lie.
-<b>Container queries</b> ask the right question: "how wide is
-<i>my box</i>?"</p>
+live in sidebars, cards, and grid cells where the screen is a lie. The
+same card that works full-width turns cramped inside a 220px sidebar,
+and no media query can even see the difference. <b>Container
+queries</b> ask the right question: "how wide is <i>my box</i>?"</p>
 
 <pre class="code">.card-wrap { container-type: inline-size; }   /* declare a container */
 
@@ -1174,12 +1433,17 @@ live in sidebars, cards, and grids where the screen is a lie.
   .card img { width: 120px; }
 }</pre>
 
-<p>Two parts: mark an ancestor with <code>container-type:
-inline-size</code> (its inline size becomes queryable), then write
-<code>@container</code> rules that apply based on the <b>nearest
-container's size</b>. The same card component now adapts to wherever it
-lands — full-width column, sidebar, grid cell — with zero knowledge of
-the page.</p>
+<p>Two parts, always both. First, mark an ancestor with
+<code>container-type: inline-size</code> — its inline size becomes
+queryable. Second, write <code>@container</code> rules that apply based
+on the <b>nearest container's size</b>: here, when the wrapper is at
+least 400px wide, the card inside switches from stacked to horizontal
+with a fixed image column; below that width those rules simply don't
+match. The same card component now adapts to wherever it lands —
+full-width column, sidebar, grid cell — with zero knowledge of the
+page. Move the component and its responsiveness moves with it; that is
+exactly what media queries, triggered only by page dimensions, could
+never do.</p>
 
 <p>Container query units complete the picture: <code>cqw</code>/
 <code>cqh</code> are percentages of the <i>container's</i> size —
@@ -1187,6 +1451,15 @@ the page.</p>
 the screen. This is <b>component-based responsive design</b>: design
 systems where every component carries its own responsive rules. MDN
 calls it one of the biggest architectural shifts in recent CSS.</p>
+
+<p>Predict the Try-it: identical card markup, two wrappers — the wide
+one lays the card out horizontally with the image aside, the narrow
+220px one keeps it stacked. Gotcha: <code>container-type:
+inline-size</code> applies size containment — the element's width no
+longer depends on its contents (that's what prevents circularity), so
+a container never shrink-wraps to the card inside. And @container
+rules can only style <i>descendants</i> of the container, never the
+container itself — which is why the pattern is always wrap-then-style.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">

@@ -10,8 +10,10 @@ CHAPTERS_CSS_D = [
             {
                 "title": "Custom Properties & var()",
                 "html": """
-<p><b>Custom properties</b> — variables, in your stylesheet, native:
-declare with <code>--</code>, read with <code>var()</code>:</p>
+<p>Every design system repeats the same colour in forty places — and
+the old CSS way meant find-and-replace when the brand changed.
+<b>Custom properties</b> — variables, in your stylesheet, native — fix
+that: declare with <code>--</code>, read with <code>var()</code>:</p>
 
 <pre class="code">:root {
   --brand: #1572b6;
@@ -26,7 +28,13 @@ declare with <code>--</code>, read with <code>var()</code>:</p>
 }
 .link { color: var(--brand); }</pre>
 
-<p>What makes them powerful:</p>
+<p>Walk it: <code>:root</code> — the html element — holds the tokens,
+so everything inherits them. The button reads three of them for its
+background, spacing and corners; the link reads the brand colour.
+Change <code>--brand</code> once and both repaint. Names are
+case-sensitive, and the values can be anything — colours, lengths,
+whole shadows, numbers you feed into calc(). Three capabilities make
+them more powerful than any preprocessor variable:</p>
 
 <ul>
 <li><b>They cascade and inherit</b> — <code>:root</code> defines global
@@ -47,9 +55,18 @@ second value when the first isn't set</li>
   color: var(--text);
 }</pre>
 
-<p>Design tokens (named, reusable decisions — colours, spaces, radii)
-are built on exactly this. Custom properties + color-mix() + calc() =
-a theme system in twenty lines.</p>
+<p>The second block is the theme pattern in miniature: a class (or
+<code>[data-theme="dark"]</code>) redefines the same token names
+locally, and every descendant reading <code>var(--bg)</code> switches —
+no component styles duplicated, only the values change. Design tokens
+(named, reusable decisions — colours, spaces, radii) are built on
+exactly this. Custom properties + color-mix() + calc() = a theme system
+in twenty lines. Predict the Try-it: two identical cards, the second
+redefining <code>--brand: rebeccapurple</code> locally — its border and
+button repaint purple while the first stays blue. Gotcha: an invalid
+value inside var() can't be rejected at parse time; at computed-value
+time the property falls back to <i>inherit or initial</i>, which can
+silently unset a colour — give important tokens sane var() fallbacks.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -123,8 +140,10 @@ a theme system in twenty lines.</p>
             {
                 "title": "Native CSS Nesting",
                 "html": """
-<p>Preprocessors made nesting famous; CSS now has it <b>natively</b> —
-rules inside rules, with <code>&amp;</code> referring to the parent:</p>
+<p>Preprocessors made nesting famous — one component, one block, its
+states and children indented inside. CSS now has it <b>natively</b>, in
+every modern browser: rules inside rules, with <code>&amp;</code>
+referring to the parent:</p>
 
 <pre class="code">.card {
   color: black;
@@ -143,7 +162,15 @@ rules inside rules, with <code>&amp;</code> referring to the parent:</p>
   }
 }</pre>
 
-<p>The rules of the road:</p>
+<p>Walk it: the outer rule styles the card itself (black text). Nested
+inside, <code>&amp; .title</code> targets a child — the leading
+<code>&amp;</code> is implied, so writing bare <code>.title</code> is
+identical here. <code>&amp;:hover</code> is different: there
+<code>&amp;</code> is <i>required</i>, gluing :hover onto the card
+itself — omit it and you'd get <code>.card :hover</code>, which styles
+whatever is hovered <i>inside</i> the card. The last rule nests two
+levels: a button inside .actions inside .card. The rules of the
+road:</p>
 
 <ul>
 <li><code>&amp;</code> is the parent selector — implicit at the start of a
@@ -156,8 +183,15 @@ high specificity that's painful to override later</li>
 </ul>
 
 <p>The payoff is organisation — a component's styles live inside its
-rule, readable and relocatable. Sass/LESS users feel at home;
-everyone else gets cleaner stylesheets with zero build step.</p>
+rule, readable and relocatable; delete the card block and every style
+for it goes at once. Sass/LESS users feel at home; everyone else gets
+cleaner stylesheets with zero build step. Predict the Try-it: hover the
+card — its shadow lifts via the nested <code>&amp;:hover</code>; hover
+the button — its own nested rule darkens it. Gotcha: nesting is not
+scoping — nested selectors still match globally, so a component
+rendered inside another one with the same class names will pick up the
+outer rules; keep class names component-unique and nesting shallow
+instead of trusting indentation to isolate anything.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -226,9 +260,11 @@ everyone else gets cleaner stylesheets with zero build step.</p>
             {
                 "title": "Logical Properties",
                 "html": """
-<p>Traditional box properties think in <b>physical</b> directions: left,
-right, top, bottom. <b>Logical properties</b> think in <b>flow</b>
-directions: inline (along the text) and block (across it):</p>
+<p>Traditional box properties think in <b>physical</b> directions:
+left, right, top, bottom — nailed to the screen. <b>Logical
+properties</b> think in <b>flow</b> directions: inline (along the text)
+and block (across it) — tied to how the content actually reads. One
+mental flip, and bilingual pages get vastly simpler:</p>
 
 <pre class="code">margin-inline: 1rem;      /* left AND right in LTR */
 margin-block: 1rem;       /* top AND bottom */
@@ -237,8 +273,14 @@ border-inline-start: 3px solid #1572b6;   /* "the start side" */
 inline-size: 300px;       /* logical width */
 block-size: 80px;         /* logical height */</pre>
 
-<p>Why they matter — one word: <b>direction</b>. In an RTL (Arabic,
-Persian) page, <code>margin-left</code> is still physically left — but
+<p>Walk it: <code>margin-inline</code> is the two-sided shorthand —
+both text-direction sides at once, <code>margin-left</code> +
+<code>margin-right</code> without caring which is which.
+<code>border-inline-start</code> is the accent-bar property: "the side
+text starts on". <code>inline-size</code> is width in a horizontal
+script, but the concept follows the flow, not the screen. Why they
+matter — one word: <b>direction</b>. In an RTL (Arabic, Persian) page,
+<code>margin-left</code> is still physically left — but
 <code>margin-inline-start</code> flips to the <i>right</i>
 automatically. A card styled with logical properties mirrors itself for
 free; one styled with left/right needs a whole RTL override
@@ -250,13 +292,24 @@ sheet.</p>
 }
 html[dir="rtl"] .callout { /* nothing needed! */ }</pre>
 
+<p>The second block is the payoff: the callout gets its accent bar and
+breathing room, and the RTL override rule is empty — there is nothing
+to override. The <code>dir="rtl"</code> attribute does all the work;
+the logical properties simply follow the text direction wherever it
+points.</p>
+
 <p>Translation table: <code>width→inline-size</code>,
 <code>height→block-size</code>,
 <code>margin-left→margin-inline-start</code>,
 <code>text-align: left→text-align: start</code>,
 <code>top/bottom→inset-block-start/end</code>. This app is bilingual
 (EN + Persian RTL) — and logical properties are exactly how such sites
-stay sane.</p>
+stay sane. Predict the Try-it: both callouts share one class; the
+accent bar sits on the left in the English one and on the right in the
+Persian one, same CSS. Gotcha: mixing physical and logical properties
+on the same element invites order-dependent surprises — later
+declarations win whichever vocabulary they use — so pick logical on
+anything that might ever be mirrored, and stay consistent.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -308,8 +361,11 @@ stay sane.</p>
             {
                 "title": "The Functions Toolbox",
                 "html": """
-<p>You've met these throughout the course — this lesson lines them up as
-one toolbox:</p>
+<p>You've met these functions scattered across the course, each solving
+one problem. This lesson lines them up as one toolbox — because their
+shared superpower is the point: every function is recalculated live,
+composes with the others, and turns CSS from static declarations into a
+calculation language:</p>
 
 <pre class="code">/* math */
 width: calc(100% - 250px);        /* mix units */
@@ -331,6 +387,17 @@ content: attr(data-label);        /* pull an attribute's text into content */
 .counter { counter-increment: step; }
 .counter::before { content: counter(step) ". "; }</pre>
 
+<p>Walk it family by family. The math family mixes units and bounds
+values: calc() for arithmetic (spaces around + and −!), clamp() for a
+fluid value with hard floors and ceilings, min()/max() for one-sided
+guards. The variables family reads design tokens, with an inline
+fallback for safety. The colour family builds tints with color-mix()
+and writes colours with alpha in the modern space-separated syntax.
+Then two specials: attr() surfaces an HTML attribute's text inside
+generated content — the tag above can print its own data-label without
+JavaScript — and counter() numbers anything you increment, the engine
+behind ordered lists you build yourself:</p>
+
 <ul>
 <li><b>calc()</b> — unit arithmetic; spaces around + and −</li>
 <li><b>min()/max()/clamp()</b> — self-adapting values without media
@@ -342,9 +409,18 @@ content</li>
 </ul>
 
 <p>They compose: <code>width: min(100%, calc(250px + 2rem))</code>,
-<code>color: color-mix(in oklab, var(--a), var(--b))</code>. The
-functions are the "programming language" layer of CSS — pure, stateless,
-and recalculated live as inputs change.</p>
+<code>color: color-mix(in oklab, var(--a), var(--b))</code> — functions
+nest freely, each returning a value the outer one consumes. The
+functions are the "programming language" layer of CSS — pure,
+stateless, and recalculated live as inputs change (a resize, a theme
+flip, a changed custom property).</p>
+
+<p>Predict the Try-it: a self-numbered list built from counter(), a tag
+whose bracketed code comes from attr(), and a fluid box bounded by
+min() and calc() together. Gotcha: attr() reads raw strings — the
+extended form with types (attr(data-n number)) is still sparse in
+browser support, and a missing attribute inside content: yields the
+empty string, not an error, so typos fail silently.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -413,9 +489,7 @@ and recalculated live as inputs change.</p>
             {
                 "title": "2D Transforms",
                 "html": """
-<p><code>transform</code> moves, scales, rotates and skews an element
-<i>visually</i> — layout is untouched (neighbours never move; that's the
-crucial difference from positioning):</p>
+<p>Think of <code>transform</code> as sliding a photograph across a window pane: the view changes, but nothing behind the glass rearranges. It visually shifts, grows, rotates or slants an element <i>after</i> layout, so its neighbours never budge. That is the crucial difference from changing <code>margin</code> or <code>top</code>, which forces the browser to recompute the geometry of everything around the element. Because transforms skip that layout work and are composited on the GPU, hover lifts and entrance effects built on them stay smooth even on modest phones.</p>
 
 <pre class="code">.card:hover { transform: translateY(-6px); }      /* lift */
 .zoom:hover { transform: scale(1.06); }           /* grow from center */
@@ -425,20 +499,11 @@ crucial difference from positioning):</p>
 /* compose left to right */
 .stamp { transform: translate(20px, 8px) rotate(-4deg) scale(0.9); }</pre>
 
-<ul>
-<li><code>translate(x, y)</code> — slide; supports percentages of the
-element's own size, and <code>translate(-50%, -50%)</code> is the
-classic "center an absolute element" move</li>
-<li><code>scale(x, y)</code> — enlarge/shrink; <code>scale(0.5)</code>
-half size</li>
-<li><code>rotate(angle)</code> — clockwise degrees</li>
-<li><code>skewX/skewY</code> — slant</li>
-</ul>
+<p>Walk the sample. <code>translateY(-6px)</code> slides the card 6 pixels up — negative Y is up on screen. <code>scale(1.06)</code> grows it 6% around its center; <code>scale(0.5)</code> would halve it. <code>rotate(8deg)</code> turns 8 degrees clockwise, and <code>skewX(-6deg)</code> leans it like italic type. Predict before you paste: the first two do nothing until you hover, the last two look permanently tilted.</p>
 
-<p>Transforms don't trigger layout recalculation — the browser
-composites them on the GPU, which is why hover lifts and load-in
-animations are smooth. The transform <b>origin</b> defaults to center;
-<code>transform-origin: top left</code> moves the hinge.</p>
+<p>The final rule composes three functions in one declaration, applied left to right: the stamp first moves 20px right and 8px down, then rotates -4 degrees, then shrinks to 0.9 — each step pivoting around the position the previous one produced. Reorder the functions and the rendered result genuinely changes. Also remember <code>translate</code> accepts percentages of the element's <i>own</i> size, which is exactly how the classic <code>translate(-50%, -50%)</code> centers an absolutely positioned element.</p>
+
+<p>Two habits worth keeping. The pivot is <code>transform-origin</code> — the center by default; <code>top left</code> turns the element into a door swinging on its hinge. And any non-none transform creates a stacking context and becomes the containing block for <code>fixed</code> and <code>absolute</code> descendants, which is why a "position: fixed" badge sometimes stops pinning to the viewport. When animating, transition <code>transform</code> — never <code>top</code> or <code>left</code>.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -472,9 +537,7 @@ animations are smooth. The transform <b>origin</b> defaults to center;
             {
                 "title": "3D Transforms & Perspective",
                 "html": """
-<p>Add a <code>Z</code> axis and transforms go three-dimensional. The
-key: 3D only reads as depth when an ancestor sets the
-<b>perspective</b>:</p>
+<p>2D transforms slide things around the page; add a <code>Z</code> axis and they can tilt toward or away from you — but only if somebody supplies a camera. That camera is <b>perspective</b>: the distance from the viewer to the Z=0 plane. Without it, <code>rotateX(60deg)</code> renders as a squashed rectangle; with it, you genuinely see the top face receding. Rule of thumb: <code>perspective</code> declared on the <i>parent</i> gives all its children one shared camera.</p>
 
 <pre class="code">.scene { perspective: 600px; }        /* the viewer's distance */
 
@@ -483,24 +546,11 @@ key: 3D only reads as depth when an ancestor sets the
 }
 .card3d { transform: rotateY(180deg); } /* turn around */</pre>
 
-<ul>
-<li><b>perspective</b> on the parent = the camera; smaller value =
-stronger depth (like a wide-angle lens)</li>
-<li><code>rotateX</code> (around the horizontal axis — think "tumble
-back"), <code>rotateY</code> (around the vertical — "turn like a
-door"), <code>rotateZ</code> = plain 2D rotate</li>
-<li><code>translateZ</code> — pop toward the viewer</li>
-<li><code>transform-style: preserve-3d</code> — keeps a child's 3D in
-the parent's space instead of flattening it (the card-flip essential:
-front and back faces plus rotateY(180deg))</li>
-</ul>
+<p>Read it as a two-actor scene. <code>.scene</code> plants the camera 600px from the page — small enough that depth reads strongly, like a wide-angle lens; 2000px would look nearly flat. Inside, predict what <code>rotateX(25deg)</code> does to <code>.flip</code>: it tips the top edge away from the viewer, so you see a trapezoid whose far edge is slightly narrower. <code>.card3d</code> rotates a full 180° around the vertical axis — you are looking at its back face, mirrored, like reading through thin paper.</p>
 
-<p>The famous 3D card flip is: a perspective scene, a preserve-3d
-inner, two absolutely-stacked faces (one pre-rotated
-<code>rotateY(180deg)</code> with <code>backface-visibility:
-hidden</code>), and a hover that rotates the inner 180°. Every lesson
-seed here renders in your browser — try building it in the
-Playground.</p>
+<p>The axes, memorised once: <code>rotateX</code> tumbles around the horizontal axis (a coin flipping away), <code>rotateY</code> swings around the vertical one (a door on its hinge), <code>rotateZ</code> is ordinary 2D rotation, and <code>translateZ</code> pops the element toward the camera — under strong perspective a few pixels of Z visibly enlarge it.</p>
+
+<p>The gotchas that bite everyone building the classic 3D card flip: children of a 3D-transformed element are flattened back into its plane unless you set <code>transform-style: preserve-3d</code> on the flipping inner. Then stack the two faces absolutely, pre-rotate one <code>rotateY(180deg)</code>, and give both <code>backface-visibility: hidden</code>, so hover can rotate the inner a full turn. And don't confuse the property with the function: <code>perspective: 600px</code> on the parent is a shared camera, while <code>transform: perspective(600px)</code> gives this one element a private camera that its children won't share.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -554,9 +604,7 @@ Playground.</p>
             {
                 "title": "Transitions",
                 "html": """
-<p>A <b>transition</b> animates the change between two states — hover
-lifts, menu slides, colour fades — automatically. Declare it on the
-<i>resting</i> state so it plays both ways:</p>
+<p>Nothing makes an interface feel cheaper than a state change that snaps. A <b>transition</b> tells the browser: when this property changes between two states, don't jump — interpolate. You declare it once on the <i>resting</i> state, and every change that follows — hover, focus, a toggled class — animates itself, in both directions, for free.</p>
 
 <pre class="code">.button {
   background: #1572b6;
@@ -567,28 +615,11 @@ lifts, menu slides, colour fades — automatically. Declare it on the
   transform: translateY(-2px);
 }</pre>
 
-<p>The four parts (shorthand order: property duration timing delay):</p>
+<p>Walk it. The resting rule carries two comma-separated transitions; the hover rule only lists destination values. Predict the motion: the background blends to <code>#0d4e82</code> over 300ms while the 2px lift finishes in 200ms — the mismatch is deliberate, quick physical feedback first, colour settling underneath. Each transition has four parts in a fixed order: property, duration, timing-function, delay — the last two optional.</p>
 
-<ul>
-<li><b>transition-property</b> — which property to animate (or
-<code>all</code> — convenient, slightly wasteful)</li>
-<li><b>transition-duration</b> — seconds: 150–250ms for micro-feedback,
-300–400ms for panels</li>
-<li><b>transition-timing-function</b> — the pacing curve:
-<code>ease</code> (default), <code>linear</code>, <code>ease-in</code>,
-<code>ease-out</code>, <code>ease-in-out</code>, or custom
-<code>cubic-bezier(...)</code></li>
-<li><b>transition-delay</b> — wait before starting (negative values
-start mid-flight!)</li>
-</ul>
+<p>The timing function is the pacing: <code>ease</code> (the default), <code>linear</code>, <code>ease-in</code>, <code>ease-out</code>, <code>ease-in-out</code>, or a custom <code>cubic-bezier(...)</code> when stock curves won't do. Durations: 150–250ms feels right for micro-feedback, 300–400ms for panels. A <code>transition-delay</code> stalls the start — and negative delays start mid-flight.</p>
 
-<p>What can transition: most numeric/colour properties — opacity,
-transform, colours, shadows, sizes. What can't: <code>display</code>,
-<code>height: auto</code> (use max-height or grid-template-rows tricks),
-font-family. And performance wisdom: <b>transition only opacity and
-transform</b> for anything that moves continuously — they're
-GPU-accelerated; animating width/top forces layout on every
-frame.</p>
+<p>Gotchas. Only interpolable properties transition: opacity, transform, colours, shadows and most numbers work; <code>display</code> snaps, and <code>height: auto</code> can't animate — use the <code>grid-template-rows: 0fr → 1fr</code> or max-height trick instead. Avoid <code>transition: all</code> — it animates whatever happens to change, often expensively. And the performance rule doubles here: anything moving continuously should transition <b>only opacity and transform</b>, because animating <code>width</code> or <code>top</code> forces a layout pass on every single frame.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -653,9 +684,7 @@ frame.</p>
             {
                 "title": "@keyframes & Animation Properties",
                 "html": """
-<p>Transitions react to state changes; <b>animations</b> play on their
-own. Define the movie with <code>@keyframes</code>, run it with
-<code>animation</code>:</p>
+<p>Transitions need a state change to react to. <b>Animations</b> run on their own schedule from the moment they apply — which is what you want for entrances, attention loops and multi-step sequences that no hover could express. Define the movie once with <code>@keyframes</code>, then screen it with an <code>animation</code> property.</p>
 
 <pre class="code">@keyframes slide-in {
   from { opacity: 0; transform: translateX(-24px); }
@@ -673,21 +702,11 @@ own. Define the movie with <code>@keyframes</code>, run it with
 }
 .badge { animation: pulse 1.6s ease-in-out infinite; }</pre>
 
-<ul>
-<li><code>from</code>/<code>to</code> are 0% / 100%; percentages stage
-<i>multiple</i> steps (the pulse above)</li>
-<li>the <code>animation</code> shorthand order: name duration timing
-delay iteration-count direction fill-mode</li>
-<li>only the properties <i>listed in the keyframes</i> animate —
-everything else stays put</li>
-</ul>
+<p>Walk both examples. <code>slide-in</code> has exactly two frames: the toast starts invisible and 24px to the left, then animates to visible at its resting spot over 0.4s with an <code>ease-out</code> deceleration — predict it sliding in while fading up. <code>pulse</code> stages three frames with percentages (<code>from</code>/<code>to</code> are just 0%/100%): scale 1, then 1.12 at the halfway point, back to 1 — and <code>infinite</code> repeats it every 1.6s, a patient heartbeat.</p>
 
-<p>A state change can also trigger a run: toggling a class whose
-animation is defined plays it once — the pattern behind entrance
-effects and shake-on-error. Combine with
-<code>animation-delay</code> + a tiny per-item delay
-(<code>style="animation-delay: 0.1s"</code>) for staggered entrances:
-cards cascading in one after another.</p>
+<p>The <code>animation</code> shorthand reads: name, duration, timing-function, delay, iteration-count, direction, fill-mode. Mind the order trap: the first time value is always the duration, the second the delay — <code>animation: pulse 1.6s 0.2s</code> waits 0.2s before starting. Only the properties <i>listed in the keyframes</i> animate; everything else stays put.</p>
+
+<p>Two patterns to steal. Toggling a class that carries an animation plays it once — the whole secret behind shake-on-error and re-triggerable entrances (remove and re-add the class to replay). And staggered entrances are just per-item delays: give the third card <code>animation-delay: 0.2s</code> and the list cascades in one after another. Wrap decorative loops in a <code>prefers-reduced-motion</code> query — the Accessibility chapter shows the standard mercy rule.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -726,32 +745,9 @@ cards cascading in one after another.</p>
             {
                 "title": "Timing, Iteration, Direction & Fill Mode",
                 "html": """
-<p>The four fine-tuning knobs, and the one people always forget:</p>
+<p>Once an animation runs, four knobs shape its character: how each cycle is paced, how many times it repeats, which way it travels, and what the element looks like before the first frame and after the last. Master these and the same keyframes read as a pendulum, a heartbeat or a bouncy badge.</p>
 
-<ul>
-<li><b>timing-function</b> — pacing <i>within</i> each cycle:
-<code>ease</code>, <code>linear</code>,
-<code>ease-in-out</code>, or custom
-<code>cubic-bezier(0.34, 1.56, 0.64, 1)</code> (overshoot — the bouncy
-one; values above 1 overshoot the target)</li>
-<li><b>iteration-count</b> — <code>3</code> or
-<code>infinite</code></li>
-<li><b>direction</b> — <code>normal</code>, <code>reverse</code>,
-<code>alternate</code> (play forward then backward — the pendulum),
-<code>alternate-reverse</code></li>
-<li><b>fill-mode</b> — what the element looks like <b>before and
-after</b>: <code>none</code> (snap back — default!),
-<code>forwards</code> (hold the last keyframe),
-<code>backwards</code> (apply the first keyframe during the delay),
-<code>both</code></li>
-</ul>
-
-<p>fill-mode is the gotcha: an entrance animation with a delay and
-<code>from { opacity: 0 }</code> shows the element <i>visible</i>
-during the delay unless you set
-<code>backwards</code> (or the shorthand
-<code>animation-fill-mode: both</code>). That's why the earlier
-staggered toasts said <code>backwards</code>.</p>
+<p>The <b>timing-function</b> paces <i>within</i> each cycle: <code>ease</code>, <code>linear</code>, <code>ease-in-out</code>, or a custom curve like <code>cubic-bezier(0.34, 1.56, 0.64, 1)</code> — Y values above 1 overshoot the target, which is where bounce comes from. The <b>iteration-count</b> is a number or <code>infinite</code>. The <b>direction</b> can be <code>normal</code>, <code>reverse</code>, or <code>alternate</code> — forward, then backward, each cycle, like a pendulum. The <b>fill-mode</b> decides what the element looks like outside the run: <code>none</code> (the default — snap back!), <code>forwards</code> (hold the last keyframe), <code>backwards</code> (apply the first keyframe during any delay), <code>both</code>.</p>
 
 <pre class="code">.pendulum {
   transform-origin: top center;
@@ -762,9 +758,9 @@ staggered toasts said <code>backwards</code>.</p>
   to   { transform: rotate(14deg); }
 }</pre>
 
-<p>And always: respect <code>prefers-reduced-motion</code> (the
-Accessibility chapter) — wrap decorative animation in a media query so
-motion-sensitive users get a calm page.</p>
+<p>Predict the pendulum before reading on: <code>ease-in-out</code> slows it at both ends of the arc the way gravity does, and <code>alternate</code> makes the return swing a reversed playback instead of a jarring jump back to -14deg. Mentally delete <code>alternate</code> and picture the snap — that is how much one keyword buys. Also note <code>transform-origin: top center</code> moving the pivot, so the swing hangs from the top like a real pendulum.</p>
+
+<p>fill-mode is the classic beginner trap. An entrance with a delay and <code>from { opacity: 0 }</code> shows the element <i>fully visible</i> during the delay, because fill-mode <code>none</code> keeps the resting style until the first frame lands. Set <code>backwards</code> — or <code>both</code> in the shorthand — to apply the first keyframe during the wait. And as always: wrap decorative motion in <code>prefers-reduced-motion: reduce</code> so motion-sensitive users get a calm page (the Accessibility chapter has the standard snippet).</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -849,8 +845,7 @@ motion-sensitive users get a calm page.</p>
             {
                 "title": "Filters, Opacity & Blend Modes",
                 "html": """
-<p><code>filter</code> applies image effects to any element — the same
-sliders your photo editor has:</p>
+<p><code>filter</code> hands any element the same sliders your photo editor has: blur, brightness, contrast, saturate, grayscale, sepia, hue-rotate, invert. Reach for it when an image needs a mood — dimmed, colourless, softly out of focus behind a modal — or when a hover should sharpen attention. The effect is paint-only, so it never disturbs the layout.</p>
 
 <pre class="code">img.blurred  { filter: blur(4px); }
 img.mood     { filter: grayscale(0.8) brightness(0.9) contrast(1.1); }
@@ -860,24 +855,11 @@ img.mood     { filter: grayscale(0.8) brightness(0.9) contrast(1.1); }
 
 .drop { filter: drop-shadow(0 6px 8px rgba(0,0,0,0.35)); }</pre>
 
-<ul>
-<li><b>blur(px)</b>, <b>brightness()</b>, <b>contrast()</b>,
-<b>saturate()</b>, <b>grayscale()</b>, <b>sepia()</b>,
-<b>hue-rotate(deg)</b>, <b>invert()</b> — compose in one filter
-declaration; they chain left to right</li>
-<li><b>drop-shadow()</b> — like box-shadow but follows the element's
-<i>actual alpha shape</i>: a transparent PNG's cloud gets a cloud-shaped
-shadow, and it wraps SVG icons perfectly</li>
-<li><b>opacity</b> — the whole element and its children fade together
-(colour alpha fades one colour)</li>
-</ul>
+<p>Walk the samples. <code>blur(4px)</code> spreads each pixel over a 4px radius — soft, decorative. The <code>mood</code> rule chains three functions in one declaration, applied left to right: 80% grayscale, then slightly darker, then slightly more contrast — predict a flat, film-like image. <code>.glass:hover</code> clears the filter on hover, the standard "unfocused until needed" pattern. <code>opacity: 0.55</code> is not a filter but sits in the same family: it fades the whole element <i>including its children</i>, while an alpha on a colour would fade only that one colour.</p>
 
-<p><b>Blend modes</b> mix layers like Photoshop:
-<code>mix-blend-mode: multiply</code> on an element blends it with
-what's behind it (multiply darkens, screen lightens, overlay boosts
-contrast); <code>background-blend-mode</code> blends an element's own
-background layers — the gradient-over-image looks from the Backgrounds
-chapter get art-directed here.</p>
+<p><code>drop-shadow(0 6px 8px ...)</code> looks like <code>box-shadow</code> but traces the element's <i>actual alpha shape</i>: a transparent PNG cloud gets a cloud-shaped shadow, and it hugs SVG icons perfectly — box-shadow would only outline their rectangular box.</p>
+
+<p>Blend modes mix layers like Photoshop. <code>mix-blend-mode: multiply</code> blends an element with whatever sits behind it (multiply darkens, screen lightens, overlay boosts contrast); <code>background-blend-mode</code> instead blends an element's <i>own</i> background layers — gradient over photo, art-directed. Two gotchas: any non-none filter creates a stacking context, so z-index neighbours can reshuffle; and large blurs over big areas are paint-expensive — prefer fading opacity or pre-baked images where speed matters.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -950,8 +932,7 @@ chapter get art-directed here.</p>
             {
                 "title": "Advanced Selectors in Practice",
                 "html": """
-<p>The Selectors chapter introduced :is/:where/:has/:not — this lesson
-is the applied, pattern-building one. Patterns worth memorising:</p>
+<p>The Selectors chapter introduced <code>:is</code>, <code>:where</code>, <code>:has</code> and <code>:not</code>; this lesson builds working patterns with them. The idea behind all six: the DOM already knows its own state, so CSS can ask questions instead of waiting for JavaScript to add classes.</p>
 
 <pre class="code">/* 1. lighthouse list: everything except the done ones gets a marker */
 li:not(.done)::before { content: "☐ "; }
@@ -972,17 +953,11 @@ ul:has(&gt; li:nth-child(3)) { columns: 2; }
 /* 6. compact grouping */
 :is(h1, h2, h3):not(.logo) { line-height: 1.2; }</pre>
 
-<p>Also from the toolbox: <code>:focus-visible</code> (focus rings only
-for keyboard users — Accessibility chapter),
-<code>:nth-child(An+B)</code> formulas (<code>3n+1</code> = 1st, 4th,
-7th...), <code>:nth-last-child()</code> for "counting from the end"
-quantity checks, <code>:empty</code>, <code>:default</code>,
-<code>:indeterminate</code>.</p>
+<p>Walk them one at a time. Pattern 1 puts a checkbox glyph before every list item <i>except</i> the done ones — <code>:not()</code> inverts, <code>::before</code> paints the glyph. Pattern 2 is the gapless-spacing trick: <code>* + *</code> matches every child that has a previous sibling, so the first box gets no margin and outer edges stay flush. Pattern 3 is <code>:has()</code> doing what needed JavaScript for twenty years — the label of any row containing an invalid input turns red, live, as the user types. Pattern 4 is a quantity query: the moment a list holds a third item, it becomes two columns. Pattern 5 styles every link at <b>zero specificity</b>, so any later rule wins without a fight. Pattern 6 groups three headings with <code>:is()</code> — predict the score: <code>:is()</code> takes the specificity of its <i>most</i> specific argument, so the selector counts as <code>h1</code> plus <code>:not(.logo)</code>.</p>
 
-<p>The meta-skill: when you reach for a class to mark a state the DOM
-already knows (:hover, :checked, :invalid, "contains an image"), stop —
-a selector already expresses it. Fewer classes, markup that stays
-clean, and CSS that documents itself.</p>
+<p>Keep the wider toolbox handy: <code>:nth-child(An+B)</code> formulas (<code>3n+1</code> hits items 1, 4, 7...), <code>:nth-last-child()</code> for counting from the end, <code>:empty</code>, <code>:default</code>, <code>:indeterminate</code>.</p>
+
+<p>The meta-skill: before reaching for a class to mark a state — hover, checked, invalid, "contains an image" — ask whether a selector already expresses it. Fewer hooks, cleaner markup, CSS that documents itself.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1055,9 +1030,7 @@ clean, and CSS that documents itself.</p>
             {
                 "title": "@layer in Depth",
                 "html": """
-<p>From the Cascade chapter: <code>@layer</code> orders your stylesheet
-into explicit tiers whose order beats specificity. Here's the
-professional architecture in full:</p>
+<p>The Cascade chapter promised that <code>@layer</code> lets you draw the winner bracket yourself: sort declarations into named tiers, and tier order outranks specificity. Here is the professional architecture in full — six named tiers, declared in one breath before any block fills them.</p>
 
 <pre class="code">@layer reset, base, layout, components, utilities, overrides;
 
@@ -1077,26 +1050,11 @@ professional architecture in full:</p>
   .mt-2 { margin-top: 0.5rem; }
 }</pre>
 
-<p>The semantics:</p>
+<p>Each block fills one tier, and each tier has one job. reset holds only mechanical normalisation — border-box, zeroed margins — that nobody should ever need to out-rank. base sets element-level defaults: fonts, text colour, link colour. components holds the classes your markup actually uses, and utilities are single-purpose override classes like <code>.mt-2</code>. Notice what is absent: no IDs, no <code>!important</code>, no specificity games — the tiers do the sorting.</p>
 
-<ul>
-<li>later layers <b>always beat</b> earlier layers — one class in
-<code>utilities</code> overrides a three-ID selector in
-<code>base</code>. Specificity still ranks <i>within</i> a layer</li>
-<li><b>unlayered styles beat all layers</b> — one-off page fixes slot
-in above the system</li>
-<li>repeat layer names to append: <code>@layer base { ... }</code> adds
-to base wherever it appears</li>
-<li><code>@layer base, components;</code> up front fixes the order even
-when the blocks appear in other files</li>
-</ul>
+<p>Predict the fights before reading the verdicts. The single class <code>.text-center</code> in <code>utilities</code> beats a three-ID selector in <code>base</code>, because layers are compared <i>before</i> specificity — yet inside one layer, specificity still ranks normally, so <code>base</code>'s own rules resolve the old way. Unlayered styles outrank every layer, the escape hatch for one-off page fixes. Repeating a name appends to it, and the up-front <code>@layer a, b;</code> line locks the order even when the blocks live in different files.</p>
 
-<p>This is how design systems stop fighting themselves: resets can't
-accidentally beat components, utilities always win, and third-party
-styles get their own sealed layer
-(<code>@layer vendor;</code> before importing). Compared to the
-!important arms race, layers are peace treaties with an enforcement
-mechanism.</p>
+<p>The design-system payoff: resets can never accidentally beat components, utilities always win arguments, and third-party CSS gets a sealed <code>@layer vendor;</code> declared before you import it. One genuinely surprising gotcha — <code>!important</code> <i>reverses</i> layer order: among important declarations the <i>earliest</i> layer wins, and any important declaration beats a normal one outright. Use important inside layered systems only when you truly mean it.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1147,10 +1105,7 @@ mechanism.</p>
             {
                 "title": "Subgrid & Advanced Grid",
                 "html": """
-<p><b>Subgrid</b> fixes grid's last annoyance: a nested grid's rows
-don't line up with its parent's. With
-<code>grid-template-rows: subgrid</code>, the child inherits the
-parent's tracks — every card in a row shares the same row heights:</p>
+<p>Every card-grid has the same old bug: one card's title wraps to two lines and the Buy buttons in the other cards no longer line up. A nested grid couldn't fix it, because a child grid sizes its own rows independently. <b>Subgrid</b> hands the child the parent's tracks instead — <code>grid-template-rows: subgrid</code> means "pace me with the same rows my siblings use".</p>
 
 <pre class="code">.cards {
   display: grid;
@@ -1164,21 +1119,11 @@ parent's tracks — every card in a row shares the same row heights:</p>
 }
 /* all three cards' titles/prices/buttons align across cards */</pre>
 
-<p>Before subgrid, card rows misaligned whenever one title wrapped to
-two lines; now the parent's rows pace every card. It also works for
-columns — form labels aligned across nested sections.</p>
+<p>Read it as a contract. The parent lays out three 1fr columns; each card is itself a grid that spans three rows of the parent and, with subgrid, renders its title, body and button into those <i>shared</i> rows. Predict what happens when the middle card's title wraps: the parent's first row grows for everyone, and every button still sits on the same baseline. Without subgrid, only the middle card would stretch and the buttons would scatter.</p>
 
-<p>Other advanced grid moves from MDN's guides:</p>
+<p>It works on columns too — nested form sections whose labels align across containers. Support is Baseline across all major browsers since 2023, so use it freely; just remember a subgridded axis inherits the parent's <code>gap</code>, and a different gap on the child is ignored along it.</p>
 
-<ul>
-<li><b>named lines</b> — <code>grid-template-columns: [main-start] 1fr
-[aside-start] 300px [main-end]</code> — placement by name, resilient to
-track changes</li>
-<li><b>grid-auto-flow: dense</b> — backfill holes left by spanning
-items (masonry-ish)</li>
-<li><b>item spanning + auto-placement</b> — mixed explicit/auto layouts:
-one hero spanning 2×2 inside an auto-flowing grid</li>
-</ul>
+<p>Three more advanced moves from MDN's guides. <b>Named lines</b> — <code>grid-template-columns: [main-start] 1fr [aside-start] 300px [main-end]</code> — let you place items by name, so renumbering tracks doesn't break placement. <code>grid-auto-flow: dense</code> backfills the holes spanning items leave behind, masonry-style packing for mixed image sizes. And mixing item spanning with auto-placement gives you one 2×2 hero inside a grid that otherwise flows on its own.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1225,12 +1170,9 @@ one hero spanning 2×2 inside an auto-flowing grid</li>
             {
                 "title": "Anchor Positioning & Scroll-driven Animations",
                 "html": """
-<p>Two of the newest platform powers — both turn "impossible without
-JavaScript" into a few lines.</p>
+<p>Two of the newest platform powers — both turn "impossible without JavaScript" into a few lines of CSS.</p>
 
-<p><b>Anchor positioning</b> — attach a floating element (tooltip,
-popover, menu) to an anchor element, and the browser keeps it glued,
-flipping to stay on-screen:</p>
+<p><b>Anchor positioning</b> attaches a floating element — tooltip, popover, menu — to an anchor element and lets the browser keep it glued there, flipping it to stay on-screen. For years that meant hundreds of lines of measuring JavaScript in every tooltip library; now it is declarative.</p>
 
 <pre class="code">.info-btn { anchor-name: --info; }
 
@@ -1241,13 +1183,9 @@ flipping to stay on-screen:</p>
   position-try-fallbacks: flip-block;  /* flip if no room */
 }</pre>
 
-<p>For years every tooltip library was 300 lines of measuring code;
-anchor positioning makes placement declarative. It pairs beautifully
-with the native <code>&lt;dialog&gt;</code> and the Popover API
-(HTML Advanced chapter).</p>
+<p>Walk it. The button declares itself as <code>--info</code>; the tooltip's <code>position-anchor</code> adopts that name, so its <code>absolute</code> positioning now resolves against the <i>button</i> instead of the nearest positioned ancestor. <code>position-area: top</code> seats it above the anchor — predict the edge case the last line covers: bring the button near the top of the viewport and there is no room above, so <code>flip-block</code> re-seats the tooltip below. It pairs naturally with the native <code>&lt;dialog&gt;</code> element and the Popover API.</p>
 
-<p><b>Scroll-driven animations</b> — animations whose progress follows
-the scroll, no scroll listeners:</p>
+<p><b>Scroll-driven animations</b> swap an animation's clock: progress follows scrolling instead of seconds — no scroll listeners, no jank from main-thread handlers.</p>
 
 <pre class="code">.reading-bar {
   position: fixed; top: 0; left: 0; height: 4px;
@@ -1263,11 +1201,7 @@ the scroll, no scroll listeners:</p>
   animation-timeline: view();         /* progress = element in view */
 }</pre>
 
-<p><code>scroll()</code> ties to page scroll, <code>view()</code> to the
-element's own journey through the viewport — reveal-on-scroll and
-reading-progress bars become pure CSS. Both features are rolling out
-across browsers; check <code>@supports</code> (Compatibility chapter)
-and let the page simply work without them elsewhere.</p>
+<p>The reading bar starts at <code>scaleX(0)</code>, grows from its left edge, and its <code>scroll(root)</code> timeline maps page progress onto the animation — 40% down the page, bar 40% wide. <code>view()</code> instead tracks the element's own journey through the viewport, which is reveal-on-scroll in two lines. Support is still uneven across engines: wrap both in <code>@supports</code> (Compatibility chapter) so other browsers keep a static fallback — and give users with reduced-motion preferences a still page.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1329,10 +1263,7 @@ and let the page simply work without them elsewhere.</p>
             {
                 "title": "Focus, :focus-visible & Accessible States",
                 "html": """
-<p>CSS's accessibility duties start with the <b>focus ring</b>. Removing
-<code>outline</code> without a replacement strands keyboard users —
-they literally cannot see where they are. Modern CSS makes the ring
-precise:</p>
+<p>CSS's first accessibility duty is the <b>focus ring</b>. Keyboard users navigate with Tab, and the ring is their cursor — delete <code>outline</code> with no replacement and they are literally lost on your page. The old dilemma was aesthetic: rings also appeared for mouse clicks, where designers hated them. <code>:focus-visible</code> ends the argument by letting the browser decide who needs the ring.</p>
 
 <pre class="code">/* mouse clicks: no ring. Keyboard Tab: clear ring. */
 :focus-visible {
@@ -1341,25 +1272,11 @@ precise:</p>
 }
 :focus:not(:focus-visible) { outline: none; }</pre>
 
-<p><code>:focus-visible</code> fires only when the browser thinks the
-user needs it (keyboard navigation) — the best of both worlds. Pair it
-with <code>:focus-within</code> (highlight a whole form row when its
-input is focused) and consider <code>scroll-margin-top</code> on
-targets so keyboard jumps don't hide content under sticky
-headers.</p>
+<p>Walk the pair of rules, then run the two tests in your head. Click the button with a mouse: the browser judged this a pointer user, so <code>:focus-visible</code> does not match and the second rule strips the outline — clean. Now press Tab instead: the browser has watched the interaction method, matches <code>:focus-visible</code>, and paints a 3px yellow ring with a 2px gap (<code>outline-offset</code> keeps it clear of the button's edge). Every modern engine agrees on the essentials, so this snippet is safe to paste into every project.</p>
 
-<p>States to honour in CSS:</p>
+<p>Related tools: <code>:focus-within</code> styles a whole form row while its input holds focus, and <code>scroll-margin-top</code> on link targets keeps keyboard jumps from hiding content under sticky headers.</p>
 
-<ul>
-<li><code>:hover</code> — never hide information behind it alone (touch
-has no hover)</li>
-<li><code>:disabled</code> — dim but keep contrast readable; explain
-<i>why</i> in text</li>
-<li><code>:invalid</code> / <code>:user-invalid</code> — the latter only
-after the user touched the field (kinder validation styling)</li>
-<li>colour alone never carries meaning — pair red errors with icons or
-text</li>
-</ul>
+<p>States to honour honestly. Never put information behind <code>:hover</code> alone — touch screens have no hover. Keep <code>:disabled</code> readable and explain <i>why</i> in text next to the control. Prefer <code>:user-invalid</code> over <code>:invalid</code> so error styling waits until the user has actually touched the field — shouting red on page load is worse than silence. And colour never carries meaning alone: pair a red error with an icon or words.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1389,7 +1306,7 @@ text</li>
             {
                 "title": "Reduced Motion, Contrast & Forced Colors",
                 "html": """
-<p>CSS can sense and honour user needs through media queries:</p>
+<p>CSS can sense user needs and honour them through media queries — no JavaScript, no settings page of your own. The three that matter most: reduced motion, dark preference, and forced colours.</p>
 
 <pre class="code">/* vestibular disorders: no decorative motion */
 @media (prefers-reduced-motion: reduce) {
@@ -1411,21 +1328,9 @@ text</li>
   .button { border: 1px solid ButtonText; }
 }</pre>
 
-<ul>
-<li><b>prefers-reduced-motion</b> — the snippet above is the standard
-mercy rule: parallax, auto-carousels and bounces become still; the
-pattern this very app ships (check its stylesheet!)</li>
-<li><b>contrast</b> — WCAG asks 4.5:1 for body text; test
-<code>color-mix()</code>-generated tints before shipping them; never
-convey state by colour alone</li>
-<li><b>forced-colors</b> — high-contrast themes override your palette;
-keep borders and outlines (they become the visible structure) and avoid
-baking colours into essential meaning</li>
-</ul>
+<p>Walk the first block — it is the standard mercy rule, and this app ships it too. Users with vestibular disorders get motion sickness from parallax, auto-carousels and bouncing badges; forcing every duration to 0.01ms with one iteration ends the movement while keeping the end states, and <code>scroll-behavior: auto</code> stops smooth-scroll jumps. Predict the result: the page looks identical, just still. The second block flips the OS preference into tokens: when the system is dark, the <code>:root</code> variables change — and because every rule reads <code>var(--bg)</code>, the whole page follows. Tokens from the Architecture chapter, doing real work. The third block answers Windows High Contrast themes, which override your palette: <code>ButtonText</code> is a system keyword that resolves to the user's theme colour, and borders and outlines become the visible structure of your UI.</p>
 
-<p>Accessibility in CSS is mostly restraint: the platform's defaults
-are good — don't remove outlines, don't disable zoom, don't move things
-without permission.</p>
+<p>Gotchas: WCAG asks 4.5:1 contrast for body text (3:1 for large text), so test any <code>color-mix()</code>-generated tint before shipping it; never let colour alone carry meaning. In forced-colours mode, don't bake essential information into your chosen colours — the user's theme owns them now. Mostly this is a chapter about restraint: don't remove outlines, don't disable zoom, don't move things without permission.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1486,8 +1391,7 @@ without permission.</p>
             {
                 "title": "Naming Conventions & BEM",
                 "html": """
-<p>Stylesheets rot when names lie. Conventions exist to keep intent
-readable. The most famous: <b>BEM</b> — Block, Element, Modifier:</p>
+<p>Stylesheets rot when names lie: is <code>.title</code> safe to change, or does a modal three screens away depend on it? Conventions keep intent readable, and the most famous is <b>BEM</b> — Block, Element, Modifier. A block is a standalone component, an element is a part of one, a modifier is a variant.</p>
 
 <pre class="code">.card { }                    Block: the component
 .card__title { }             Element: a part of it (double underscore)
@@ -1495,22 +1399,9 @@ readable. The most famous: <b>BEM</b> — Block, Element, Modifier:</p>
 .card--featured { }          Modifier: a variant (double dash)
 .card--compact { }</pre>
 
-<ul>
-<li>Every selector is one flat class — <b>zero specificity wars</b>,
-everything overridable by order</li>
-<li>The name tells you the anatomy: <code>.card__title</code> obviously
-belongs to the card, can never leak into <code>.modal__title</code>'s
-business</li>
-<li>Modifiers compose:
-<code>class="card card--featured"</code></li>
-</ul>
+<p>Read the anatomy straight from the names: the double underscore says <code>.card__title</code> belongs to the card and can never interfere with <code>.modal__title</code>'s business; the double dash says <code>.card--featured</code> is the same card in different clothes. In markup a variant composes beside its base — <code>class="card card--featured"</code> — so the card styles apply and the modifier only adds on top. Predict the specificity table: every selector is one flat class, worth 0-1-0, so nothing out-ranks anything and later rules or layers decide. That flatness is the entire point — no descendant selectors means no accidental leaks in either direction. BEM's names run long, but that length is the price of styles that cannot leak.</p>
 
-<p>Alternatives have different trade-offs: <b>SMACSS</b> categorises
-rules (base/layout/module/state/theme), <b>ITCSS</b> orders layers by
-specificity (the pre-@layer ancestor — cascade layers now do this
-natively), and modern component frameworks sidestep naming entirely by
-scoping styles to components. BEM remains the lingua franca — even if
-you don't use it, you must be able to read it.</p>
+<p>Alternatives, briefly: <b>SMACSS</b> categorises rules (base, layout, module, state, theme); <b>ITCSS</b> orders layers by specificity — the pre-<code>@layer</code> ancestor, whose job cascade layers now do natively; modern component frameworks scope styles per component and sidestep naming altogether. BEM stays the lingua franca. Even if your next project never uses it, you must be able to read it — and the flat-class discipline it teaches transfers everywhere.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1543,14 +1434,7 @@ you don't use it, you must be able to read it.</p>
             {
                 "title": "Utility CSS & Design Tokens",
                 "html": """
-<p>Two opposite philosophies, both mainstream:</p>
-
-<p><b>Semantic/components-first</b> (BEM world): styles describe
-meaning — <code>.card</code>, <code>.button--danger</code>. Change the
-HTML rarely; change the CSS freely.</p>
-
-<p><b>Utility-first</b> (the Tailwind model): tiny single-purpose
-classes composed in markup:</p>
+<p>Two opposite philosophies, both mainstream. <b>Semantic-first</b> (the BEM world) names styles after meaning — <code>.card</code>, <code>.button--danger</code> — so HTML rarely changes and CSS changes freely. <b>Utility-first</b> (the Tailwind model) composes tiny single-purpose classes directly in the markup:</p>
 
 <pre class="code">&lt;div class="flex gap-3 rounded-lg p-4 bg-blue-50"&gt;...&lt;/div&gt;
 
@@ -1561,19 +1445,11 @@ classes composed in markup:</p>
 .p-4 { padding: 1rem; }
 .bg-blue-50 { background: #eff6ff; }</pre>
 
-<ul>
-<li>No naming bikeshed, no dead CSS, visually consistent by
-construction — at the cost of classes in markup</li>
-<li>Design <b>tokens</b> are the shared foundation either way: named
-decisions (<code>--space-2: 0.5rem</code>,
-<code>--color-brand</code>) that both approaches consume. Utilities
-generated FROM tokens scale without drifting</li>
-</ul>
+<p>Read the markup as a sentence: flexbox layout, 0.75rem gap, 8px radius, 1rem padding, pale blue background. Each utility does exactly one thing, so <code>.p-4</code> can never surprise you; predict the payoff — delete the element and its styles leave with it, so there is no dead CSS and no naming debate. Compare the semantic world, where deleting a component means hunting its CSS across files. The cost of utilities sits in the markup: spacing decisions live in templates, so a redesign touches many files instead of one.</p>
 
-<p>Most mature systems are hybrids: token-driven custom properties,
-semantic component classes for the big pieces, a thin utility layer for
-spacing/alignment one-offs — with cascade layers enforcing the
-pecking order.</p>
+<p>Design <b>tokens</b> are the shared foundation either approach consumes: named decisions like <code>--space-2: 0.5rem</code> and <code>--color-brand</code> defined once as custom properties — one source of truth for the whole system. Generate utilities <i>from</i> tokens and the system scales without drifting — change <code>--color-brand</code> once and every tint, button and badge follows. Tokens also document the scale itself: when a new spacing step is needed, designers see the existing list before inventing a fourth value. That is the trick the tryit below performs: twelve lines that already behave like a tiny design system.</p>
+
+<p>Most mature codebases end up hybrid: token-driven custom properties, semantic component classes for the big pieces, a thin utility layer for spacing and alignment one-offs — with cascade layers enforcing the pecking order (utilities last, so they always win).</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1605,24 +1481,7 @@ pecking order.</p>
             {
                 "title": "Organizing Stylesheets",
                 "html": """
-<p>A stylesheet is a codebase. The structural playbook:</p>
-
-<ul>
-<li><b>One purpose per file</b>: <code>reset.css</code>,
-<code>tokens.css</code>, <code>base.css</code>,
-<code>layout.css</code>, <code>components/*.css</code>,
-<code>utilities.css</code> — imported in that order (or, better,
-declared as cascade <b>layers</b> in that order)</li>
-<li><b>Source order is design</b>: resets first, tokens early (they're
-just definitions), base next, components, utilities last so they always
-win</li>
-<li><b>Component colocated styles</b> — keep a component's styles next
-to its markup/component file; findability beats elegance</li>
-<li><b>Comment the why</b>: "z-index: 40 — above sticky header (30)"
-saves the next person an hour</li>
-<li><b>Lint and prune</b>: dead selectors accumulate like dust; audits
-are spring cleaning</li>
-</ul>
+<p>Past a few hundred rules, a stylesheet is a codebase and needs a structure: one purpose per file, an agreed order, and an obvious place for every new rule. The classic breakdown is <code>reset.css</code>, <code>tokens.css</code>, <code>base.css</code>, <code>layout.css</code>, <code>components/*.css</code>, <code>utilities.css</code> — and the order is not taste, it is the cascade doing your architecture for you.</p>
 
 <pre class="code">/* styles.css — the index */
 @layer reset, tokens, base, layout, components, utilities;
@@ -1633,11 +1492,11 @@ are spring cleaning</li>
 @import "./components.css" layer(components);
 @import "./utilities.css" layer(utilities);</pre>
 
-<p>The cascade chapter's tools (layers, tokens, low-specificity
-selectors) are exactly the mechanisms that make this structure
-enforceable rather than aspirational. Architecture = deciding, up
-front, where things go — so the answer never has to be
-"anywhere".</p>
+<p>Walk the index file. The first line declares all six layers up front, locking their order; each import then lands in its named layer. Predict the consequences: a one-class utility in <code>utilities.css</code> beats any selector in <code>components.css</code> regardless of specificity, tokens are merely definitions so their position matters little, and nobody fixes a component by sneaking in a heavier selector — the layer decides, not cleverness.</p>
+
+<p>The habits that keep it alive: keep a component's styles next to its markup or component file, because findability beats elegance; comment the <i>why</i> — "z-index: 40, above the sticky header (30)" saves the next person an hour; and prune dead selectors regularly, since they accumulate like dust and every rule costs matching work on DOM changes. One caveat: chained <code>@import</code>s fetch files one after another at runtime, so let a bundler inline the final stylesheet — the layer statements survive bundling and keep enforcing the order.</p>
+
+<p>Architecture is deciding up front where things go, so the answer never has to be "anywhere".</p>
 """,
             },
         ],
@@ -1685,42 +1544,18 @@ front, where things go — so the answer never has to be
             {
                 "title": "CSS Performance",
                 "html": """
-<p>CSS rarely tops a performance audit, but it has three costs worth
-knowing: <b>download</b>, <b>parsing/matching</b>, and <b>rendering</b>.</p>
+<p>CSS rarely tops a performance audit, but it has three costs worth knowing: <b>download</b>, <b>matching</b> and <b>rendering</b>.</p>
 
-<p><b>Download:</b> stylesheets block first render — the browser waits
-for CSS before painting (unstyled content is worse than late content).
-So: ship it early (<code>&lt;link&gt;</code> in the head), keep it
-compressed (gzip/brotli), split only when genuinely per-route, and
-<code>font-display: swap</code> so web fonts don't hold text
-hostage.</p>
+<p><b>Download:</b> stylesheets block first render — the browser refuses to paint before CSS arrives, because unstyled content flashing and re-painting looks broken. So ship CSS early (<code>&lt;link&gt;</code> in the head), compressed with gzip or brotli; split into per-route files only when routes truly differ; and set <code>font-display: swap</code> so a slow web font shows fallback text instead of holding your copy hostage.</p>
 
-<p><b>Matching:</b> the browser matches selectors right-to-left and does
-it <i>fast</i> — modern engines make the old "avoid descendant
-selectors!" advice mostly obsolete. The real costs today: enormous
-stylesheets nobody prunes (every rule is matched against every DOM
-change), and universal shenanigans. Write natural selectors; spend the
-effort on deleting dead CSS.</p>
+<p><b>Matching:</b> engines match selectors right-to-left and do it <i>fast</i> — the folklore "avoid descendant selectors" is mostly obsolete. The real cost today is an enormous stylesheet nobody prunes: every rule can be re-matched after every DOM change. Write natural selectors; spend the saved effort deleting dead CSS.</p>
 
-<p><b>Rendering</b> — the pipeline: style → layout → paint → composite.
-Performance gold is animating only the last stage:</p>
-
-<ul>
-<li><b>opacity &amp; transform</b> — composite-only: the GPU moves the
-already-painted pixels. 60fps for free</li>
-<li><b>width/height/top/left/margin/font-size</b> — trigger
-<b>layout</b> (reflow): the browser recalculates geometry for possibly
-the whole page, then repaints. Animate these only on small, contained
-areas</li>
-<li>big filters/shadows on huge areas are paint-heavy — prefer
-pre-baked images or contain the effect</li>
-</ul>
+<p><b>Rendering</b> is a pipeline: style → layout → paint → composite. The gold is animating only the last stage. <code>opacity</code> and <code>transform</code> are composite-only — the GPU moves pixels that are already painted, so 60fps is nearly free. Geometry properties — <code>width</code>, <code>height</code>, <code>top</code>, <code>margin</code>, <code>font-size</code> — trigger <b>layout</b>: the browser recomputes geometry, possibly for the whole page, then repaints. The tryit below shows both side by side; hover each box and feel which one stays smooth on a busy page.</p>
 
 <pre class="code">.reveal { will-change: transform; }  /* hint: promote to its own layer */
 /* but add sparingly — every hint costs memory */</pre>
 
-<p>The golden rule from MDN: measure first (devtools Performance panel),
-then optimise what the numbers say — not what folklore says.</p>
+<p><code>will-change</code> is a hint, not a switch: it promotes the element to its own compositor layer so the GPU can animate it cheaply. Add it just before an animation runs and remove it afterwards — one per animated element, because every layer costs memory. Big filters and shadows over large areas are paint-heavy for the same reason; contain the effect or pre-bake the image. Then the golden rule: open the devtools Performance panel, <i>measure</i>, and optimise what the numbers say — not what folklore says.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1781,11 +1616,7 @@ then optimise what the numbers say — not what folklore says.</p>
             {
                 "title": "Feature Detection & Progressive Enhancement",
                 "html": """
-<p>Browsers differ. The professional response is never "target one
-browser" — it's <b>progressive enhancement</b>: build a solid baseline
-every browser understands, then layer upgrades where supported.</p>
-
-<p><b>@supports</b> — CSS's own feature detector:</p>
+<p>Browsers differ — that is permanent. The professional response is never "target one browser": it is <b>progressive enhancement</b>. Build a solid baseline every engine understands, then layer upgrades where support exists. CSS ships its own feature detector: <code>@supports</code>.</p>
 
 <pre class="code">.gallery { display: flex; gap: 8px; }        /* baseline: works everywhere */
 
@@ -1797,14 +1628,9 @@ every browser understands, then layer upgrades where supported.</p>
   .card { /* a media-query fallback instead */ }
 }</pre>
 
-<p>The pattern: declare the fallback <i>first</i>, then the enhancement
-inside @supports — browsers that don't understand the condition skip
-the block entirely, and cascade order means the newer rule wins where
-available. No JavaScript, no user-agent sniffing (that's the
-anti-pattern).</p>
+<p>Walk the pattern. Every browser applies the flex baseline. A browser that understands grid answers the condition and applies the block too — and because it comes <i>later</i> in the cascade, the upgrade wins. A browser that has never seen <code>(display: grid)</code> skips the whole block as if it did not exist. The <code>@supports not (...)</code> form is the mirror image: patch only the engines lacking a feature. The order is load-bearing — fallback first, enhancement after — and no JavaScript or user-agent sniffing is involved (sniffing is the anti-pattern: it lies the moment a new engine ships).</p>
 
-<p><b>Values with fallbacks</b> work at the declaration level — the
-cascade's silent feature detector:</p>
+<p>The quieter detector lives at the declaration level. CSS's error recovery drops any declaration it cannot parse — one declaration at a time, never the whole rule:</p>
 
 <pre class="code">.card {
   background: #1572b6;                                /* fallback */
@@ -1812,10 +1638,7 @@ cascade's silent feature detector:</p>
   width: max(300px, 50vw);                            /* unknown = ignored */
 }</pre>
 
-<p>An unsupported declaration is simply skipped; the previous one
-survives. Write fallback-then-enhancement in that order and old
-browsers get the old look, new browsers the new one — same
-stylesheet.</p>
+<p>An old browser reads the first <code>background</code>, fails on <code>color-mix()</code>, discards only that line and keeps plain blue; a modern browser parses both and the later one wins. Same stylesheet, two looks, zero detection code — one extra line, no runtime work. Write fallback-then-enhancement as a reflex, and compatibility stops being a chore.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1846,40 +1669,13 @@ stylesheet.</p>
             {
                 "title": "Browser Support & Baseline",
                 "html": """
-<p>How do you know what's safe to use? The ecosystem's answer is
-<b>Baseline</b> — MDN/caniuse's shared label for web platform
-features:</p>
+<p>How do you know what is safe to use today? The ecosystem's shared answer is <b>Baseline</b> — a label that MDN and caniuse put on every web platform feature. Read it as a traffic light with three states. <b>Newly available</b>: the feature works in the current version of every major browser, so use it behind an <code>@supports</code> check with a fallback in mind. <b>Widely available</b>: it has worked across browsers for 30+ months, so even users who never update are covered — use it without ceremony. <b>Limited availability</b>: not yet in every engine; experiment, but keep the fallback first in the cascade.</p>
 
-<ul>
-<li><b>Baseline: Newly available</b> — works across all the major
-browsers' current versions; safe with a fallback mindset</li>
-<li><b>Baseline: Widely available</b> — has worked across browsers for
-30+ months; safe everywhere, old browsers included</li>
-<li><b>Limited availability</b> — not yet in every engine; use with
-@supports and a fallback</li>
-</ul>
+<p>Make checking it a reflex: every MDN property page opens with its Baseline status and browser badges. Predict the answers for features from this course — <code>:has()</code> and container queries are Baseline now; subgrid reached Baseline more recently; anchor positioning is still limited. That one glance replaces memorising release tables for four engines.</p>
 
-<p>Every MDN property page shows its Baseline status with browser
-badges — it's the first thing to check before adopting a shiny feature
-(look up <code>:has()</code> or container queries: both are Baseline
-now; subgrid and anchor positioning are newer).</p>
+<p>The working policy beyond the label. Know your <b>audience</b> from analytics — "everyone uses the latest Chrome" is a myth, and the real long tail is old enterprise builds and phones. <b>Evergreen browsers</b> update themselves, so your problem users are the ones who can't update. And <b>test</b>: before shipping any new layout technique, at minimum open it in current Chrome, Firefox and Safari — one browser's devtools can emulate some differences, but rendering engines still disagree in the corners.</p>
 
-<p>The working policy:</p>
-
-<ul>
-<li>know your <b>audience</b> (analytics), not a mythical "everyone uses
-Chrome latest"</li>
-<li><b>evergreen browsers</b> update themselves — the long tail is old
-enterprise builds and old phones; feature-detect for them</li>
-<li><b>testing</b>: the devtools of one browser can render/emulate
-another's quirks, but at minimum test the newest Chrome, Firefox and
-Safari before shipping a layout technique</li>
-</ul>
-
-<p>That's the whole journey, from "what is a rule" to cascade layers
-and scroll-driven animation. CSS rewards exactly one habit: build the
-baseline, layer the enhancements, and let every browser give its
-best.</p>
+<p>That closes the journey, from "what is a rule" to cascade layers and scroll-driven animation. CSS rewards one habit above all: build the baseline, layer the enhancements, and let every browser give its best.</p>
 """,
             },
         ],

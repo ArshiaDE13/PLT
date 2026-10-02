@@ -32,6 +32,13 @@ nums.sort()           # sorts nums itself, returns None
 
 sorted({3: 'x', 1: 'y'})   # works on ANY iterable: -&gt; [1, 3]</pre>
 
+<p>Walk through it: <code>sorted(nums)</code> leaves <code>nums</code>
+untouched and hands back a fresh list; <code>nums.sort()</code> rearranges
+the list itself and gives you <code>None</code> — writing
+<code>nums = nums.sort()</code> silently destroys your list, a classic
+beginner slip. The third line shows flexibility: iterating a dict yields
+its keys, so the result is <code>[1, 3]</code>.</p>
+
 <p>The superpower is the <code>key</code> parameter: a function that
 turns each item into the value you actually compare. It runs exactly
 once per item, so it's fast:</p>
@@ -41,6 +48,11 @@ sorted(words, key=str.casefold)   # case-insensitive
 
 students = [('john', 'A', 15), ('jane', 'B', 12), ('dave', 'B', 10)]
 sorted(students, key=lambda s: s[2])   # sort tuples by age</pre>
+
+<p>For the words, <code>str.casefold</code> folds case for comparison, so
+'This' and 'is' compete fairly. For the students,
+<code>lambda s: s[2]</code> picks the age out of each tuple, so the order
+becomes dave (10), jane (12), john (15) — while the tuples stay whole.</p>
 
 [[diag:sorting_flow]]
 
@@ -55,6 +67,11 @@ the secondary sort first, then the primary:</p>
 <pre class="code">s = sorted(students, key=lambda s: s[2])          # by age
 sorted(s, key=lambda s: s[1], reverse=True)       # then by grade</pre>
 
+<p>Why two passes works: after the first pass the list is ordered by
+age; the second pass reorders by grade but leaves equal grades in their
+age order. Result — sorted by grade descending, ties broken by age,
+without a single comparison function.</p>
+
 <p>When you only need the top few, skip the full sort:
 <code>min()</code>, <code>max()</code>,
 <code>heapq.nsmallest()</code> and <code>heapq.nlargest()</code>
@@ -66,7 +83,7 @@ do a single pass and keep only what they need.</p>
                 "html": """
 <p>Writing <code>lambda s: s[2]</code> all day is tiresome — the
 <code>operator</code> module has ready-made accessors that are also
-faster:</p>
+faster, because they run in C instead of interpreted Python:</p>
 
 <pre class="code">from operator import itemgetter, attrgetter
 
@@ -75,6 +92,13 @@ sorted(students, key=itemgetter(1, 2))         # grade, then age
 
 sorted(student_objects, key=attrgetter('age'))  # attribute
 sorted(student_objects, key=attrgetter('grade', 'age'))</pre>
+
+<p>Walk through it: <code>itemgetter(2)</code> builds a callable that
+grabs index 2 from whatever it receives — the lambda, but terser and
+quicker. Passing several indices, as in <code>itemgetter(1, 2)</code>,
+sorts by grade first and breaks ties by age.
+<code>attrgetter</code> is the same idea for named attributes instead
+of positions.</p>
 
 <p><code>itemgetter</code> works on anything subscriptable (tuples,
 dicts, lists); <code>attrgetter</code> works on objects with
@@ -99,6 +123,12 @@ class Student:
 
 sorted([Student('ada', 36), Student('guido', 68)])</pre>
 
+<p>The decorator studies your <code>__lt__</code> and <code>__eq__</code>
+and synthesizes <code>__le__</code>, <code>__gt__</code> and
+<code>__ge__</code> — write two methods, get six. The final
+<code>sorted</code> orders the students by age: ada (36) before guido
+(68).</p>
+
 <p>Three traps from the docs, with easy fixes:</p>
 
 <ul>
@@ -110,6 +140,11 @@ sorted([Student('ada', 36), Student('guido', 68)])</pre>
 <li><b><code>None</code></b> isn't comparable — drop it:
   <code>sorted(x for x in data if x is not None)</code>.</li>
 </ul>
+
+<p>And one habit: never sort mixed <code>int</code> and <code>str</code>
+"to see what happens" — decide the type first, coerce second. When the
+data comes from a user, sort a defensive copy;
+<code>sorted(data)</code> does that for free.</p>
 """,
             },
         ],
@@ -173,13 +208,19 @@ sorted([Student('ada', 36), Student('guido', 68)])</pre>
 <p>Regular expressions ("regexes") are a tiny programming language
 for describing <b>patterns of text</b>. The <code>re</code> module
 lets you ask: does this string contain a phone number? Extract all
-the prices? Split on commas-or-semicolons?</p>
+the prices? Split on commas-or-semicolons? One pattern can replace a
+dozen lines of string code.</p>
 
 <p>Patterns are written as <b>raw strings</b> so backslashes stay
 literal — no double-escaping:</p>
 
 <pre class="code">import re
 phone = r"\\d{3}-\\d{4}"     # three digits, dash, four digits</pre>
+
+<p>Read the pattern aloud: "three digits, a dash, four digits" — like
+<code>555-1234</code>. In a normal string you would have to write
+<code>"\\\\d{3}"</code> for the same effect, which is why every regex
+in this course carries its <code>r</code>.</p>
 
 <p>Core building blocks:</p>
 
@@ -191,6 +232,12 @@ r"\\w"        # letter/digit/underscore
 r"\\s"        # whitespace (space, tab, newline)
 r"."         # any character except newline</pre>
 
+<p>Each line is a one-character matcher: <code>\\d</code> one digit,
+<code>\\w</code> one word character, <code>\\s</code> one space-like
+character, <code>.</code> anything at all (except a newline). Stack
+them — <code>r"\\d+\\.\\d+"</code> — and you have just said "a decimal
+number".</p>
+
 [[diag:regex_flow]]
 
 <p>Quantifiers say <b>how many</b>:</p>
@@ -201,10 +248,19 @@ r"ca?t"     # zero or one 'a'
 r"\\d{3}"    # exactly three digits
 r"\\d{2,4}"  # two to four digits</pre>
 
+<p>The gap between <code>*</code> and <code>+</code> matters:
+<code>ca*t</code> accepts <code>ct</code> (no a at all) while
+<code>ca+t</code> demands at least one. Curly braces pin exact counts —
+<code>\\d{2,4}</code> takes 12 and 1234, refuses 1 and 12345.</p>
+
 <p>Anchors pin the match to a position: <code>^</code> is the start
 of the string, <code>$</code> the end.</p>
 
 <pre class="code">r"^\\d{5}$"   # a whole line of exactly 5 digits (a zip code)</pre>
+
+<p>Without anchors, <code>\\d{5}</code> would happily match five digits
+inside a longer number; with both anchors the entire string must be
+exactly a five-digit code.</p>
 
 <p>Greedy quantifiers grab as much as they can, then back off if the
 rest of the pattern needs it. When text gets complicated, remember
@@ -215,7 +271,9 @@ string code is often clearer and just as good.</p>
             {
                 "title": "re functions — search, findall, sub",
                 "html": """
-<p>Now the functions that run your patterns:</p>
+<p>Now the functions that run your patterns. Four of them cover almost
+everything: find the first match, find them all, replace them, or split
+on them:</p>
 
 <pre class="code">import re
 
@@ -223,6 +281,12 @@ re.search(r"\\d+", "Order 42 shipped")   # find the FIRST match
 re.findall(r"\\d+", "3 apples, 12 pears") # -&gt; ['3', '12']
 re.sub(r"\\d+", "#", "a1 b22")            # replace -&gt; 'a# b#'
 re.split(r"[,;]", "a,b;c")                # -&gt; ['a', 'b', 'c']</pre>
+
+<p>Walk through it: <code>findall</code> returns every match as a plain
+list — <code>['3', '12']</code>, and yes, always strings. <code>sub</code>
+swaps each run of digits for <code>#</code>, producing
+<code>'a# b#'</code>. <code>split</code> cuts the string at every comma
+or semicolon — the character class <code>[,;]</code> is the knife.</p>
 
 <p><code>search()</code> scans anywhere in the string and returns a
 <b>match object</b> (or <code>None</code>) — check it like a
@@ -234,6 +298,11 @@ if m:
     print(m.group())     # -&gt; '42'
     print(m.start(), m.end())   # -&gt; 6 8</pre>
 
+<p>The match object is more than a yes-or-no: <code>group()</code> is the
+matched text itself, and <code>start()</code>/<code>end()</code> give the
+positions — 6 and 8 — exactly what you need to highlight the match in an
+editor or a log viewer.</p>
+
 <p><b>Groups</b> capture parts of a match with parentheses:</p>
 
 <pre class="code">m = re.search(r"(\\d+)-(\\d+)", "call 12-34")
@@ -241,11 +310,23 @@ m.group(1)     # -&gt; '12'   first group
 m.group(2)     # -&gt; '34'   second group
 m.groups()     # -&gt; ('12', '34')</pre>
 
+<p>Parentheses do double duty: they group the pattern <em>and</em>
+capture what matched. <code>group(1)</code> is the first pair — '12' —
+and <code>groups()</code> hands back every capture at once. Later you'll
+meet named groups, <code>(?P&lt;name&gt;...)</code>, which read even
+better.</p>
+
 <p>Compile a pattern you reuse many times — it's cached anyway, but
 compiling keeps your code tidy and lets you set flags once:</p>
 
 <pre class="code">pattern = re.compile(r"\\w+", re.IGNORECASE)
 pattern.findall("Hello WORLD")   # -&gt; ['Hello', 'WORLD']</pre>
+
+<p><code>re.IGNORECASE</code> applies to every search this object does —
+with a literal pattern like <code>r"hello"</code> it would match 'Hello'
+and 'HELLO' too. The compiled object carries all the same methods:
+<code>pattern.search(...)</code>, <code>pattern.sub(...)</code> and
+friends.</p>
 
 <p>If you reach for <code>\\</code> spam often, pause: simple cases
 like "starts with" / "ends with" are one call on plain strings —
@@ -320,6 +401,13 @@ args = parser.parse_args()
 
 print(args.path, args.number, args.color)</pre>
 
+<p>Four argument flavors in one parser: a positional
+(<code>path</code> — required, written without a dash), an option with
+type conversion, one restricted by <code>choices</code>, and a flag.
+Run <code>tool.py report.txt -n 5 --color red --verbose</code> and
+<code>args.path</code> is a string, <code>args.number</code> is already
+an int.</p>
+
 <p><code>type=int</code> converts the value automatically
 (<code>--number 5</code> gives the int <code>5</code>, not the
 string <code>'5'</code>). <code>choices=</code> rejects anything
@@ -334,9 +422,10 @@ turns a flag's presence into <code>True</code>.</p>
 
 <p>The default level is <code>WARNING</code>, so plain
 <code>logging.info(...)</code> prints nothing until you configure it.
-The docs' rule of thumb: use <code>print()</code> for ordinary
-console output, a logger for events worth tracking, and raise an
-exception for errors. To log to a file with a timestamp:</p>
+That surprises everyone exactly once. The docs' rule of thumb: use
+<code>print()</code> for ordinary console output, a logger for events
+worth tracking, and raise an exception for errors. To log to a file
+with a timestamp:</p>
 
 <pre class="code">import logging
 
@@ -349,6 +438,13 @@ logging.basicConfig(
 
 logging.info('started')     # -&gt; 2026-08-16 09:14:02,331 INFO started</pre>
 
+<p>Walk the format string: <code>%(asctime)s</code> is the timestamp,
+<code>%(levelname)s</code> the level, <code>%(message)s</code> your
+text — together they build a line like the sample above, written to
+<code>app.log</code> instead of the console.
+<code>encoding='utf-8'</code> matters the moment a log message carries
+any non-ASCII text.</p>
+
 <p>In bigger programs, create your own logger per module with
 <code>logger = logging.getLogger(__name__)</code> — that's the
 idiom the howto recommends, because then you control each module's
@@ -359,8 +455,10 @@ logging level independently.</p>
                 "title": "enum — named constants done right",
                 "html": """
 <p>Constants that are just numbers or strings are a classic bug
-source — is <code>1</code> red, or is it on? The <code>enum</code>
-module gives you real named members:</p>
+source — is <code>1</code> red, or is it on? Does <code>"READY"</code>
+mean the same thing in every module that uses it? The
+<code>enum</code> module gives you real named members: a fixed set of
+values with names, grouped under one type:</p>
 
 <pre class="code">from enum import Enum
 
@@ -374,6 +472,13 @@ Color.RED.name     # -&gt; 'RED'
 Color.RED.value    # -&gt; 1
 list(Color)        # -&gt; [&lt;Color.RED: 1&gt;, ...]  (iteration order)</pre>
 
+<p>Walk through it: each name becomes a member <em>object</em>, not a
+bare number. You get the readable printed form, the name string, the
+value, and iteration in definition order — handy for menus
+(<code>for color in Color:</code>). Trying to assign
+<code>Color.RED = 9</code> from outside raises an
+<code>AttributeError</code>: members are protected.</p>
+
 <p>Members are singletons: <code>Color.RED is Color.RED</code> is
 <code>True</code>, so comparisons are simple and safe:</p>
 
@@ -383,6 +488,13 @@ list(Color)        # -&gt; [&lt;Color.RED: 1&gt;, ...]  (iteration order)</pre>
     return 'go'
 
 describe(Color.RED)     # -&gt; 'stop'</pre>
+
+<p>Compare with <code>is</code>, not <code>==</code>: identity is what
+enums guarantee, and <code>is</code> also catches the mistake of
+passing a raw <code>1</code> instead of <code>Color.RED</code> — the
+check fails loudly instead of silently matching. And a typo like
+<code>Color.RDE</code> dies instantly with <code>AttributeError</code>
+rather than quietly behaving wrong.</p>
 
 <p>Don't want to invent values? <code>auto()</code> numbers them for
 you:</p>
@@ -396,9 +508,16 @@ class Status(Enum):
 
 Status.DONE.value    # -&gt; 3</pre>
 
+<p><code>auto()</code> hands out 1, 2, 3 in order. After that the values
+matter only for storage or wire formats — your code compares names. When
+the value should be a lowercase string (say, for JSON APIs), use
+<code>enum.StrEnum</code> (3.11+) instead.</p>
+
 <p>Use an enum anywhere a fixed set of choices exists — days of the
 week, file modes, HTTP statuses, player classes — and typos become
-<code>AttributeError</code>s instead of silent wrong behavior.</p>
+<code>AttributeError</code>s instead of silent wrong behavior. That one
+property is the whole pitch: named-constant safety with readable debug
+output thrown in.</p>
 """,
             },
         ],

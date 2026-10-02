@@ -38,6 +38,19 @@ element.</p>
 Tab through your page. If you can't reach or operate something with the
 keyboard, a large group of users can't either — and a screen-reader user
 probably can't at all.</p>
+
+<p>It helps to know who you are building for. Screen readers speak the
+accessibility tree (built from your semantics); keyboard users need every
+control reachable and operable with Tab, Enter and Space; users with low
+vision need contrast and zoom that doesn't break; users with motor
+impairments need generous click targets and no time-limited traps. One
+page, four different ways of "reading" it — and semantic HTML serves all
+four at once.</p>
+
+<p>Gotcha: accessibility is not a final coat of paint. Bolted-on fixes
+(an aria-label here, a tabindex there) cost more than writing semantic
+markup from the start — which is why this is chapter 10, after you have
+met all the real elements.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -97,6 +110,18 @@ description nearby (caption, adjacent text, or
 (the screen reader already says "image"), filenames, and keyword
 stuffing (that's an SEO trick that hurts the very people alt text is
 for).</p>
+
+<p>Walk the demo's three images: the logo inside a link describes its
+destination ("MDN home page") — click it and that is where you go, so
+that is what matters. The chart's alt gives the takeaway, not the
+pixels ("sales up 120 percent") — alt is a summary for ears, not a
+caption for eyes. The decorative divider is silent on purpose.</p>
+
+<p>Gotcha: alt length. Screen readers read the whole thing aloud, so one
+clear sentence usually beats a paragraph; if an image genuinely needs
+more, use figure/figcaption or a visible description nearby and keep
+the alt short. And when you upgrade an image, upgrade its alt — stale
+descriptions misinform more than missing ones.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -152,6 +177,19 @@ order)</li>
 programmatically tied to the field, so screen readers read it right
 after the label. The same connection trick works for error messages
 (<code>aria-invalid="true"</code> flags the broken state).</p>
+
+<p>Walk the snippet: the label says what the field is <i>and</i> its
+constraint ("min 8 characters"), so the requirement is heard, not just
+enforced. Tab into the field and a screen reader announces "Password,
+required, edit text, use letters and numbers" — label, required state,
+then the describedby hint. Three pieces of information, all wired by
+attributes.</p>
+
+<p>Gotcha: don't move focus with auto-advancing fields or hijack Enter —
+let the browser's default behaviour work, since it is what users are
+trained on. And test with the keyboard alone: if you can fill and
+submit your form without touching the mouse, screen-reader users have
+a fighting chance.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -225,6 +263,20 @@ activation — semantics without behaviour is a lie.</p>
 (<code>tabindex="1+"</code> breaks it — avoid)</li>
 <li>"skip to content" link as the first tab stop for long pages</li>
 </ul>
+
+<p>Walk the demo: the close button shows only "✕" on screen, but
+<code>aria-label</code> makes it "Close dialog, button" to screen
+readers. The toggle button keeps <code>aria-expanded</code> in sync with
+the box's hidden state, so assistive tech hears "expanded" the moment
+it opens. The alert region announces "Details are now visible!"
+without focus moving at all — that is <code>role="alert"</code>'s
+live-region power.</p>
+
+<p>Gotcha: ARIA on native elements is duplicate semantics —
+<code>&lt;button role="button"&gt;</code> is noise. The decision ladder:
+first ask "is there a native element?", then "can I fix the native
+one?", and only then reach for ARIA. Semantics without matching
+behaviour is still a lie, whichever way you write it.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -340,6 +392,18 @@ fallback children — content shown if the embed fails). For modern work:
 iframes for documents/apps, <code>&lt;video&gt;</code>/<code>&lt;audio&gt;</code>
 for media, <code>&lt;img&gt;</code>/<code>&lt;picture&gt;</code> for
 images, and native PDF viewing needs only a link.</p>
+
+<p>Walk the demo: the frame's <code>srcdoc</code> holds a tiny HTML
+document inline; the browser parses it as a separate page inside the
+box. Notice the <code>title</code> attribute on the frame — that is how
+screen readers announce what this foreign region is ("frame, A nested
+page demo").</p>
+
+<p>Gotcha: an iframe is not a borderless void — it is a full document
+load, often the slowest thing on your page. Give it dimensions (or it
+flickers while loading), load lazily when it sits below the fold, and
+don't nest more than you need: every frame is another browsing context
+the browser must spin up.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -376,6 +440,13 @@ the element itself does nothing until code draws into it:</p>
   ctx.fill();
 &lt;/script&gt;</pre>
 
+<p>Walk the code: <code>getContext("2d")</code> hands you a paintbrush
+object; <code>fillStyle</code> picks the colour; <code>fillRect</code>
+stamps a rectangle; <code>arc</code> traces a circle's path and
+<code>fill</code> inks it. Five lines of JavaScript, two shapes, no HTML
+in between — the element is just a viewport onto a drawing
+surface.</p>
+
 <p>The mental model: <b>immediate mode</b>. You draw pixels now, and the
 canvas remembers nothing — move something and you redraw everything
 (each animation frame clears and repaints). That's why canvas powers
@@ -393,6 +464,13 @@ inside the tags)</li>
 <li>Everything inside is <b>not DOM</b> — you can't click "the orange
 circle"; you get coordinates and do hit-testing yourself</li>
 </ul>
+
+<p>Gotcha: never size a canvas purely with CSS. The attributes define the
+bitmap's real resolution; CSS merely stretches it — set both
+consistently (or account for devicePixelRatio) or your crisp lines go
+blurry. And remember the fallback content between the tags ("your
+browser doesn't support canvas") shows only in ancient browsers — all
+current ones support it.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -457,6 +535,18 @@ and is accessible when labelled
 <p>canvas vs svg in one line: <b>canvas</b> for thousands of changing
 pixels (games), <b>svg</b> for crisp resizable graphics you want to
 style and interact with (icons, charts, diagrams).</p>
+
+<p>Walk the demo: the <code>viewBox</code> sets an internal grid of
+220×130 units; the rect and circle place themselves in those units, not
+pixels — resize the element and they scale with it. The CSS rule
+<code>svg circle:hover</code> restyles a shape like any element, and the
+script gives the circle a click listener — try both in the preview.</p>
+
+<p>Gotcha: SVG inside <code>&lt;img&gt;</code> is a dead end for styling
+and scripts — it renders, but the page cannot reach inside. Inline it
+when you need interaction. And always label meaningful SVGs with
+<code>role="img"</code> plus a <code>&lt;title&gt;</code> or
+<code>aria-label</code>, or screen readers hear an empty region.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -527,8 +617,22 @@ target classes inside and append</li>
 never displays</li>
 </ul>
 
+<p>Walk the demo: three menu items render from one template. The loop
+clones <code>tpl.content</code>, fills the <code>.name</code> and
+<code>.price</code> slots with textContent, and appends each copy to the
+list. Add a fourth item to the array and the markup needs no change at
+all — data drives the DOM.</p>
+
 <p>Templates + custom elements (HTML 12) are the two halves of native
 web components.</p>
+
+<p>Gotcha: fill cloned templates with <code>textContent</code>, not
+<code>innerHTML</code>, when the data is user-supplied — that is the
+whole safety story above. And don't forget the <code>true</code> in
+<code>cloneNode(true)</code>: cloning without it copies the wrapper only
+and your "rows" come out empty, a classic head-scratcher. Debug tip:
+<code>console.log(tpl.content.children.length)</code> shows what the
+fragment really holds.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -606,6 +710,21 @@ return value readable on <code>dlg.returnValue</code></li>
 <li>it participates in forms via
 <code>method="dialog"</code></li>
 </ul>
+
+<p>Walk the demo: open the dialog and the page behind dims
+(::backdrop) and goes inert — Tab is trapped inside, Esc closes, and
+focus returns where it came from. Cancel and Delete both call
+<code>close(...)</code> with a return value; the <code>close</code>
+event reads <code>dlg.returnValue</code> and prints which button won.
+Modal semantics — historically the hairiest JavaScript on the web — in
+about ten lines.</p>
+
+<p>Gotcha: the element is invisible until opened; don't fight that with
+CSS <code>display</code> overrides, because the attribute-driven states
+<i>are</i> the API. And prefer <code>showModal()</code> over
+<code>show()</code> for confirmations: the focus trap is an
+accessibility feature, not a limitation. All current browsers support
+<code>&lt;dialog&gt;</code>, so the old polyfills can retire.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -690,6 +809,19 @@ range</b>, colour-coded by thresholds (disk usage, quiz score):</p>
 <p>The dividing line: <code>progress</code> = "how far through this
 task", <code>meter</code> = "how does this value sit in its range". A
 loading bar is progress; a fuel gauge is a meter.</p>
+
+<p>Walk the demo: the accordion opens because of <code>open</code>, and
+toggling needs no script at all — the browser wires the summary click.
+The progress bar reads "70 of 100"; the meter reads "0.8 in a range
+where 0.25 counts as low and 0.9 as high" — similar visuals, different
+questions answered. Drag the quantity slider and the output element
+updates through the one-line listener.</p>
+
+<p>Gotchas: keep the fallback text inside <code>&lt;progress&gt;</code>
+and <code>&lt;meter&gt;</code> (between the tags) — that is what screen
+readers and very old browsers get. And use <code>&lt;output&gt;</code>
+for <i>results</i>, not as a generic span; using it semantically earns
+you the live-region announcements for free.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -779,6 +911,12 @@ actually touch:</p>
               ├── h1 (class="title")
               └── p</pre>
 
+<p>Read the tree: <code>document</code> is the root, <code>body</code> its
+child, and each element becomes a node — the h1 and p are siblings, and
+text inside them becomes text nodes. This tree is why "nesting right"
+from chapter 1 pays off: the tree is what CSS selectors and JavaScript
+walk.</p>
+
 <p>Every node is an object with properties and methods. The everyday
 toolkit:</p>
 
@@ -798,11 +936,23 @@ el.classList.add("active") / remove / toggle
 const p = document.createElement("p")
 parent.appendChild(p) / parent.removeChild(el)</pre>
 
+<p>Walk the toolkit: find elements by id or CSS selector, read or write
+their text, attributes, inline styles and class lists, create new nodes
+and attach them. Six verbs cover most of dynamic HTML. The demo below
+uses four: it finds the list and input, creates an <code>&lt;li&gt;</code>,
+sets its textContent, and appends it — a to-do list in a dozen
+lines.</p>
+
 <p>Two cautions from MDN's pages: <code>innerHTML</code> with
 user-supplied strings is the classic <b>XSS</b> hole — prefer
 <code>textContent</code> unless you truly mean to parse markup; and the
 DOM is <i>live</i> — change it and the page updates instantly, no
 refresh.</p>
+
+<p>One more habit: query once, store the reference.
+<code>const list = document.getElementById("list")</code> at the top of
+your script beats calling it inside every handler — lookups cost, and a
+stored node keeps working as the page changes around it.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -851,6 +1001,12 @@ refresh.</p>
 "keydown" / "keyup"  keys on the keyboard
 "mouseover" / "mouseout" / "scroll" / "load" ...</pre>
 
+<p>How it flows: something happens, the browser creates an event object
+and calls every listener registered for that event type on that element
+— in registration order. Nothing polls; your function sleeps until the
+event arrives. This inversion of control is what makes pages feel alive
+without loops.</p>
+
 <p>The event object carries details
 (<code>event.target</code> = what was hit, <code>event.key</code> = which
 key) and can stop default behaviour:</p>
@@ -870,6 +1026,18 @@ delegation — how the sidebar in this app works). And
 list.addEventListener("click", (e) =&gt; {
   if (e.target.matches("li")) e.target.classList.toggle("done");
 });</pre>
+
+<p>Walk the preventDefault example: without it, submitting reloads the
+page with the data in the URL; with it, the default dies and your
+handler takes over — the minimal skeleton behind every modern app
+form.</p>
+
+<p>Gotcha: don't sprinkle <code>onclick="..."</code> attributes in HTML —
+one handler per attribute, and markup gets tangled with behaviour fast.
+<code>addEventListener</code> keeps everything in the script and allows
+many listeners per element. And remember events need elements that
+exist: scripts can only query markup written above them — or wait for
+the <code>DOMContentLoaded</code> event.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -924,6 +1092,13 @@ localStorage.clear();                        // nuke everything
 localStorage.setItem("prefs", JSON.stringify({ theme: "dark" }));
 const prefs = JSON.parse(localStorage.getItem("prefs"));</pre>
 
+<p>Walk the block: <code>setItem("name", "Ada")</code> writes;
+<code>getItem</code> reads back — or <code>null</code> if absent, which
+is why you check before using. Objects have no native storage form, so
+<code>JSON.stringify</code> before writing and <code>JSON.parse</code>
+after reading; forget the parse and you get the literal string
+'{"theme": "dark"}' back instead of an object.</p>
+
 <p>Know the limits:</p>
 
 <ul>
@@ -940,6 +1115,13 @@ megabytes</li>
 <p>Fun fact: this course uses <code>localStorage</code> for your name,
 language, progress and playground code — check your browser's devtools →
 Application → Local Storage right now and you'll find the keys.</p>
+
+<p>Gotcha: storage is per-origin and per-device — keep nothing secret in
+it (any script on the page, and any user with devtools, reads it in
+plaintext), and don't expect it to sync across a user's devices. Treat
+it as a convenience cache, and guard your reads: one corrupted value
+and an unguarded <code>JSON.parse</code> throws on every page
+load.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1001,6 +1183,13 @@ targets accept it on <code>dragover</code> + <code>drop</code>:</p>
   });
 &lt;/script&gt;</pre>
 
+<p>Trace the flow: the user presses the card and <code>dragstart</code>
+stashes its id in <code>dataTransfer</code>; as the drag crosses the
+zone, <code>dragover</code> fires continuously and its
+<code>preventDefault()</code> is what flips the target from "no drops
+allowed" to accepting; release fires <code>drop</code>, which reads the
+id back and moves the element. Three listeners, one contract.</p>
+
 <p>The event family:</p>
 
 <ul>
@@ -1020,6 +1209,13 @@ as JSON. Styling hooks: <code>:dragging</code>-like feedback comes from
 <code>dropEffect</code> (<code>copy</code>/<code>move</code>) shapes the
 cursor. Native D&amp;D works on desktop; on touch screens it's spotty —
 serious apps pair it with pointer-event fallbacks.</p>
+
+<p>Gotchas: the missing <code>preventDefault()</code> on
+<code>dragover</code> is the single most common "my drop zone doesn't
+work" bug — the browser's default is to reject drops. And native drag
+&amp; drop is keyboard- and touch-inaccessible: real products add
+buttons ("move to zone") alongside, so the action is never
+drag-only.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1079,6 +1275,12 @@ self.addEventListener("message", (e) =&gt; {
   self.postMessage(result);               // answer back
 });</pre>
 
+<p>Walk both halves: the page creates a worker from a file, posts a
+message object, and listens back. Inside <code>calc.js</code>, the
+worker listens, computes — off the main thread, so the UI keeps
+animating — and posts the result. The whole conversation is two
+<code>addEventListener("message")</code> calls facing each other.</p>
+
 <p>The rules, straight from MDN:</p>
 
 <ul>
@@ -1100,6 +1302,13 @@ proxy behind offline apps and installable PWAs) and shared workers.</p>
 <p>This course is a live example: the C and Python playgrounds both run
 engines inside workers so an infinite loop can be terminated without
 freezing the page.</p>
+
+<p>Gotcha: workers can't see the DOM, so the beginner plan "spawn a
+worker to update the page" is impossible by design — workers compute
+and hand back data; the main thread paints. And don't spawn one for a
+5-millisecond task: message overhead exceeds the compute. Feel the
+threshold: does the task jank a frame (~16ms) or stall a tap (~100ms)?
+If yes, worker.</p>
 """,
             },
             {
@@ -1120,6 +1329,12 @@ then use it like any tag — no framework required.</p>
   }
   customElements.define("coffee-cup", CoffeeCup);
 &lt;/script&gt;</pre>
+
+<p>Walk it: the page writes <code>&lt;coffee-cup size="large"&gt;</code>
+like any tag; the script teaches the browser what that tag means. When
+each element enters the DOM, <code>connectedCallback</code> fires, reads
+the attribute, and stamps the inner HTML. Three cups in the markup, one
+class in the script.</p>
 
 <p>The rules: the tag name must contain a <b>dash</b>
 (<code>coffee-cup</code>, never <code>coffee</code>) so custom elements
@@ -1144,6 +1359,13 @@ caller-provided content.</li>
 <b>Web Components</b>: framework-free, standard, reusable widgets.
 (MDN's full guide is the reference when you build your first
 one.)</p>
+
+<p>Gotcha: custom elements upgrade asynchronously — the element renders
+empty until its defining script has run, which is why the definition
+lives in a <code>&lt;script&gt;</code> on the page. And don't build
+everything as a component: if a native element fits, use it. A custom
+<code>&lt;my-button&gt;</code> re-implementing <code>&lt;button&gt;</code>
+badly is the classic anti-pattern of the technique.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">
@@ -1315,6 +1537,11 @@ paragraph's closing <code>&lt;/p&gt;</code> (before another
 &lt;p&gt;This parses into a complete
    html/head/body document!</pre>
 
+<p>The parser never draws a wrong tree from this snippet: the title
+lands in an implied head, the paragraph in an implied body, and html
+wraps both. Every "missing" tag was implicit in context — the DOM comes
+out complete.</p>
+
 <p>Fun — and a trap. The omitted tags exist because their presence is
 <i>implied by context</i>, and the parser applies exact rules (an
 <code>&lt;/p&gt;</code> is implied before a following
@@ -1322,6 +1549,15 @@ paragraph's closing <code>&lt;/p&gt;</code> (before another
 see, and one surprise (a div inside that paragraph!) changes where the
 parser closes things. Professional markup writes the tags — the
 optional ones are great for reading code, poor for writing it.</p>
+
+<p>Gotcha: tooling disagrees with cleverness — XML pipelines and many
+build tools require explicit closing, and diff-friendly code benefits
+from visible structure. Write <code>&lt;/p&gt;</code>,
+<code>&lt;/li&gt;</code>, <code>&lt;/html&gt;</code> even when you could
+skip them: zero ambiguity for humans, parsers and validators alike. The
+omission you'll meet anyway: browsers insert <code>&lt;tbody&gt;</code>
+whether you wrote it or not — a selector bug waiting for anyone who
+forgets.</p>
 """,
             },
             {
@@ -1344,6 +1580,12 @@ code points too)</li>
 <pre class="code">&lt;p&gt;5 &amp;lt; 10 &amp;amp; 10 &amp;gt; 5&lt;/p&gt;
 &lt;p&gt;© 2026 — made with &amp;#x2665;&lt;/p&gt;</pre>
 
+<p>Read the block: the first paragraph renders "5 &lt; 10 &amp;&amp; 10
+&gt; 5" — the references told the parser these are text, not markup;
+without them the <code>&lt;</code> would open a phantom tag and swallow
+the rest of the line. The second renders © and the heart straight from
+code points, no font trickery involved.</p>
+
 <p>The reserved four matter most: a literal <code>&lt;</code> in text
 starts a tag as far as the parser cares, so code samples, math
 (<code>a &lt; b</code>) and any raw angle bracket must be escaped.
@@ -1358,6 +1600,14 @@ is CSS's job, and nbsp-chains are a screen-reader stumble.</p>
 <p>And remember the deeper rule: the file itself is Unicode text — save
 it as UTF-8 and declare <code>&lt;meta charset="utf-8"&gt;</code>, and
 most accented letters need no references at all.</p>
+
+<p>Gotcha: escape <b>late and locally</b>. Write plain UTF-8 text in your
+source and reach for references only where meaning demands them
+(<code>&amp;lt;</code>, <code>&amp;amp;</code>,
+<code>&amp;nbsp;</code>). Pages stuffed with <code>&amp;copy;</code> and
+numeric refs for every accented é are unreadable in the source and
+error-prone to maintain; with the charset declared, you simply type the
+letter.</p>
 """,
                 "tryit": """<!DOCTYPE html>
 <html lang="en">

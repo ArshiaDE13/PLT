@@ -14,6 +14,11 @@ CHAPTERS_CT_B = [
 interface of a piece of code: function prototypes, type definitions and
 macros, ready to be shared:</p>
 
+<p>Why split interface from implementation? Because other files — and other
+programmers — need to know what exists without reading your source. The
+header is the contract; the <code>.c</code> file is the implementation that
+honours it.</p>
+
 <pre class="code">// geometry.h
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
@@ -23,6 +28,10 @@ typedef struct { double x, y; } point;
 double distance(point a, point b);
 
 #endif</pre>
+
+<p>Read it top to bottom: the guard macro, the typedef that callers need, the
+prototype announcing <code>distance</code>. Nothing here executes — this file
+only describes.</p>
 
 <p>Every <code>.c</code> file that wants the interface writes
 <code>#include "geometry.h"</code> — and the compiler literally pastes
@@ -38,6 +47,9 @@ the header's text into the file at that point (that is all
 <b>project</b> directory first</li>
 </ul>
 
+<p>Rule: angle brackets for the standard library and installed packages,
+quotes for your own files.</p>
+
 <p>The <code>#ifndef / #define / #endif</code> sandwich is an
 <b>include guard</b>: if the header is included twice in one
 compilation, the second copy is skipped because the guard macro is
@@ -47,6 +59,10 @@ in bigger projects.</p>
 <p>Rule of thumb: headers declare, sources define. A header should
 compile on its own and never contain function bodies (with the
 exception of small <code>static inline</code> helpers).</p>
+
+<p>Gotcha: including a header twice without guards — usually because one
+header includes another — is how duplicate-definition errors are born. Every
+header you write deserves its guard from line one.</p>
 """,
             },
             {
@@ -55,6 +71,12 @@ exception of small <code>static inline</code> helpers).</p>
 <p>Real projects split code across many <code>.c</code> files, each
 responsible for one area. The compiler compiles each file
 independently; they meet only at link time.</p>
+
+<p>Why bother? A 5,000-line <code>main.c</code> is unreadable and recompiles
+from scratch on every change. Split by responsibility and each piece stays
+small, testable, and independently compilable — the build system turns each
+file into an object and the linker glues them together (next two lessons show
+that machinery).</p>
 
 <pre class="code">// main.c
 #include "geometry.h"
@@ -74,6 +96,11 @@ double distance(point a, point b) {
     return sqrt((a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y));
 }</pre>
 
+<p>Trace the flow: <code>geometry.h</code> declares
+<code>distance</code>, <code>main.c</code> includes the header and calls the
+function, <code>geometry.c</code> defines it. Neither <code>.c</code> file
+includes the other — they share only the header.</p>
+
 <p>What makes a name visible across files?</p>
 
 <ul>
@@ -91,9 +118,18 @@ static int internal_hits = 0;  // private
 // main.c
 extern int public_total;       // declaration, not definition</pre>
 
+<p>In <code>counters.c</code>, <code>public_total</code> is exported — the
+linker matches the <code>extern</code> declaration in main.c to it.
+<code>internal_hits</code> stays hidden: another file declaring
+<code>extern int internal_hits</code> gets a link error, by design.</p>
+
 <p>Good structure: each <code>.c</code> pairs with a header that exposes
 its public names; everything else is <code>static</code>. This keeps
 interfaces small and prevents accidental coupling.</p>
+
+<p>Gotcha: never <i>define</i> a variable in a header — every file including
+it would get its own copy, or trip a multiple-definition link error. Headers
+declare; exactly one <code>.c</code> file defines.</p>
 """,
             },
             {
@@ -106,6 +142,11 @@ on Windows). Compiling one file means:</p>
 <pre class="code">gcc -c geometry.c     # produces geometry.o
 gcc -c main.c         # produces main.o</pre>
 
+<p>Each <code>gcc -c</code> run translates exactly one source file into
+machine code. Nothing in <code>geometry.o</code> knows where main is; nothing
+in <code>main.o</code> knows where distance is — both just record what they
+need.</p>
+
 <p>The <code>-c</code> flag says "compile only — do not link". An object
 file contains machine code plus a table of <b>symbols</b>: names it
 defines, and names it still needs.</p>
@@ -113,6 +154,10 @@ defines, and names it still needs.</p>
 <pre class="code">nm geometry.o
 # T distance        — "T" = defined text (code) symbol
 # U sqrt            — "U" = undefined: still needs sqrt</pre>
+
+<p>Run <code>nm</code> and read the table: <code>T distance</code> means
+"here, defined"; <code>U sqrt</code> means "wanted, not found". The linker's
+whole job is turning every U into a T.</p>
 
 <p>Why split compilation from linking?</p>
 
@@ -123,6 +168,9 @@ this is exactly what <code>make</code> automates.</li>
 against them without their source.</li>
 </ul>
 
+<p>Think of object files as half-finished assemblies: built once, clicked
+together in any combination at the end.</p>
+
 <p>A typical build with separate steps:</p>
 
 <pre class="code">gcc -c main.c geometry.c
@@ -132,6 +180,10 @@ gcc main.o geometry.o -o app -lm</pre>
 library (where <code>sqrt</code> lives). Each object file only ever
 sees its own source — headers provide the cross-file type information
 the compiler needs.</p>
+
+<p>Gotcha: <code>undefined reference to 'sqrt'</code> usually means a missing
+library (<code>-lm</code>) or a missing <code>.c</code> on the command line —
+the problem is at link time, not in your code's logic.</p>
 """,
             },
             {
@@ -148,6 +200,10 @@ libm:        T sqrt
             ─────────────
 app: all U symbols resolved</pre>
 
+<p>Follow the diagram: main.o needs distance and printf; geometry.o provides
+distance but needs sqrt; libm provides sqrt. Every U finds a T and the
+executable is complete.</p>
+
 <p>When resolution fails, you get the classic link errors:</p>
 
 <ul>
@@ -159,6 +215,10 @@ define the same global; usually a variable defined in a header instead
 of declared there</li>
 </ul>
 
+<p>A trick against the multiple-definition trap: put
+<code>extern int total;</code> in the header and <code>int total = 0;</code>
+in exactly one <code>.c</code> file — one declaration, one definition.</p>
+
 <p>After resolution, the linker lays out the final memory image: the
 <b>text segment</b> (code, read-only), <b>data segment</b> (initialised
 globals), <b>bss</b> (zero-initialised globals), and metadata the OS
@@ -168,6 +228,10 @@ loader uses to start the program.</p>
 code into the executable (self-contained, bigger); dynamically linked
 ones record "I need libm.so" and load it at startup (smaller, shared,
 but depends on the system having the library).</p>
+
+<p>Rule of thumb: dynamic linking is the default on modern systems for good
+reasons — a security fix to the library benefits every program on the machine
+without recompiling any of them.</p>
 """,
             },
         ],
@@ -241,14 +305,28 @@ but depends on the system having the library).</p>
 <p>Console I/O lives in <code>&lt;stdio.h&gt;</code>. You already know
 <code>printf</code>; the format specifiers are worth mastering:</p>
 
+<p>Why master these? Every program starts and ends in I/O — and
+<code>printf</code>/<code>scanf</code> are also your main debugging tools in
+this course's sandbox.</p>
+
 <pre class="code">printf("%d %s %c %.2f %zu\\n", 42, "hi", 'x', 3.14159, sizeof(int));
 #   %d int   %s string   %c char   %f float   %zu size_t</pre>
+
+<p>Walk the specifier list: <code>%d</code> prints an int, <code>%s</code> a
+string, <code>%c</code> a single character, <code>%.2f</code> a double with
+two decimals, <code>%zu</code> a size_t. Mixing these up prints garbage or
+crashes — the specifier must match the argument.</p>
 
 <p>Between <code>%</code> and the letter you can add <b>width</b>,
 <b>precision</b> and flags:</p>
 
 <pre class="code">printf("[%5d] [%-5d] [%05d]\\n", 42, 42, 42);
 printf("[%10.3f]\\n", 3.14159);     // 10 wide, 3 decimals</pre>
+
+<p>Read the output: <code>[   42]</code> pads to width 5 on the left,
+<code>[42   ]</code> pads on the right thanks to the <code>-</code> flag,
+<code>[00042]</code> zero-fills, and <code>%10.3f</code> gives 3.142 — the
+width includes the decimal point.</p>
 
 <p>Reading input is <code>scanf</code> — it takes <b>addresses</b> to
 fill in, and returns the number of items successfully read (or
@@ -259,6 +337,11 @@ if (scanf("%d", &amp;age) == 1) {
     printf("you are %d\\n", age);
 }</pre>
 
+<p><code>scanf</code>'s second argument is <code>&amp;age</code> — an address,
+because scanf must write into your box. The <code>== 1</code> check asks
+"did one item actually get read?"; typing <code>abc</code> where a number is
+expected fails and leaves <code>age</code> untouched.</p>
+
 <p>Character-level I/O uses <code>getchar()</code> and
 <code>putchar(c)</code> — the standard idiom to process all input:</p>
 
@@ -267,10 +350,18 @@ while ((c = getchar()) != EOF) {
     putchar(c);
 }</pre>
 
+<p>The loop body runs once per character, echoing everything back. Note
+<code>c</code> is an <code>int</code> so it can hold <code>EOF</code> — the
+end-of-file marker that is not itself a character.</p>
+
 <p>Two habits to keep: always check <code>scanf</code>'s return value
 (input may not match), and remember that <code>scanf("%s", buf)</code>
 cannot limit length — prefer <code>scanf("%15s", buf)</code> with a
 width matching your buffer.</p>
+
+<p>One more: if input behaves oddly, leftover newlines from earlier reads are
+usually the culprit — <code>scanf(" %c", ...)</code> with a leading space
+skips them on purpose.</p>
 """,
                 "tryit": """#include <stdio.h>
 
@@ -294,6 +385,10 @@ int main(void) {
 <p>File I/O revolves around one opaque type: <code>FILE *</code>. You
 open a file, get a handle, read/write through it, and close it:</p>
 
+<p>Why files? Console input disappears the moment you close the terminal;
+files persist. Almost every real program reads configuration, logs results,
+or loads data — all through this interface.</p>
+
 <pre class="code">FILE *f = fopen("names.txt", "r");   // "r" = read
 if (f == NULL) {
     printf("cannot open\\n");
@@ -301,6 +396,10 @@ if (f == NULL) {
 }
 // ... use f ...
 fclose(f);</pre>
+
+<p>The NULL check matters more than it looks: <code>fopen</code> fails for a
+missing file, wrong permissions, or a full disk — and using a NULL
+<code>FILE *</code> crashes immediately.</p>
 
 <p>Mode strings: <code>"r"</code> read, <code>"w"</code> write (truncates
 or creates), <code>"a"</code> append, plus <code>+</code> for update and
@@ -315,6 +414,10 @@ while (fgets(line, sizeof line, f) != NULL) {
     printf("read: %s", line);    // line still has its \\n
 }</pre>
 
+<p>Each pass reads one line into the buffer — say <code>"line 1\\n"</code> —
+and prints it with its newline intact. When no lines remain,
+<code>fgets</code> returns NULL and the loop ends.</p>
+
 <p>Writing mirrors printing: <code>fprintf(f, ...)</code>,
 <code>fputs</code>, <code>fputc</code>. And always close —
 <code>fclose</code> flushes buffered output and releases the handle.</p>
@@ -325,9 +428,18 @@ if (out) {
     fclose(out);
 }</pre>
 
+<p>If <code>fopen</code> succeeds, <code>fprintf</code> writes exactly like
+printf but into the file, and <code>fclose</code> flushes and releases.
+Forgetting <code>fclose</code> means the tail of your output may never land
+on disk.</p>
+
 <p>Handy companions: <code>feof(f)</code> (end reached?),
 <code>ferror(f)</code>, <code>rewind(f)</code>, <code>fseek</code>/
 <code>ftell</code> for jumping around inside a file.</p>
+
+<p>Gotcha: using <code>feof</code> as the loop condition is a classic bug —
+it only turns true <i>after</i> a failed read, so the last line gets
+processed twice. Loop on the read function's return value instead.</p>
 """,
                 "tryit": """#include <stdio.h>
 
@@ -357,6 +469,10 @@ int main(void) {
 the exact memory image of your data. C gives you two functions that
 move blocks of memory to and from files:</p>
 
+<p>Read the signatures: a pointer to your buffer, the size of one item, how
+many items, the file. The return value tells you how many complete items
+actually moved.</p>
+
 <pre class="code">size_t fread(void *ptr, size_t size, size_t count, FILE *f);
 size_t fwrite(const void *ptr, size_t size, size_t count, FILE *f);</pre>
 
@@ -374,6 +490,11 @@ FILE *g = fopen("data.bin", "rb");
 fread(back, sizeof(int), 4, g);
 fclose(g);</pre>
 
+<p>Walk it: <code>fwrite</code> copies 16 bytes (4 ints) into
+<code>data.bin</code>; later <code>fread</code> pulls the same 16 bytes back.
+Open the file in a hex viewer and you see <code>0a 00 00 00 14 00 00 00
+...</code> — the numbers themselves, not their printed digits.</p>
+
 <p>Structs can be written the same way — <code>fwrite(&amp;s, sizeof s,
 1, f)</code> — which leads to the caveats Beej warns about:</p>
 
@@ -390,6 +511,10 @@ with <code>b</code>.</li>
 
 <p>This is why real file formats (PNG, SQLite...) specify exact byte
 layouts instead of dumping structs — they serialize field by field.</p>
+
+<p>Rule of thumb: <code>fwrite</code> a struct only for scratch files your own
+program rereads on the same machine; anything shared goes through explicit
+field-by-field serialization.</p>
 """,
                 "tryit": """#include <stdio.h>
 
@@ -476,8 +601,16 @@ int main(void) {
 <b>before</b> the compiler. Its simplest directive is
 <code>#include</code> — paste a file's contents right here:</p>
 
+<p>Why care how it works? Because half of all mysterious compile errors —
+redefinition, missing prototype, "file not found" — are preprocessor issues,
+not C issues.</p>
+
 <pre class="code">#include &lt;stdio.h&gt;      // system header
 #include "myutils.h"    // your header</pre>
+
+<p>After the paste, the compiler sees the whole contents of
+<code>stdio.h</code> followed by your file — which is why every
+<code>printf</code> call compiles: the prototype arrived by text.</p>
 
 <p>That is the entire magic behind headers: textual inclusion. The
 compiler never sees your 20 include lines — it sees one big file with
@@ -495,10 +628,17 @@ debug output:</p>
 <li><code>__STDC__</code> — defined in standard C compilers</li>
 </ul>
 
+<p><code>__LINE__</code> is evaluated at the line where it appears — the two
+printfs in the tryit example report different numbers.</p>
+
 <p>Remember: the preprocessor knows <b>nothing about C</b>. It cannot
 check types, does not understand expressions, and will happily paste
 nonsense. It is a text tool — the compiler afterwards is what gives the
 result meaning.</p>
+
+<p>Gotcha: including a <code>.c</code> file "because the functions are there"
+compiles at first and then breaks with duplicate definitions once two files
+include it — include <code>.h</code> files, compile <code>.c</code> files.</p>
 """,
                 "tryit": """#include <stdio.h>
 
@@ -515,10 +655,18 @@ int main(void) {
 <p><code>#define</code> creates a macro — a name the preprocessor
 replaces with text before compilation:</p>
 
+<p>Why macros at all? They can do things functions cannot: build code from
+tokens, compile out debug prints, sidestep type restrictions — the
+preprocessor rewrites your source text before the compiler ever sees it.</p>
+
 <pre class="code">#define MAX_USERS 100
 #define GREETING "hello"
 
 if (users &gt; MAX_USERS) { ... }</pre>
+
+<p><code>MAX_USERS</code> is a plain text swap: the compiler literally sees
+<code>if (users &gt; 100)</code>. It never knows a macro existed — no type,
+no scope, no address to take.</p>
 
 <p><b>Function-like macros</b> take arguments and are the ones that bite.
 Always parenthesise the body and every parameter:</p>
@@ -528,6 +676,11 @@ Always parenthesise the body and every parameter:</p>
 
 int a = SQUARE(2 + 3);   // ((2+3)*(2+3)) = 25
 int b = BAD(2 + 3);      // 2+3*2+3       = 11!</pre>
+
+<p>Follow <code>BAD(2 + 3)</code>: the text <code>2 + 3</code> lands inside
+<code>x * x</code>, giving <code>2 + 3 * 2 + 3</code>. Multiplication binds
+first, so it computes 2 + 6 + 3 = 11, not 25. The parentheses in
+<code>SQUARE</code> force the grouping you meant.</p>
 
 <p>Without inner parens, operator precedence corrupts the expansion.
 This is why real macros look over-parenthesised.</p>
@@ -550,6 +703,11 @@ int CAT(va, r) = 7;                  // declares: int var = 7;</pre>
 prefer <code>const</code> variables and real functions when they can do
 the job — macros have no types, no scope, and evaluate arguments
 repeatedly.</p>
+
+<p>Classic double-evaluation trap: <code>SQUARE(i++)</code> computes
+<code>i++</code> twice — a macro argument with side effects is executed once
+per textual use. Rule one of macro writing: parenthesise everything, and
+never pass side effects.</p>
 """,
                 "tryit": """#include <stdio.h>
 
@@ -575,6 +733,10 @@ int main(void) {
 <p>The preprocessor can include or discard code before compilation —
 the tool behind "debug builds", cross-platform code and configuration:</p>
 
+<p>How it works: one codebase ships on Windows and Linux, keeps debug prints
+free to delete, and fails fast on wrong compilers — all decisions made
+<i>before</i> compilation, with zero runtime cost.</p>
+
 <pre class="code">#define DEBUG 1
 
 #if DEBUG
@@ -588,6 +750,11 @@ the tool behind "debug builds", cross-platform code and configuration:</p>
 #ifndef NDEBUG        // "if not NDEBUG" — the assert idiom
     ...
 #endif</pre>
+
+<p>Three flavours, three questions: <code>#if DEBUG</code> tests the
+<i>value</i>; <code>#ifdef DEBUG</code> only tests <i>existence</i> — even
+<code>#define DEBUG 0</code> satisfies it; and <code>#ifndef NDEBUG</code> is
+the idiom <code>assert</code> uses to vanish in release builds.</p>
 
 <p>The directive family:</p>
 
@@ -621,9 +788,19 @@ int main(void) {
     return 0;
 }</pre>
 
+<p>With <code>USE_FAST_MATH</code> as 1, the compiler only ever sees
+<code>printf("fast path\\n")</code> — the <code>#else</code> branch is
+discarded text. Flip the define, rebuild, and the other path exists instead:
+no <code>if</code> statement ever runs at runtime.</p>
+
 <p>Discarded branches must still be lexically sane, but they are never
 compiled — this is how the same source supports different platforms
 with <code>#ifdef _WIN32</code> ... <code>#else</code> ... blocks.</p>
+
+<p>Gotcha: an <code>#if</code> expression may only use integer constants and
+macros — variables do not exist yet at preprocessing time. And keep the
+nesting shallow: a stray <code>#endif</code> produces errors far from the
+real mistake.</p>
 """,
                 "tryit": """#include <stdio.h>
 
@@ -693,6 +870,10 @@ int main(void) {
 <p>C lets you work on the individual bits of an integer — the toolset of
 drivers, protocols, packing and flags:</p>
 
+<p>Why bits? One int holds 32 on/off switches, hardware registers speak in
+bits, and protocols pack fields shoulder to shoulder. These six operators
+are how you talk to all of that.</p>
+
 <ul>
 <li><code>&amp;</code> AND — 1 only where <i>both</i> bits are 1</li>
 <li><code>|</code> OR — 1 where <i>either</i> bit is 1</li>
@@ -713,6 +894,10 @@ printf("%d\\n", a ^ b);   // 6    (0110)
 printf("%d\\n", a &lt;&lt; 2);  // 48   (110000)
 printf("%d\\n", a &gt;&gt; 2);  // 3    (11)</pre>
 
+<p>Do one by hand: <code>a &amp; b</code> asks "which column has 1 in
+<i>both</i>?" — only the top bit, so 8. The shift moves every bit two places
+left or right, multiplying or dividing by 4.</p>
+
 <p>The everyday patterns:</p>
 
 <pre class="code">flags |= 0x04;           // set bit 2
@@ -720,10 +905,20 @@ flags &amp;= ~0x04;          // clear bit 2
 if (flags &amp; 0x04) ...    // test bit 2
 x &amp;= 0xFF;               // keep only the low byte</pre>
 
+<p>Read the patterns aloud: OR with the bit turns it on, AND with its
+complement turns it off, AND with the bit tests it, and the last line masks
+away everything above the low byte.</p>
+
 <p>Bite-sized tricks worth knowing: <code>x &amp; 1</code> tests odd/even,
 <code>x &gt;&gt; 1</code> halves, and XOR-ing twice with the same value
 restores the original. Shift counts must be less than the width —
 <code>x &lt;&lt; 32</code> on an int is undefined.</p>
+
+<p>Gotcha: do bit work in <code>unsigned</code> types — shifting a negative
+signed value is undefined, and <code>&gt;&gt;</code> on signed values is
+implementation-defined. And do not confuse <code>&amp;</code> with
+<code>&amp;&amp;</code>: <code>flags &amp; 0x04</code> computes;
+<code>flags &amp;&amp; 0x04</code> answers a different question entirely.</p>
 """,
                 "tryit": """#include <stdio.h>
 
@@ -751,6 +946,11 @@ int main(void) {
 <p>Functions live in memory too, and a <b>function pointer</b> stores a
 function's address — letting you pass behaviour around like data:</p>
 
+<p>Why pass functions around? Because it turns a decision — "how to
+compare?" — into data the caller supplies. That is the trick behind
+<code>qsort</code>, event handlers, and every framework that lets you plug
+in your own logic.</p>
+
 <pre class="code">int add(int a, int b) { return a + b; }
 int mul(int a, int b) { return a * b; }
 
@@ -758,6 +958,10 @@ int (*op)(int, int) = add;    // pointer named op
 printf("%d\\n", op(3, 4));     // 7 — call through it
 op = mul;
 printf("%d\\n", op(3, 4));     // 12</pre>
+
+<p>First <code>op</code> points at <code>add</code>, so <code>op(3, 4)</code>
+runs add and prints 7. Assign <code>mul</code> and the same call site prints
+12 — the behaviour changed without touching the calling code.</p>
 
 <p>Read the declaration inside-out: <code>op</code> is a pointer to a
 function taking two ints and returning int. The parentheses around
@@ -776,14 +980,28 @@ int cmp(const void *a, const void *b) {
 int v[] = {5, 1, 9, 3, 7};
 qsort(v, 5, sizeof(int), cmp);   // pass the function itself</pre>
 
+<p><code>qsort</code> calls your <code>cmp</code> once per comparison,
+through the pointer you pass. Return negative, zero, or positive to say
+"a before b", "equal", or "a after b" — this descending version simply flips
+the usual order.</p>
+
 <p>Arrays of function pointers make dispatch tables — a clean
 replacement for long switch statements:</p>
 
 <pre class="code">int (*ops[2])(int, int) = {add, mul};
 printf("%d\\n", ops[choice](6, 7));</pre>
 
+<p><code>ops[choice](6, 7)</code> indexes the array and calls whichever
+function sits there — a table-driven replacement for a five-case
+switch.</p>
+
 <p>Tip: typedef the type once and the code reads normally —
 <code>typedef int (*op_fn)(int, int);</code></p>
+
+<p>Gotcha: calling a NULL function pointer is undefined behaviour — the
+famous crash. Check before you call, and keep the parentheses in
+<code>int (*op)(int, int)</code>: drop them and you have declared a function
+<i>returning</i> a pointer, not a pointer.</p>
 """,
                 "tryit": """#include <stdio.h>
 #include <stdlib.h>
@@ -815,12 +1033,19 @@ int main(void) {
 <p>A pointer is itself a variable, so it has an address — which another
 pointer can store. That is a <b>pointer to a pointer</b>:</p>
 
+<p>Why two levels? Because C functions cannot change their caller's pointers
+any better than their ints — unless you pass the pointer's own address.</p>
+
 <pre class="code">int x = 5;
 int *p = &amp;x;
 int **pp = &amp;p;
 
 printf("%d\\n", **pp);   // 5 — dereference twice
 **pp = 7;               // changes x, two levels deep</pre>
+
+<p>Three boxes: <code>x</code> holds 5, <code>p</code> holds x's address,
+<code>pp</code> holds p's address. <code>**pp</code> follows both arrows and
+lands on x — so <code>**pp = 7</code> changes x from two doors away.</p>
 
 <p>Picture the chain: <code>pp</code> holds the address of
 <code>p</code>, which holds the address of <code>x</code>.</p>
@@ -841,6 +1066,11 @@ int main(void) {
     }
 }</pre>
 
+<p><code>make_array</code> receives the <i>address of main's pointer</i>.
+<code>*out = malloc(...)</code> writes the new address straight into that
+slot, so when the function returns, <code>data</code> points at the array.
+The return value doubles as a success flag.</p>
+
 <p>Pointer-to-pointer is also the natural type of <b>argv</b> —
 <code>char *argv[]</code> is an array of string pointers, i.e. a
 <code>char **</code> — and of two-dimensional dynamic grids. Each extra
@@ -849,6 +1079,15 @@ int main(void) {
 <pre class="code">char *names[] = {"Ada", "Grace", NULL};
 char **p = names;
 printf("%s\\n", p[0]);    // Ada</pre>
+
+<p><code>p[0]</code> is the first string pointer, which prints Ada. The
+trailing NULL is the classic sentinel that tells loops where the list
+ends.</p>
+
+<p>Rule of thumb: <code>int **</code> in a signature should immediately make
+you ask "am I writing through to a caller's pointer?" — that covers
+out-parameters, <code>argv</code>-style arrays, and dynamic 2-D grids, the
+three places double pointers really live.</p>
 """,
                 "tryit": """#include <stdio.h>
 #include <stdlib.h>
@@ -893,6 +1132,10 @@ struct flags f = {1, 5, 19};
 printf("%u %u %u\\n", f.visible, f.kind, f.level);
 printf("sizeof = %zu\\n", sizeof(struct flags));  // 4 — one int</pre>
 
+<p>The initializer fills fields in order: <code>visible</code> gets 1,
+<code>kind</code> gets 5, <code>level</code> gets 19. Reading them back feels
+normal — the compiler does all the masking and shifting behind the dot.</p>
+
 <p>Three one-bit + three-bit + five-bit fields = 9 bits — all packed
 into a single 32-bit <code>unsigned int</code>. Same data, quarter of
 the naive space — handy for hardware registers, file formats and
@@ -915,6 +1158,11 @@ into a file format; pack bits yourself for that.</li>
 <li>You cannot take the address of a bit field — it may not start on a
 byte boundary.</li>
 </ul>
+
+<p>Two more traps: assigning out of range keeps only the low bits
+(<code>f.kind = 9</code> on 3 bits silently gives 1), and layout is not
+portable — for a guaranteed on-disk format, shift and mask by hand the way
+the previous lesson showed.</p>
 """,
                 "tryit": """#include <stdio.h>
 #include <stddef.h>
@@ -944,6 +1192,10 @@ int main(void) {
 invisible <b>padding bytes</b> so that each field sits at its natural
 <b>alignment</b> — the CPU reads aligned types faster (or at all):</p>
 
+<p>Why does the CPU care? A 4-byte int read from an address divisible by 4 is
+one memory operation; from an odd address it may be two, or a fault.
+Alignment trades a few wasted bytes for speed.</p>
+
 <pre class="code">struct S {
     char  c;    // offset 0
                 // 3 bytes padding
@@ -952,6 +1204,11 @@ invisible <b>padding bytes</b> so that each field sits at its natural
                 // 3 bytes padding (struct size rounds up)
 };
 printf("%zu\\n", sizeof(struct S));   // 12 — not 6!</pre>
+
+<p>Trace the offsets: <code>c</code> at 0, padding for bytes 1-3,
+<code>i</code> at 4, <code>c2</code> at 8, then padding 9-11 so the total is a
+multiple of 4 — which keeps every element of an array of
+<code>struct S</code> aligned too.</p>
 
 <p>The rules: each field's offset is rounded up to a multiple of its
 alignment (int → 4, double → 8, pointers → 8), and the struct's total
@@ -969,10 +1226,19 @@ printf("%zu %zu\\n", offsetof(struct S, i), offsetof(struct S, c2));</pre>
 <pre class="code">struct good { double d; int i; char c; };    // 16 bytes
 struct bad  { char c; double d; int i; };    // 24 bytes — same data!</pre>
 
+<p>Same three fields, different order: <code>good</code> puts the 8-byte
+double first, where nothing needs padding before it;
+<code>bad</code> wedges a char in front of it and pays 8 bytes for that
+decision.</p>
+
 <p>And remember from the Data Structures chapter: <code>union</code> puts
 every field at offset 0, and bit fields pack sub-byte fields together.
 The sandbox implements exactly this little-endian, naturally-aligned
 model — so the lessons you run here reflect a real 64-bit machine.</p>
+
+<p>Rule of thumb: order fields big to small by habit, never
+<code>memcmp</code> two structs (the padding holds garbage), and never write
+raw struct bytes into a portable file format.</p>
 """,
                 "tryit": """#include <stdio.h>
 #include <stddef.h>

@@ -3179,8 +3179,21 @@
             declareVar(frame, item.name, type, addr);
             frame.vars[item.name].vlaSize = Math.max(1, n * es);
             if (item.init) {
-              for (let i = 0; i < n && i < item.init.items.length; i++) {
-                writeInit(addr + i * es, type.of, item.init.items[i]);
+              // initializers arrive as a raw array ({...} list), {items},
+              // or {k:"str"} — normalize before walking (writeInitLocal
+              // does the same for fixed-size arrays)
+              const norm = Array.isArray(item.init) ? { items: item.init }
+                : item.init;
+              if (norm.k === "str") {
+                if (norm.s.length + 1 > n) {
+                  err("initializer string is longer than the array", s.line);
+                }
+                writeInit(addr, type, norm);
+              } else {
+                const items = norm.items || [];
+                for (let i = 0; i < n && i < items.length; i++) {
+                  writeInit(addr + i * es, type.of, items[i]);
+                }
               }
             }
             continue;
@@ -4248,6 +4261,30 @@
     const s = readCString(argNum(args[0]));
     out.text += s + ": success\n";
     return { v: 0, t: { k: "void" } };
+  });
+  defineBuiltin("setlocale", { k: "ptr", to: T_CHAR() }, (args) => {
+    // the sandbox is always in the "C" locale; setlocale(LC_*, NULL) and
+    // any set attempt both report that
+    return { v: addLiteral("C"), t: { k: "ptr", to: T_CHAR() } };
+  });
+  let localeconvAddr = 0;
+  defineBuiltin("localeconv", { k: "ptr", to: T_VOIDPTR() }, () => {
+    const rec = unit.findRec("struct", "lconv");
+    if (!rec) rerr("localeconv() needs #include <locale.h>");
+    if (!localeconvAddr) {
+      // one static lconv, filled with the classic "C" locale values
+      localeconvAddr = heapAlloc(typeSize(rec), typeAlign(rec));
+      const set = (name, s) => {
+        const fld = rec.fields.find((x) => x.name === name);
+        if (fld) memWrite(mem, localeconvAddr + fld.off, addLiteral(s), fld.type);
+      };
+      set("decimal_point", "."); set("thousands_sep", "");
+      set("grouping", ""); set("mon_decimal_point", ".");
+      set("mon_thousands_sep", ""); set("mon_grouping", "");
+      set("positive_sign", ""); set("negative_sign", "-");
+      set("currency_symbol", ""); set("int_curr_symbol", "");
+    }
+    return { v: localeconvAddr, t: { k: "ptr", to: rec } };
   });
   defineBuiltin("fflush", T_INT(), () => ({ v: 0, t: T_INT() }));
   defineBuiltin("setvbuf", T_INT(), () => ({ v: 0, t: T_INT() }));

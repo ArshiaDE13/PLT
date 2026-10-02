@@ -119,6 +119,10 @@ int main(void) {
                 "html": """
 <p>Two numeric rules cause most real-world integer bugs:</p>
 
+<p>Why these two? Because they combine: a calculation you believe fits
+quietly promotes, converts, and wraps — and the failure surfaces three
+functions away from the cause.</p>
+
 <p><b>1. Unsigned arithmetic wraps; signed arithmetic overflows (and
 that is undefined).</b> <code>unsigned int</code> arithmetic is defined
 modulo 2<sup>32</sup>: <code>UINT_MAX + 1</code> is exactly 0. But
@@ -133,6 +137,10 @@ chapter.</p>
 unsigned char sum = a + b;      // 300 wraps to 44 — promotion happened
 printf("%d\\n", a + b);          // prints 300! the int result is not wrapped</pre>
 
+<p>Walk it: <code>a</code> and <code>b</code> promote to int, add up to 300
+in int world, and the printf sees that 300. Only the <i>assignment</i> back
+into an <code>unsigned char</code> keeps the low byte — 44.</p>
+
 <p>And the nastiest trap of all: when a <b>signed</b> value meets an
 <b>unsigned</b> one in a comparison or operation, the signed side is
 <i>converted to unsigned</i> first:</p>
@@ -141,11 +149,20 @@ printf("%d\\n", a + b);          // prints 300! the int result is not wrapped</p
 unsigned u = 1;
 if (x &lt; u) ...   // FALSE! -1 becomes 4294967295, which is not &lt; 1</pre>
 
+<p><code>x &lt; u</code> is false because x's bits, read as unsigned, are the
+biggest number there is. No warning required — every C programmer falls in
+once.</p>
+
 <p>The try-it below prints exactly that surprise. This is why the
 roadmap insists on understanding signed vs unsigned: comparing a length
 returned as <code>-1</code> against an unsigned size silently passes.
 Habit to keep: don't mix the two in one expression, and treat
 <code>size_t</code> values as unsigned (they are).</p>
+
+<p>Gotcha: a loop like <code>for (unsigned i = n - 1; i &gt;= 0; i--)</code>
+never ends — unsigned cannot go below 0, so the condition is always true,
+and with <code>n = 0</code> the initial value wraps to UINT_MAX. When values
+can legitimately be negative, stay signed.</p>
 """,
                 "tryit": """#include <stdio.h>
 
@@ -274,6 +291,10 @@ int main(void) {
 <p><b>C11</b> (2011) brought C into the multi-core era and added the
 tools you have already met in the deep chapters:</p>
 
+<p>Why track standard versions? Because compiler flags
+(<code>-std=c11</code>) and error messages name them — knowing which feature
+arrived when tells you what you may use, and why the docs mention it.</p>
+
 <ul>
 <li><b>Threads</b>: <code>&lt;threads.h&gt;</code> with
 <code>thrd_create</code>/<code>thrd_join</code> (optional — see the
@@ -292,9 +313,18 @@ without a member name.</li>
 removed from the standard for good.</li>
 </ul>
 
+<p>Notice the pattern: everything C11 added is about parallelism (threads,
+atomics, thread-local) or correctness (<code>_Static_assert</code>,
+alignment) — the language catching up with multi-core hardware.</p>
+
 <p><b>C17</b> (2017) is a <i>bug-fix</i> release: no new features at all
 — its job was to keep C11 implementable and consistent. If you hear "we
 use C17", it means C11 with defects resolved.</p>
+
+<p>Gotcha: a flag mismatch is a common beginner wall — calling
+<code>thrd_create</code> without <code>-std=c11</code> (or without linking
+the system's thread library) produces undefined references at link time,
+not syntax errors.</p>
 
 <p>C23 then landed the big modernization — that is the next lesson.</p>
 """,
@@ -351,9 +381,14 @@ arrays.</li>
 <li><b>#elifdef / #elifndef</b> — the long-missing else-if for
 <code>#ifdef</code> chains.</li>
 <li><b>#warning</b> — a formal, non-fatal warning directive.</li>
-<li><b>__has_include</b> and <b>__has_c_attribute</b> — ask the
+<li><b>__has_c_attribute</b> — ask the
 preprocessor whether a header or attribute exists before using it.</li>
 </ul>
+
+<p>Read <code>#embed</code> as "paste this file's bytes here, at compile
+time": the compiler opens the file and inserts it as data — a font inside
+the executable with one line, instead of a 10,000-element generated
+array.</p>
 
 <p><b>The library</b> grew in two directions the roadmap names:</p>
 
@@ -369,10 +404,20 @@ over unsigned integer types.</li>
 worries.</li>
 </ul>
 
+<p><code>stdckdint</code> is the one to remember:
+<code>ckd_add(r, a, b)</code> stores the exact sum in <code>*r</code> and
+returns true only when it overflowed — the <code>if</code> that finally
+replaces "hope it fits".</p>
+
 <p>C23 also <i>removed</i> things: K&amp;R-style function definitions
 (the old parameter lists after the parentheses) and a few obsolete
 traps. That is the pattern of a maturing standard: new tools in, proven
 footguns out.</p>
+
+<p>Gotcha: new standards take years to reach every toolchain — gate C23
+usage behind <code>__has_include</code> and
+<code>__has_c_attribute</code> checks, which is exactly what the additions
+above are for.</p>
 """,
             },
             {
