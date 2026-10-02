@@ -926,6 +926,12 @@ function renderView(skipAnim) {
     view.appendChild(renderQuiz(ch));
   }
   if (!skipAnim) view.classList.add("anim-in");
+  // a freshly opened lesson/quiz always starts at its own top — on phones
+  // the sidebar sits ABOVE the content, so without this the lesson opens
+  // half-hidden below it
+  $("main").scrollTop = 0;
+  const active = document.querySelector(".sub-item.active, .chapter-item.active");
+  if (active) active.scrollIntoView({ block: "nearest" });
 }
 
 function lessonBreadcrumb(ch, idx) {
