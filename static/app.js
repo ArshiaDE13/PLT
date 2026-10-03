@@ -932,6 +932,8 @@ function renderView(skipAnim) {
   $("main").scrollTop = 0;
   const active = document.querySelector(".sub-item.active, .chapter-item.active");
   if (active) active.scrollIntoView({ block: "nearest" });
+  // phones: picking a title closes the drawer so the page shows fully
+  setDrawer(false);
 }
 
 function lessonBreadcrumb(ch, idx) {
@@ -1971,11 +1973,33 @@ function setupNameUi() {
 
 /* ============================== boot =================================== */
 
+/* mobile drawer: on phones the chapter sidebar slides in over the page
+   instead of sitting above it — the floating button and backdrop toggle it,
+   and picking any title closes it (see renderView). */
+function setDrawer(open) {
+  const btn = document.getElementById("drawer-btn");
+  if (!btn) return;
+  document.body.classList.toggle("drawer-open", open);
+  btn.setAttribute("aria-expanded", String(open));
+  const ic = btn.querySelector(".drawer-ic");
+  if (ic) ic.textContent = open ? "✕" : "☰";
+}
+
 function boot() {
   setupNameUi();
   ensureLangPills();
   applyStaticText();
   $("open-playground").addEventListener("click", openPlayground);
+  const drawerBtn = document.getElementById("drawer-btn");
+  const drawerBackdrop = document.getElementById("drawer-backdrop");
+  if (drawerBtn && drawerBackdrop) {
+    drawerBtn.addEventListener("click", () =>
+      setDrawer(!document.body.classList.contains("drawer-open")));
+    drawerBackdrop.addEventListener("click", () => setDrawer(false));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setDrawer(false);
+    });
+  }
   if (!courseDataFor("python") && !courseDataFor("c") &&
       !courseDataFor("html") && !courseDataFor("css") &&
       !courseDataFor("js") && !courseDataFor("cpp")) {
