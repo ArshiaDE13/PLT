@@ -685,8 +685,10 @@
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(CODE_KEY)); } catch (e) {}
   if (saved && typeof saved === "object") {
-    panes.css.value = saved.css || DEFAULT.css;
-    panes.html.value = saved.html || DEFAULT.html;
+    // only strings are valid pane content — a corrupted (object) save
+    // self-heals back to the defaults instead of showing [object Object]
+    panes.css.value = typeof saved.css === "string" ? saved.css : DEFAULT.css;
+    panes.html.value = typeof saved.html === "string" ? saved.html : DEFAULT.html;
   } else {
     panes.css.value = DEFAULT.css;
     panes.html.value = DEFAULT.html;

@@ -302,6 +302,39 @@ body.switching #pg { opacity: 0; filter: blur(4px); transition: .18s ease; }
   .pg-main { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
 }
 
+/* ---------------- phones: the IDE must fit and stay usable ------------- */
+@media (max-width: 640px) {
+  #pg { height: 100dvh; } /* real viewport — the address bar eats 100vh */
+
+  .pg-top { padding: 8px 12px; gap: 8px; }
+  .pg-top h1 { font-size: 15px; }
+  .pg-sub { font-size: 10.5px; }
+  .pg-brand, .pg-brand > div { min-width: 0; }
+
+  /* wrap the toolbar so Run / Examples / Reset / Clear / Close all stay
+     reachable — nothing gets pushed off-screen */
+  .pg-toolbar { flex-wrap: wrap; row-gap: 8px; padding: 9px 12px; }
+  .pg-toolbar .btn { padding: 9px 13px; font-size: 13.5px; }
+  .pg-toolbar .btn.secondary { font-size: 12.5px; padding: 8px 11px; }
+  .pg-select { max-width: 46vw; }
+
+  /* give the code the space; the console stays a visible strip below */
+  .pg-main { grid-template-rows: minmax(0, 1.55fr) minmax(0, 1fr); }
+  .pg-gutter { width: 32px; font-size: 12px; }
+  .pg-gutter div { padding-inline-end: 7px; }
+  .pg-hl, .pg-ta { font-size: 13px; padding: 10px; }
+  .pg-filebar { padding: 6px 12px; font-size: 12px; }
+  .pg-filetag { display: none; }
+
+  .pg-console-head { padding: 6px 12px; }
+  .pg-console-body, .pg-stdin { font-size: 13px; }
+  .pg-stdin-row { padding: 8px 12px; }
+  .pg-statusbar { font-size: 11px; gap: 10px; }
+  .pg-shortcut { display: none; }  /* keyboard hint is useless on touch */
+  .pg-statusbar { display: none; }
+}
+
+
 /* stdin box (C playground) — feeds scanf() */
 .pg-stdin-row {
   display: flex;
