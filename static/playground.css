@@ -320,14 +320,18 @@ body.switching #pg { opacity: 0; filter: blur(4px); transition: .18s ease; }
 
   /* give the code the space; the console stays a visible strip below */
   .pg-main { grid-template-rows: minmax(0, 1.55fr) minmax(0, 1fr); }
-  .pg-gutter { width: 32px; font-size: 12px; }
+  /* 16px on inputs: iOS Safari auto-zooms into smaller fields and leaves
+     the page zoomed-in (the "blurry" look). Gutter font/padding must stay
+     in lockstep with the editor or line numbers drift. */
+  .pg-gutter { width: 32px; font-size: 16px; padding: 10px 0; }
   .pg-gutter div { padding-inline-end: 7px; }
-  .pg-hl, .pg-ta { font-size: 13px; padding: 10px; }
+  .pg-hl, .pg-ta { font-size: 16px; padding: 10px; }
   .pg-filebar { padding: 6px 12px; font-size: 12px; }
   .pg-filetag { display: none; }
 
   .pg-console-head { padding: 6px 12px; }
-  .pg-console-body, .pg-stdin { font-size: 13px; }
+  .pg-console-body { font-size: 13px; }
+  .pg-stdin, .pg-select { font-size: 16px; }
   .pg-stdin-row { padding: 8px 12px; }
   .pg-statusbar { font-size: 11px; gap: 10px; }
   .pg-shortcut { display: none; }  /* keyboard hint is useless on touch */

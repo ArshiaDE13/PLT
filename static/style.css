@@ -647,7 +647,7 @@ textarea.codebox:focus { border-color: var(--blue); }
   .chapter-head h2 { font-size: 19px; }
   .chapter-head .emoji { font-size: 25px; }
   .lesson-body pre.code { font-size: 12.5px; padding: 11px 12px; margin: 14px 0; }
-  textarea.codebox { font-size: 13px; }
+  textarea.codebox { font-size: 16px; } /* >=16px: no iOS focus zoom */
   .subject-title { font-size: 24px; }
   .nav-row { margin-top: 18px; }
 }
