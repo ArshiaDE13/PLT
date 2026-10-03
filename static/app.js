@@ -1838,7 +1838,9 @@ function renderChooser() {
   const wrap = orbit.closest(".orbit-wrap");
   const W = (wrap && wrap.clientWidth) || 560;
   const R = W / 2 - 28; // keep a clear gap between ring and blob edge
-  const nodeR = Math.max(46, Math.round(W * 0.13));
+  const nodeR = W < 620
+    ? Math.max(38, Math.round(W * 0.115))   // phones: smaller bubbles...
+    : Math.max(46, Math.round(W * 0.13));   // desktop: unchanged sizing
   SUBJECTS.forEach((s, i) => {
     const ang = -Math.PI / 2 + i * (2 * Math.PI / SUBJECTS.length);
     const x = W / 2 + R * Math.cos(ang);

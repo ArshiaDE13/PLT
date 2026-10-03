@@ -1068,6 +1068,12 @@ textarea.codebox:focus { border-color: var(--blue); }
   .node-circle svg { width: 36px; height: 36px; }
   .subject-start { min-width: 240px; }
   .subject-sub { display: none; }
+  /* breathing room: shrink the blob and widen the ring so the language
+     bubbles stop touching it on small screens */
+  #blob-svg { width: 62%; }
+  .orbit-wrap { width: min(92vw, 540px); }
+  /* keep the heading clear of the language pill pinned top-end */
+  .subject-stage { padding-top: 58px; }
 }
 
 
