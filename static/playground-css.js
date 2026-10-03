@@ -26,7 +26,7 @@
       pg_examples_ph: "Examples…",
       pg_reset: "Reset",
       pg_clear: "Clear preview",
-      pg_close: "✕ Close",
+      pg_close: "✕ Back to lessons",
       pg_output: "PREVIEW",
       pg_live: "Live",
       pg_shortcut: "Ctrl+Enter = render · Tab = indent",
@@ -44,7 +44,7 @@
       pg_examples_ph: "نمونه‌ها…",
       pg_reset: "بازنشانی",
       pg_clear: "خالی کردن پیش‌نمایش",
-      pg_close: "✕ بستن",
+      pg_close: "✕ بازگشت به درس‌ها",
       pg_output: "پیش‌نمایش",
       pg_live: "زنده",
       pg_shortcut: "Ctrl+Enter = رندر · Tab = تورفتگی",
@@ -677,7 +677,7 @@
 
   $("pg-close").addEventListener("click", () => {
     saveNow();
-    window.close();
+    window.location.href = "index.html";
   });
 
   /* ------------------------------- boot ------------------------------- */

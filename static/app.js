@@ -934,6 +934,7 @@ function renderView(skipAnim) {
   if (active) active.scrollIntoView({ block: "nearest" });
   // phones: picking a title closes the drawer so the page shows fully
   setDrawer(false);
+  savePosition();
 }
 
 function lessonBreadcrumb(ch, idx) {
@@ -1459,8 +1460,9 @@ function renderQuestion(ch, q, i) {
 
 /* ============================== playground ============================= */
 
-/* The Playground is a separate page opened in its own browser window, so
-   the course stays where it is while you experiment with real code. */
+/* The Playground opens in THIS tab (never a popup): the playground's
+   "Back to lessons" button — or the browser back button — returns to the
+   exact place you left, because the position is saved on every render. */
 function openPlayground() {
   const page = activeSubject === "c" ? "playground-c.html"
     : activeSubject === "html" ? "playground-html.html"
@@ -1468,9 +1470,36 @@ function openPlayground() {
     : activeSubject === "js" ? "playground-js.html"
     : activeSubject === "cpp" ? "playground-cpp.html"
     : "playground.html";
-  const w = window.open(page, "pytutor-playground-" + activeSubject,
-    "popup=yes,width=1180,height=780");
-  if (!w) toast(t("playground_blocked"));
+  window.location.href = page;
+}
+
+/* remember where the reader is, so the playground round-trip (and any
+   reload) lands back on the same lesson */
+const POSITION_KEY = "pytutor-position-v1";
+function savePosition() {
+  try {
+    localStorage.setItem(POSITION_KEY, JSON.stringify({
+      subject: activeSubject,
+      chapter: state.chapter,
+      step: state.step,
+    }));
+  } catch (e) { /* storage blocked — worst case: course reopens at ch.1 */ }
+}
+
+function restorePosition() {
+  try {
+    const pos = JSON.parse(localStorage.getItem(POSITION_KEY) || "null");
+    if (!pos || pos.subject !== activeSubject) return;
+    const ch = Number(pos.chapter);
+    if (!Number.isInteger(ch) || ch < 0 || ch >= chapters.length) return;
+    const st = pos.step || {};
+    const len = chapters[ch].lessons.length;
+    state.chapter = ch;
+    state.step = st.kind === "quiz"
+      ? { kind: "quiz", idx: len }
+      : { kind: "lesson", idx: Math.min(Math.max(0, Math.trunc(st.idx) || 0), len - 1) };
+    sidebarOpenChapter = ch;
+  } catch (e) { /* corrupt position — start at chapter 1 */ }
 }
 
 /* ============================== toast ================================== */
@@ -1911,6 +1940,7 @@ function enterCourse(greet) {
   $("welcome").classList.remove("show", "entering");
   closeChooser();
   renderSidebar();
+  restorePosition(); // return to the lesson you were reading (playground round-trip)
   renderView();
   if (greet) {
     toast(t("subject_started", {

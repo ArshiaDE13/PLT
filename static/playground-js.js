@@ -24,7 +24,7 @@
       pg_examples_ph: "Examples…",
       pg_reset: "Reset",
       pg_clear: "Clear console",
-      pg_close: "✕ Close",
+      pg_close: "✕ Back to lessons",
       pg_output: "CONSOLE",
       pg_shortcut: "Ctrl+Enter = run · Tab = indent",
       pg_no_output: "(no output)",
@@ -46,7 +46,7 @@
       pg_examples_ph: "نمونه‌ها…",
       pg_reset: "بازنشانی",
       pg_clear: "پاک کردن console",
-      pg_close: "✕ بستن",
+      pg_close: "✕ بازگشت به درس‌ها",
       pg_output: "CONSOLE",
       pg_shortcut: "Ctrl+Enter = اجرا · Tab = تورفتگی",
       pg_no_output: "(خروجی نیست)",
@@ -579,7 +579,7 @@
     ta.focus();
   });
 
-  $("pg-close").addEventListener("click", () => { saveNow(); window.close(); });
+  $("pg-close").addEventListener("click", () => { saveNow(); window.location.href = "index.html"; });
 
   /* ------------------------------- boot ------------------------------- */
 

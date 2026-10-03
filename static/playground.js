@@ -26,7 +26,7 @@
       pg_examples_ph: "Examples…",
       pg_reset: "Reset",
       pg_clear: "Clear console",
-      pg_close: "✕ Close",
+      pg_close: "✕ Back to lessons",
       pg_output: "OUTPUT",
       pg_shortcut: "Ctrl+Enter = run · Tab = indent",
       pg_no_output: "(no output)",
@@ -53,7 +53,7 @@
       pg_examples_ph: "نمونه‌ها…",
       pg_reset: "بازنشانی",
       pg_clear: "پاک کردن خروجی",
-      pg_close: "✕ بستن",
+      pg_close: "✕ بازگشت به درس‌ها",
       pg_output: "خروجی",
       pg_shortcut: "Ctrl+Enter = اجرا · Tab = تورفتگی",
       pg_no_output: "(خروجی نیست)",
@@ -560,7 +560,7 @@
 
   $("pg-close").addEventListener("click", () => {
     saveNow();
-    window.close();
+    window.location.href = "index.html";
     // If the browser refused (page not opened by script), stay open.
   });
 
