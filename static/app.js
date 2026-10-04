@@ -93,6 +93,9 @@ const STR = {
     btn_next_chapter: "Next chapter →",
     btn_finish: "Finish 🏁",
     btn_back_lessons: "← Back to lessons",
+    copy_code: "Copy",
+    copied_code: "Copied!",
+    chips_label: "Programming language",
     tryit_label: "💻 Try it yourself — write Python and run it:",
     run: "▶ Run",
     running: "Running…",
@@ -217,6 +220,9 @@ const STR = {
     btn_next_chapter: "فصل بعدی",
     btn_finish: "پایان 🏁",
     btn_back_lessons: "بازگشت به درس‌ها",
+    copy_code: "کپی",
+    copied_code: "کپی شد!",
+    chips_label: "زبان آموزش",
     tryit_label: "💻 خودت امتحان کن — کد پایتون بنویس و اجرا کن:",
     run: "▶ اجرا",
     running: "در حال اجرا…",
@@ -438,6 +444,7 @@ function applyStaticText() {
   document.querySelectorAll(".lang-switch").forEach((el) => {
     el.setAttribute("aria-label", t("lang_aria"));
   });
+  renderSubjectChips(); // chip labels follow the UI language
 }
 
 function ensureLangPills() {
@@ -974,6 +981,44 @@ function renderLesson(ch) {
   body.className = "lesson-body";
   body.innerHTML = lesson.html;
   applyDir(body, !!lesson.__fa);
+  // each code block gets a meta-bar: language on the left, Copy on the
+  // right — touch users should never have to select code by hand
+  body.querySelectorAll("pre.code").forEach((pre) => {
+    const bar = document.createElement("div");
+    bar.className = "code-head";
+    const langName = document.createElement("span");
+    langName.className = "code-lang";
+    langName.textContent = subjName(subjectById(activeSubject));
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "code-copy";
+    copy.textContent = "📋 " + t("copy_code");
+    copy.addEventListener("click", () => {
+      const done = () => {
+        copy.textContent = "✓ " + t("copied_code");
+        copy.classList.add("ok");
+        setTimeout(() => {
+          copy.textContent = "📋 " + t("copy_code");
+          copy.classList.remove("ok");
+        }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(pre.textContent).then(done, done);
+      } else {
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        try { document.execCommand("copy"); } catch (e) { /* best effort */ }
+        sel.removeAllRanges();
+        done();
+      }
+    });
+    bar.appendChild(langName);
+    bar.appendChild(copy);
+    pre.parentNode.insertBefore(bar, pre);
+  });
   card.appendChild(body);
 
   // try-it playground — HTML/CSS render live; JS runs with console output,
@@ -2015,6 +2060,39 @@ function setDrawer(open) {
   btn.setAttribute("aria-expanded", String(open));
   const ic = btn.querySelector(".drawer-ic");
   if (ic) ic.textContent = open ? "✕" : "☰";
+}
+
+/* the programming-language chips at the top of the sidebar: switch subject
+   without leaving the course. The UI language (FA/EN) lives at the sidebar
+   footer, deliberately kept separate from the educational language. */
+function renderSubjectChips() {
+  const bar = document.getElementById("subject-chips");
+  if (!bar) return;
+  bar.innerHTML = "";
+  SUBJECTS.forEach((s) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "subject-chip" + (s.id === activeSubject ? " active" : "");
+    chip.dataset.subject = s.id;
+    chip.style.setProperty("--c", s.c1);
+    chip.title = subjName(s);
+    chip.innerHTML =
+      '<span class="chip-ic">' + svgIcon(s.inner("chip-" + s.id)) + "</span>" +
+      '<span class="chip-name">' + esc(subjName(s)) + "</span>";
+    chip.addEventListener("click", () => switchSubject(s.id));
+    bar.appendChild(chip);
+  });
+}
+
+function switchSubject(id) {
+  if (!courseActive) { chooseSubject(id); return; }
+  if (id === activeSubject) return;
+  if (!activateSubject(id)) return;
+  saveSubject(id);
+  renderSidebar();
+  restorePosition();
+  renderView();
+  renderSubjectChips();
 }
 
 function boot() {
