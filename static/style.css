@@ -1846,6 +1846,7 @@ body.zen #main { padding-inline: 18px; }
   bottom: 0;
   left: 0;
   right: 0;
+  border-radius: 0; /* must meet the screen edge exactly */
   z-index: 1260;
   background: linear-gradient(180deg, #22415f, #1a3149);
   border-top: 1px solid rgba(255, 255, 255, .12);
