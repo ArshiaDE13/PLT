@@ -2302,9 +2302,10 @@ function applyChapterFilter(q) {
 function toggleZen(force) {
   const on = force === undefined ? !document.body.classList.contains("zen") : force;
   document.body.classList.toggle("zen", on);
-  document.body.classList.toggle("zen-exit-hint", on);
   const fab = document.getElementById("zen-fab");
-  if (fab) fab.textContent = on ? "📖" : "📖";
+  const exit = document.getElementById("zen-exit");
+  if (fab) fab.textContent = "📖";
+  if (exit) exit.hidden = !on;
   if (on) {
     $("main").scrollTop = 0;
     toast(t("zen_toast"));
@@ -2341,8 +2342,10 @@ function boot() {
     zen.title = t("zen_title");
     zen.addEventListener("click", () => toggleZen());
   }
+  const zenExit = document.getElementById("zen-exit");
+  if (zenExit) zenExit.addEventListener("click", () => toggleZen(false));
   document.addEventListener("keydown", (e) => {
-    if ((e.key === "f" || e.key === "F") && courseActive &&
+    if (e.code === "KeyF" && courseActive &&
         !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !e.ctrlKey && !e.metaKey) {
       toggleZen();
     }
