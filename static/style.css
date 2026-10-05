@@ -1871,6 +1871,8 @@ body.zen #main { padding-inline: 18px; }
 
 @media (max-width: 600px) {
   body.course-active #bottom-nav { display: flex; }
+  /* focus mode lives in the nav bar on phones — the floating FAB is off */
+  #zen-fab { display: none; }
   body.drawer-open #bottom-nav { display: none; }
   #main { padding-bottom: 74px; }  /* clear the bar */
   body.zen #bottom-nav { display: none; }

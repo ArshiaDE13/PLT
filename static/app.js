@@ -109,6 +109,7 @@ const STR = {
     bn_menu: "Menu",
     bn_search: "Search",
     bn_saved: "Saved",
+    bn_focus: "Focus",
     bn_lang: "Language",
     compare_title: "Compare across languages",
     pal_ph: "Search lessons or type a command…",
@@ -256,6 +257,7 @@ const STR = {
     bn_menu: "منو",
     bn_search: "جست‌وجو",
     bn_saved: "نشان‌شده",
+    bn_focus: "تمرکز",
     bn_lang: "زبان",
     compare_title: "مقایسهٔ زبان‌ها",
     pal_ph: "جست‌وجوی درس‌ها یا دستورها…",
@@ -2661,6 +2663,7 @@ function boot() {
         }
       }, 380);
     }
+    if (b.dataset.nav === "focus") toggleZen();
     if (b.dataset.nav === "lang") toggleLang();
   });
 
