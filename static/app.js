@@ -104,6 +104,18 @@ const STR = {
     bookmark_add: "Bookmark this lesson",
     bookmark_remove: "Remove bookmark",
     bookmarks: "Bookmarks",
+    update_msg: "A new version is available!",
+    update_btn: "Update",
+    bn_menu: "Menu",
+    bn_search: "Search",
+    bn_saved: "Saved",
+    bn_lang: "Language",
+    compare_title: "Compare across languages",
+    pal_ph: "Search lessons or type a command…",
+    pal_commands: "Commands",
+    share_lesson: "Share this lesson",
+    share_text: "Check out this lesson on PLT:",
+    link_copied: "Lesson link copied ✓",
     tryit_label: "💻 Try it yourself — write Python and run it:",
     run: "▶ Run",
     running: "Running…",
@@ -239,6 +251,18 @@ const STR = {
     bookmark_add: "نشان‌گذاری این درس",
     bookmark_remove: "حذف نشان",
     bookmarks: "نشان‌شده‌ها",
+    update_msg: "نسخهٔ جدیدی از آموزش‌ها آماده است!",
+    update_btn: "به‌روزرسانی",
+    bn_menu: "منو",
+    bn_search: "جست‌وجو",
+    bn_saved: "نشان‌شده",
+    bn_lang: "زبان",
+    compare_title: "مقایسهٔ زبان‌ها",
+    pal_ph: "جست‌وجوی درس‌ها یا دستورها…",
+    pal_commands: "دستورها",
+    share_lesson: "اشتراک‌گذاری این درس",
+    share_text: "این درس را در PLT ببین:",
+    link_copied: "لینک درس کپی شد ✓",
     tryit_label: "💻 خودت امتحان کن — کد پایتون بنویس و اجرا کن:",
     run: "▶ اجرا",
     running: "در حال اجرا…",
@@ -1040,8 +1064,24 @@ function renderLesson(ch) {
     star.textContent = on ? "★" : "☆";
     star.title = on ? t("bookmark_remove") : t("bookmark_add");
   });
+  const share = document.createElement("button");
+  share.type = "button";
+  share.className = "share-btn";
+  share.title = t("share_lesson");
+  share.textContent = "🔗";
+  share.addEventListener("click", async () => {
+    const url = location.href;
+    if (navigator.share) {
+      try { await navigator.share({ title: document.title,
+        text: t("share_text"), url }); } catch (e) { /* user cancelled */ }
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(
+        () => toast(t("link_copied")), () => {});
+    }
+  });
   card.appendChild(h);
   card.appendChild(star);
+  card.appendChild(share);
 
   const body = document.createElement("div");
   body.className = "lesson-body";
@@ -1081,6 +1121,12 @@ function renderLesson(ch) {
         done();
       }
     });
+    const compare = document.createElement("button");
+    compare.type = "button";
+    compare.className = "code-expand";
+    compare.textContent = "⇄";
+    compare.title = t("compare_title");
+    compare.addEventListener("click", openCompare);
     const group = document.createElement("span");
     group.className = "bar-group";
     const expand = document.createElement("button");
@@ -1091,6 +1137,7 @@ function renderLesson(ch) {
     expand.addEventListener("click", () => openCodeModal(pre, langName.textContent));
     group.appendChild(copy);
     group.appendChild(expand);
+    group.appendChild(compare);
     bar.appendChild(langName);
     bar.appendChild(group);
     pre.parentNode.insertBefore(bar, pre);
@@ -2063,6 +2110,7 @@ function subjectStart() {
 
 function enterCourse(greet) {
   courseActive = true;
+  document.body.classList.add("course-active");
   $("welcome").classList.remove("show", "entering");
   closeChooser();
   renderSidebar();
@@ -2312,6 +2360,167 @@ function renderBookmarks() {
   box.hidden = !any;
 }
 
+/* ---------------- command palette (Ctrl+K, /) ---------------- */
+let palItems = [], palSel = 0;
+
+function palOpen() {
+  const p = $("palette");
+  if (!p) return;
+  p.hidden = false;
+  const input = $("pal-input");
+  input.value = "";
+  buildPalResults("");
+  input.focus();
+}
+function palClose() {
+  const p = $("palette");
+  if (p) p.hidden = true;
+}
+function palRun(item) {
+  palClose();
+  if (item) item.run();
+}
+function buildPalResults(q, keepSel) {
+  const prev = palItems[palSel] ? palItems[palSel].label : null;
+  q = (q || "").trim().toLowerCase();
+  const res = $("pal-results");
+  res.innerHTML = "";
+  palItems = [];
+  palSel = 0;
+
+  const cmds = [];
+  cmds.push({ tag: "⌘", c: "#6b7f95",
+    label: lang === "fa"
+      ? "تغییر زبان رابط به " + (lang === "fa" ? "English" : "فارسی")
+      : "Switch UI language to فارسی",
+    run: () => toggleLang() });
+  cmds.push({ tag: "⌘", c: "#6b7f95",
+    label: lang === "fa" ? "حالت تمرکز" : "Focus mode",
+    run: () => toggleZen() });
+  cmds.push({ tag: "⌘", c: "#6b7f95",
+    label: lang === "fa" ? "باز کردن Playground" : "Open Playground",
+    run: () => openPlayground() });
+  cmds.push({ tag: "⌘", c: "#6b7f95",
+    label: lang === "fa" ? "منوی اصلی" : "Main menu",
+    run: () => { const b = $("home-btn"); if (b) b.click(); } });
+
+  const cmdHits = cmds.filter((c) => c.label.toLowerCase().includes(q));
+  if (cmdHits.length) {
+    const h = document.createElement("div");
+    h.className = "pal-group";
+    h.textContent = t("pal_commands");
+    res.appendChild(h);
+    cmdHits.forEach((c) => { c.kind = "cmd"; palItems.push(c); });
+  }
+
+  SUBJECTS.forEach((s) => {
+    const data = courseDataFor(s.id);
+    if (!data) return;
+    const name = subjName(s);
+    data.chapters.forEach((ch, ci) => {
+      ch.lessons.forEach((lesson, li) => {
+        const title = (lang === "fa" && lesson.title_fa) ? lesson.title_fa : lesson.title;
+        const label = name + " — " + title;
+        if (q && !label.toLowerCase().includes(q) &&
+            !(ch.title || "").toLowerCase().includes(q)) return;
+        palItems.push({ kind: "lesson", tag: name, c: s.c1, label,
+          run: () => {
+            if (s.id !== activeSubject) switchSubject(s.id);
+            goToStep(ci, "lesson", li);
+          } });
+      });
+    });
+  });
+
+  const shown = palItems.slice(0, 80);
+  palItems = shown;
+  if (keepSel && prev !== null) {
+    const at = shown.findIndex((it) => it.label === prev);
+    if (at !== -1) palSel = at; else palSel = 0;
+  } else palSel = 0;
+  shown.forEach((item, i) => {
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "pal-item" + (i === palSel ? " sel" : "");
+    el.innerHTML = '<span class="pal-tag" style="--c:' + item.c + '">' +
+      esc(item.tag) + "</span><span>" + esc(item.label) + "</span>";
+    el.addEventListener("click", () => palRun(item));
+    el.addEventListener("mousemove", () => {
+      [...res.children].forEach((c) => c.classList.remove("sel"));
+      el.classList.add("sel");
+      palSel = i;
+    });
+    res.appendChild(el);
+  });
+  if (!palItems.length) {
+    res.innerHTML = '<div class="pal-item">—</div>';
+  }
+}
+
+function toggleLang() {
+  applyLang(lang === "fa" ? "en" : "fa");
+}
+
+/* ---------------- syntax comparison modal ---------------- */
+let cmpTopicId = null, cmpA = null, cmpB = null;
+const CMP_LANGS = ["python", "c", "cpp", "js"];
+
+function openCompare() {
+  const modal = $("compare-modal");
+  if (!modal) return;
+  const topics = window.COMPARISON_TOPICS || [];
+  if (!topics.some((t) => t.id === cmpTopicId)) cmpTopicId = topics[0] ? topics[0].id : null;
+  if (cmpA === null) {
+    cmpA = CMP_LANGS.indexOf(activeSubject) !== -1 ? activeSubject : "python";
+    cmpB = cmpA === "python" ? "cpp" : "python";
+  }
+  renderCompare();
+  modal.hidden = false;
+}
+function renderCompare() {
+  const topics = window.COMPARISON_TOPICS || [];
+  const topic = topics.find((t) => t.id === cmpTopicId) || topics[0];
+  if (!topic) return;
+  const top = $("cmp-topics");
+  top.innerHTML = "";
+  topics.forEach((t) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "cmp-topic" + (t.id === cmpTopicId ? " sel" : "");
+    b.textContent = (lang === "fa" && t.fa) ? t.fa : t.en;
+    b.addEventListener("click", () => { cmpTopicId = t.id; renderCompare(); });
+    top.appendChild(b);
+  });
+  $("cmp-topic-label").textContent =
+    (lang === "fa" && topic.fa) ? topic.fa : topic.en;
+
+  const renderPane = (paneId, sel) => {
+    const pane = $(paneId);
+    pane.innerHTML = "";
+    const pills = document.createElement("div");
+    pills.className = "cmp-pills";
+    CMP_LANGS.forEach((lid) => {
+      const sub = subjectById(lid);
+      const p = document.createElement("button");
+      p.type = "button";
+      p.className = "cmp-pill" + (lid === sel ? " sel" : "");
+      p.style.setProperty("--c", sub.c1);
+      p.textContent = subjName(sub);
+      p.addEventListener("click", () => {
+        if (paneId === "cmp-pane-a") cmpA = lid; else cmpB = lid;
+        renderCompare();
+      });
+      pills.appendChild(p);
+    });
+    pane.appendChild(pills);
+    const pre = document.createElement("pre");
+    pre.textContent = topic.code[sel] || "(not available)";
+    pane.appendChild(pre);
+  };
+  renderPane("cmp-pane-a", cmpA);
+  renderPane("cmp-pane-b", cmpB);
+}
+
 /* -------- swipe navigation + edge-swipe drawer (touch devices) -------- */
 function initSwipeGestures() {
   let sx = 0, sy = 0, tracking = false, fromEdge = false;
@@ -2434,6 +2643,48 @@ function boot() {
   const search = document.getElementById("chapter-search");
   if (search) search.addEventListener("input", () => applyChapterFilter(search.value));
 
+  // bottom navigation bar (mobile thumb bar)
+  const bn = document.getElementById("bottom-nav");
+  if (bn) bn.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.nav === "menu") setDrawer(true);
+    if (b.dataset.nav === "search") palOpen();
+    if (b.dataset.nav === "saved") {
+      setDrawer(true);
+      setTimeout(() => {
+        const bb = document.getElementById("bookmarks-box");
+        if (bb) {
+          bb.scrollIntoView({ block: "center" });
+          bb.style.outline = "2px solid rgba(255, 212, 59, .8)";
+          setTimeout(() => { bb.style.outline = ""; }, 1500);
+        }
+      }, 380);
+    }
+    if (b.dataset.nav === "lang") toggleLang();
+  });
+
+  // command palette input keys
+  const palInput = $("pal-input");
+  if (palInput) {
+    palInput.addEventListener("input", () => buildPalResults(palInput.value));
+    palInput.addEventListener("focus", () => buildPalResults(palInput.value));
+  }
+  if (palInput) palInput.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      palSel = Math.min(palSel + 1, palItems.length - 1);
+      buildPalResults(palInput.value, true);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      palSel = Math.max(palSel - 1, 0);
+      buildPalResults(palInput.value, true);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      palRun(palItems[palSel]);
+    }
+  });
+
   // zen (focus) mode: button + F key
   const zen = document.getElementById("zen-fab");
   if (zen) {
@@ -2456,18 +2707,26 @@ function boot() {
       }
       return;
     }
+    if (e.key === "k" && !e.ctrlKey) { /* plain k handled below with courseActive */ }
+    if (e.key === "Escape") { palClose(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      palOpen();
+      return;
+    }
+    if (e.key === "/" && courseActive) {
+      e.preventDefault();
+      palOpen();
+      return;
+    }
     if (!courseActive || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!$("palette").hidden) return;
     if (e.key === "ArrowRight" || e.key === "j" || e.key === "J") {
       e.preventDefault();
       nextStep();
     } else if (e.key === "ArrowLeft" || e.key === "k" || e.key === "K") {
       e.preventDefault();
       prevStep();
-    } else if (e.key === "/" || (e.ctrlKey && e.key.toLowerCase() === "k")) {
-      e.preventDefault();
-      if (window.matchMedia("(max-width: 760px)").matches) setDrawer(true);
-      const s = document.getElementById("chapter-search");
-      if (s) { s.focus(); s.select(); }
     }
     // Escape already closes the drawer / modal / zen via the handler above
   });
@@ -2475,6 +2734,23 @@ function boot() {
   // reading-progress line follows the lessons pane scroll
   $("main").addEventListener("scroll", updateScrollProgress, { passive: true });
   window.addEventListener("resize", updateScrollProgress);
+
+  // compare modal
+  $("cmp-close").addEventListener("click", () => {
+    $("compare-modal").hidden = true;
+  });
+  $("cmp-share").addEventListener("click", async () => {
+    const pane = $("cmp-pane-a");
+    const code = pane ? pane.querySelector("pre").textContent : "";
+    const topic = $("cmp-topic-label").textContent;
+    if (navigator.share) {
+      try { await navigator.share({ title: "PLT — " + topic, text: code }); }
+      catch (e) { /* cancelled */ }
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(
+        () => toast(t("link_copied")), () => {});
+    }
+  });
 
   // fullscreen code modal
   $("cm-close").addEventListener("click", closeCodeModal);
@@ -2491,6 +2767,46 @@ function boot() {
   });
 
   initSwipeGestures();
+
+  // PWA update prompt: when a new service worker installs while an old one
+  // still controls the page, offer the refresh instead of stale content
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (window.__pltReloadPending) window.location.reload();
+    });
+    navigator.serviceWorker.register("sw.js").then((reg) => {
+      const showUpdateToast = () => {
+        // an old worker controls the page + a new one is ready: offer refresh
+        if (!navigator.serviceWorker.controller) return;
+        const t = document.getElementById("update-toast");
+        if (t) t.hidden = false;
+      };
+      const watch = (sw) => {
+        if (!sw) return;
+        sw.addEventListener("statechange", () => {
+          if (sw.state === "installed") showUpdateToast();
+        });
+      };
+      watch(reg.installing);
+      watch(reg.waiting);
+      if (reg.waiting) showUpdateToast();          // already waiting at load
+      if (reg.active && !reg.waiting) {
+        // force the browser's update check now (navigations do this too,
+        // but this catches SPA-long sessions)
+        reg.update().then(() => {
+          watch(reg.installing);
+          if (reg.waiting) showUpdateToast();
+        }).catch(() => {});
+      }
+      reg.addEventListener("updatefound", () => watch(reg.installing));
+    }).catch(() => {});
+    const ub = $("update-btn");
+    if (ub) ub.addEventListener("click", async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.waiting) reg.waiting.postMessage({ action: "skipWaiting" });
+      window.__pltReloadPending = true;
+    });
+  }
   if (!courseDataFor("python") && !courseDataFor("c") &&
       !courseDataFor("html") && !courseDataFor("css") &&
       !courseDataFor("js") && !courseDataFor("cpp")) {

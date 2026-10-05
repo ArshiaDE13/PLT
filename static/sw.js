@@ -3,7 +3,7 @@
    - Cache-first for same-origin static assets (stale-while-revalidate).
    - Network-first for page navigations, falling back to the cached app
      so an internet outage never shows the browser's error page. */
-const CACHE = "plt-cache-v2";
+const CACHE = "plt-cache-v4";
 const CORE = [
   "./", "index.html", "style.css", "app.js",
   "data.js", "data-c.js", "data-html.js", "data-css.js", "data-js.js", "data-cpp.js",
@@ -13,8 +13,12 @@ const CORE = [
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE)
-    .then((c) => c.addAll(CORE))
-    .then(() => self.skipWaiting()));
+    .then((c) => c.addAll(CORE)));
+  // NO auto-skipWaiting: the page shows an "update available" toast and
+  // triggers it via postMessage({action:"skipWaiting"}) when the user opts in
+  self.addEventListener("message", (e) => {
+    if (e.data && e.data.action === "skipWaiting") self.skipWaiting();
+  });
 });
 
 self.addEventListener("activate", (e) => {
