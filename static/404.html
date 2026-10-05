@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found — PLT</title>
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(-45deg, #0e1f2c, #16364d, #1d4d6b, #2a5a82);
+    background-size: 400% 400%;
+    animation: shift 16s ease infinite;
+    color: #e6eef7;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+  @keyframes shift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  .box { max-width: 460px; }
+  h1 { font-size: 64px; margin: 0; }
+  p { color: #a9c3de; margin: 10px 0 26px; }
+  .fa { direction: rtl; }
+  a.btn {
+    display: inline-block;
+    padding: 13px 30px;
+    border-radius: 12px;
+    background: #ffd43b;
+    color: #1f3554;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  a.btn:hover { filter: brightness(1.08); }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>404</h1>
+    <p>This page does not exist — but every lesson does.<br>
+       <span class="fa">این صفحه پیدا نشد — اما همهٔ درس‌ها سر جایشان هستند.</span></p>
+    <a class="btn" href="./">← Back to the course / بازگشت به درس‌ها</a>
+  </div>
+</body>
+</html>

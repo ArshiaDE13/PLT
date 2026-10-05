@@ -101,6 +101,9 @@ const STR = {
     search_ph: "Search lessons…",
     zen_title: "Focus mode (F)",
     zen_toast: "Focus mode — press F or ✕ to exit",
+    bookmark_add: "Bookmark this lesson",
+    bookmark_remove: "Remove bookmark",
+    bookmarks: "Bookmarks",
     tryit_label: "💻 Try it yourself — write Python and run it:",
     run: "▶ Run",
     running: "Running…",
@@ -233,6 +236,9 @@ const STR = {
     search_ph: "جست‌وجوی درس‌ها…",
     zen_title: "حالت تمرکز (F)",
     zen_toast: "حالت تمرکز — برای خروج F یا ✕ را بزن",
+    bookmark_add: "نشان‌گذاری این درس",
+    bookmark_remove: "حذف نشان",
+    bookmarks: "نشان‌شده‌ها",
     tryit_label: "💻 خودت امتحان کن — کد پایتون بنویس و اجرا کن:",
     run: "▶ اجرا",
     running: "در حال اجرا…",
@@ -959,6 +965,7 @@ function renderView(skipAnim) {
   setDrawer(false);
   savePosition();
   markOnLessonEnd();
+  updateHash();
 }
 
 /* a lesson counts as "read" when its end becomes visible (or when it is
@@ -1020,7 +1027,21 @@ function renderLesson(ch) {
   h.className = "lesson-title";
   h.textContent = lesson.title;
   applyDir(h, !!lesson.__fa);
+  const star = document.createElement("button");
+  star.type = "button";
+  star.className = "star-btn" +
+    (isBookmarked(activeSubject, ch.id, idx) ? " on" : "");
+  star.title = isBookmarked(activeSubject, ch.id, idx)
+    ? t("bookmark_remove") : t("bookmark_add");
+  star.textContent = isBookmarked(activeSubject, ch.id, idx) ? "★" : "☆";
+  star.addEventListener("click", () => {
+    const on = toggleBookmark(ch.id, idx);
+    star.classList.toggle("on", on);
+    star.textContent = on ? "★" : "☆";
+    star.title = on ? t("bookmark_remove") : t("bookmark_add");
+  });
   card.appendChild(h);
+  card.appendChild(star);
 
   const body = document.createElement("div");
   body.className = "lesson-body";
@@ -2046,6 +2067,16 @@ function enterCourse(greet) {
   closeChooser();
   renderSidebar();
   restorePosition(); // return to the lesson you were reading (playground round-trip)
+  const deep = pendingDeepLink;
+  pendingDeepLink = null;
+  if (deep && deep.subject === activeSubject) {
+    const ci = Math.min(deep.chapter, chapters.length - 1);
+    state.chapter = ci;
+    state.step = deep.quiz
+      ? { kind: "quiz", idx: chapters[ci].lessons.length }
+      : { kind: "lesson", idx: Math.min(deep.idx, chapters[ci].lessons.length - 1) };
+    sidebarOpenChapter = ci;
+  }
   renderView();
   if (greet) {
     toast(t("subject_started", {
@@ -2155,6 +2186,8 @@ function switchSubject(id) {
   renderSubjectChips();
 }
 
+let pendingDeepLink = null;
+
 /* -------- per-lesson "read" tracking (study checklist) -------- */
 const READ_KEY = "pytutor-read-v1";
 function readStore() {
@@ -2212,6 +2245,71 @@ function closeCodeModal() {
   const modal = document.getElementById("code-modal");
   if (modal) modal.hidden = true;
   codeModalSource = null;
+}
+
+/* ---------------- deep links: #/subject/chapter/lesson ---------------- */
+function updateHash() {
+  if (!courseActive) return;
+  const h = "#/" + activeSubject + "/" + state.chapter + "/" +
+    (state.step.kind === "quiz" ? "q" : state.step.idx);
+  if (location.hash !== h) history.replaceState(null, "", h);
+}
+function parseHash() {
+  const m = location.hash.match(/^#\/([a-z]+)\/(\d+)\/(q|\d+)$/i);
+  if (!m) return null;
+  return { subject: m[1].toLowerCase(), chapter: +m[2],
+           quiz: m[3] === "q", idx: +m[3] || 0 };
+}
+
+/* ---------------- bookmarks (localStorage, no account) ---------------- */
+const BOOKMARK_KEY = "pytutor-bookmarks-v1";
+function bookmarkStore() {
+  try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || "{}") || {}; }
+  catch (e) { return {}; }
+}
+function isBookmarked(subj, chId, idx) {
+  const list = bookmarkStore()[subj] || [];
+  return list.some((b) => b.c === chId && b.i === idx);
+}
+function toggleBookmark(chId, idx) {
+  const store = bookmarkStore();
+  const list = store[activeSubject] || (store[activeSubject] = []);
+  const at = list.findIndex((b) => b.c === chId && b.i === idx);
+  const added = at === -1;
+  if (added) list.push({ c: chId, i: idx }); else list.splice(at, 1);
+  try { localStorage.setItem(BOOKMARK_KEY, JSON.stringify(store)); } catch (e) {}
+  renderBookmarks();
+  return added;
+}
+function renderBookmarks() {
+  const box = document.getElementById("bookmarks-box");
+  const listEl = document.getElementById("bookmarks-list");
+  if (!box || !listEl) return;
+  const store = bookmarkStore();
+  listEl.innerHTML = "";
+  let any = false;
+  Object.keys(store).forEach((subj) => {
+    (store[subj] || []).forEach((b) => {
+      const data = courseDataFor(subj);
+      const ch = data ? data.chapters.find((c) => c.id === b.c) : null;
+      if (!ch || !ch.lessons[b.i]) return;
+      any = true;
+      const sub = subjectById(subj);
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "bm-item" + (subj === activeSubject ? " current" : "");
+      item.innerHTML =
+        '<span class="bm-subj" style="--c:' + sub.c1 + '">' + esc(subjName(sub)) +
+        '</span><span class="bm-title">' + esc(ch.lessons[b.i].title) + "</span>";
+      item.addEventListener("click", () => {
+        if (subj !== activeSubject) switchSubject(subj);
+        goToStep(data.chapters.findIndex((c) => c.id === b.c), "lesson", b.i);
+        if (window.matchMedia("(max-width: 760px)").matches) setDrawer(true);
+      });
+      listEl.appendChild(item);
+    });
+  });
+  box.hidden = !any;
 }
 
 /* -------- swipe navigation + edge-swipe drawer (touch devices) -------- */
@@ -2345,10 +2443,33 @@ function boot() {
   const zenExit = document.getElementById("zen-exit");
   if (zenExit) zenExit.addEventListener("click", () => toggleZen(false));
   document.addEventListener("keydown", (e) => {
-    if (e.code === "KeyF" && courseActive &&
-        !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !e.ctrlKey && !e.metaKey) {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+    if (e.code === "KeyF" && !typing && courseActive && !e.ctrlKey && !e.metaKey) {
       toggleZen();
+      return;
     }
+    if (typing) {
+      const search = document.getElementById("chapter-search");
+      if (e.key === "Escape" && search && search.value) {
+        search.value = "";
+        applyChapterFilter("");
+      }
+      return;
+    }
+    if (!courseActive || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "ArrowRight" || e.key === "j" || e.key === "J") {
+      e.preventDefault();
+      nextStep();
+    } else if (e.key === "ArrowLeft" || e.key === "k" || e.key === "K") {
+      e.preventDefault();
+      prevStep();
+    } else if (e.key === "/" || (e.ctrlKey && e.key.toLowerCase() === "k")) {
+      e.preventDefault();
+      if (window.matchMedia("(max-width: 760px)").matches) setDrawer(true);
+      const s = document.getElementById("chapter-search");
+      if (s) { s.focus(); s.select(); }
+    }
+    // Escape already closes the drawer / modal / zen via the handler above
   });
 
   // reading-progress line follows the lessons pane scroll
@@ -2380,9 +2501,17 @@ function boot() {
   }
   // default the course data to Python so the chooser's ready-tag works
   activateSubject("python");
+  const deep = parseHash();
   if (!getUserName().trim()) {
+    pendingDeepLink = deep;
     showWelcome();
   } else {
+    if (deep && courseDataFor(deep.subject)) {
+      activateSubject(deep.subject);
+      pendingDeepLink = deep;
+      enterCourse(false); // consumes pendingDeepLink
+      return;
+    }
     const saved = getSavedSubject();
     if (courseDataFor(saved) && activateSubject(saved)) {
       enterCourse(false);

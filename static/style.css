@@ -320,7 +320,8 @@ html[dir="rtl"] .chapter-item.open .chev svg { transform: rotate(90deg); }
   border: 1px solid var(--line);
   border-radius: 5px;
   padding: 1px 6px;
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal;
   font-size: 0.92em;
 }
 .lesson-body pre.code {
@@ -334,7 +335,8 @@ html[dir="rtl"] .chapter-item.open .chev svg { transform: rotate(90deg); }
   padding: 14px 16px;
   margin: 18px 0;
   overflow-x: auto;
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal;
   font-size: 14px;
   line-height: 1.6;
 }
@@ -409,7 +411,8 @@ button.btn:disabled { opacity: 0.45; cursor: not-allowed; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .question .q-text { font-size: 15px; line-height: 1.55; margin-bottom: 12px; }
-.question .q-text code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace; font-size: .92em; }
+.question .q-text code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal; font-size: .92em; }
 
 /* mc options */
 .option {
@@ -445,7 +448,8 @@ button.btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* blank input */
 input.blank {
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal;
   font-size: 15px;
   padding: 6px 10px;
   border: 1px solid var(--blue);
@@ -464,7 +468,8 @@ input.blank.wrong { border-color: var(--red); background: #fbe4e2; }
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 14px 16px;
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal;
   font-size: 14px;
   line-height: 2.1;
   overflow-x: auto;
@@ -481,7 +486,8 @@ input.blank.wrong { border-color: var(--red); background: #fbe4e2; }
   padding: 8px 14px;
   margin: 5px 6px 5px 0;
   cursor: pointer;
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal;
   font-size: 13px;
   animation: chipIn .35s var(--ease-spring) backwards;
   transition: transform .22s var(--ease-spring), border-color .18s var(--ease-smooth),
@@ -567,6 +573,55 @@ input.blank.wrong { border-color: var(--red); background: #fbe4e2; }
   border-top-right-radius: 0;
 }
 
+/* bookmarks (starred lessons) at the top of the sidebar */
+#bookmarks-box {
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.bm-head { font-size: 12px; letter-spacing: .6px; color: #ffd43b; font-weight: 700; }
+#bookmarks-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.bm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: rgba(255, 255, 255, .05);
+  color: #e6eef7;
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: start;
+}
+.bm-item:hover { background: rgba(255, 255, 255, .12); }
+.bm-subj {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--c, #3776ab);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.bm-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bm-item.current .bm-title { font-weight: 700; }
+
+/* star button next to the lesson title */
+.star-btn {
+  border: none;
+  background: none;
+  font-size: 21px;
+  cursor: pointer;
+  color: #b7c6d6;
+  padding: 0 4px;
+  vertical-align: middle;
+  transition: transform .18s var(--ease-spring), color .2s ease;
+}
+.star-btn:hover { transform: scale(1.2); }
+.star-btn.on { color: #ffb800; }
+
 /* programming-language chips at the top of the sidebar — the educational
    language selector, deliberately separate from the UI language toggle
    that sits at the sidebar footer */
@@ -611,7 +666,8 @@ input.blank.wrong { border-color: var(--red); background: #fbe4e2; }
 textarea.codebox {
   width: 100%;
   min-height: 110px;
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal;
   font-size: 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -624,7 +680,8 @@ textarea.codebox:focus { border-color: var(--blue); }
 .run-output {
   background: #101c28;
   color: #c9e6c9;
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal;
   font-size: 13px;
   border-radius: 10px;
   padding: 12px 14px;
@@ -1572,7 +1629,8 @@ html[data-subject="js"] .welcome-card label {
 .run-output.js-console {
   background: #1e1e1e;
   color: #d4d4d4;
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal;
   font-size: 13px;
   padding: 12px 14px;
   border-radius: 10px;
@@ -1721,7 +1779,8 @@ html[data-subject="cpp"] .welcome-card label {
   margin: 0;
   padding: 16px;
   color: #dbe7f3;
-  font-family: "Fira Code", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  font-variant-ligatures: normal;
   font-size: 16px;
   line-height: 1.6;
   white-space: pre;
@@ -1755,6 +1814,9 @@ html[data-subject="cpp"] .welcome-card label {
   transition: transform .18s var(--ease-out), opacity .3s ease;
 }
 #zen-fab:active { transform: scale(.92); }
+/* not a study tool on the menu screens — course pages only */
+#welcome.show ~ #zen-fab,
+#subject.show ~ #zen-fab { display: none; }
 body.zen #sidebar,
 body.zen #drawer-btn,
 body.zen #drawer-backdrop,

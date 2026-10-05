@@ -1,0 +1,29 @@
+{
+  "name": "PLT — Programming Learning Tutors",
+  "short_name": "PLT",
+  "description": "Bilingual (English/Persian) courses for Python, C, C++, HTML, CSS and JavaScript — with in-browser code playgrounds.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0e1f2c",
+  "theme_color": "#16364d",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
