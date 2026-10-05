@@ -96,6 +96,11 @@ const STR = {
     copy_code: "Copy",
     copied_code: "Copied!",
     chips_label: "Programming language",
+    read_time: "⏱ {min} min read",
+    read_progress: "📖 {read} of {total} lessons read",
+    search_ph: "Search lessons…",
+    zen_title: "Focus mode (F)",
+    zen_toast: "Focus mode — press F or ✕ to exit",
     tryit_label: "💻 Try it yourself — write Python and run it:",
     run: "▶ Run",
     running: "Running…",
@@ -223,6 +228,11 @@ const STR = {
     copy_code: "کپی",
     copied_code: "کپی شد!",
     chips_label: "زبان آموزش",
+    read_time: "⏱ {min} دقیقه مطالعه",
+    read_progress: "📖 {read} از {total} درس خوانده شد",
+    search_ph: "جست‌وجوی درس‌ها…",
+    zen_title: "حالت تمرکز (F)",
+    zen_toast: "حالت تمرکز — برای خروج F یا ✕ را بزن",
     tryit_label: "💻 خودت امتحان کن — کد پایتون بنویس و اجرا کن:",
     run: "▶ اجرا",
     running: "در حال اجرا…",
@@ -772,6 +782,7 @@ function renderSidebar() {
     chapters: fmtNum(chapters.length),
   });
   $("overall-bar").style.width = (100 * mastered / totalQ) + "%";
+  updateReadProgressLine();
 }
 
 /* A chapter header row plus its collapsible sub-list: one item per lesson
@@ -801,10 +812,15 @@ function renderChapterGroup(ch, i, firstBuild) {
 
   const inner = document.createElement("div");
   inner.className = "sublist-inner";
+  const readSet = readStore()[activeSubject] || {};
   ch.lessons.forEach((lesson, j) => {
     const s = document.createElement("button");
-    s.className = "sub-item" + (j === activeLessonIdx ? " active" : "");
-    s.textContent = faLessonTitle(lesson);
+    s.className = "sub-item" + (j === activeLessonIdx ? " active" : "") +
+      (readSet[ch.id + "/" + j] ? " read" : "");
+    s.dataset.ch = i;
+    s.dataset.idx = j;
+    s.innerHTML = '<span class="sub-title">' + esc(faLessonTitle(lesson)) +
+      '</span><span class="read-tick" aria-hidden="true">✔</span>';
     s.addEventListener("click", () => goToStep(i, "lesson", j));
     inner.appendChild(s);
   });
@@ -942,6 +958,28 @@ function renderView(skipAnim) {
   // phones: picking a title closes the drawer so the page shows fully
   setDrawer(false);
   savePosition();
+  markOnLessonEnd();
+}
+
+/* a lesson counts as "read" when its end becomes visible (or when it is
+   too short to scroll at all) */
+let lessonEndHandler = null;
+function markOnLessonEnd() {
+  const main = $("main");
+  if (lessonEndHandler) main.removeEventListener("scroll", lessonEndHandler);
+  updateScrollProgress();
+  const ch = chapters[state.chapter];
+  const mark = () => {
+    if (state.step.kind !== "lesson") return;
+    if (main.scrollTop + main.clientHeight >= main.scrollHeight - 60) {
+      markLessonRead(ch.id, state.step.idx);
+      main.removeEventListener("scroll", lessonEndHandler);
+      lessonEndHandler = null;
+    }
+  };
+  lessonEndHandler = mark;
+  main.addEventListener("scroll", mark, { passive: true });
+  mark(); // short lessons: already at the end
 }
 
 function lessonBreadcrumb(ch, idx) {
@@ -970,6 +1008,13 @@ function renderLesson(ch) {
   bc.className = "breadcrumb";
   bc.textContent = lessonBreadcrumb(ch, idx);
   card.appendChild(bc);
+
+  const words = (lesson.html || "").replace(/<[^>]+>/g, " ").split(/\s+/)
+    .filter(Boolean).length;
+  const rt = document.createElement("div");
+  rt.className = "read-time";
+  rt.textContent = t("read_time", { min: Math.max(1, Math.round(words / 180)) });
+  card.appendChild(rt);
 
   const h = document.createElement("h3");
   h.className = "lesson-title";
@@ -1015,8 +1060,18 @@ function renderLesson(ch) {
         done();
       }
     });
+    const group = document.createElement("span");
+    group.className = "bar-group";
+    const expand = document.createElement("button");
+    expand.type = "button";
+    expand.className = "code-expand";
+    expand.textContent = "⛶";
+    expand.title = t("zen_title").indexOf("(") > -1 ? "Full screen" : "Full screen";
+    expand.addEventListener("click", () => openCodeModal(pre, langName.textContent));
+    group.appendChild(copy);
+    group.appendChild(expand);
     bar.appendChild(langName);
-    bar.appendChild(copy);
+    bar.appendChild(group);
     pre.parentNode.insertBefore(bar, pre);
   });
   card.appendChild(body);
@@ -2100,6 +2155,162 @@ function switchSubject(id) {
   renderSubjectChips();
 }
 
+/* -------- per-lesson "read" tracking (study checklist) -------- */
+const READ_KEY = "pytutor-read-v1";
+function readStore() {
+  try { return JSON.parse(localStorage.getItem(READ_KEY) || "{}") || {}; }
+  catch (e) { return {}; }
+}
+function markLessonRead(chId, idx) {
+  const store = readStore();
+  const set = store[activeSubject] || (store[activeSubject] = {});
+  const key = chId + "/" + idx;
+  if (set[key]) return;
+  set[key] = 1;
+  try { localStorage.setItem(READ_KEY, JSON.stringify(store)); } catch (e) {}
+  const tick = document.querySelector(
+    '.sub-item[data-ch="' + chapters.findIndex((c) => c.id === chId) +
+    '"][data-idx="' + idx + '"] .read-tick');
+  if (tick) tick.textContent = "✔";
+  updateReadProgressLine();
+}
+function countReadLessons() {
+  const set = readStore()[activeSubject] || {};
+  let n = 0;
+  chapters.forEach((ch) => ch.lessons.forEach((_, j) => {
+    if (set[ch.id + "/" + j]) n++;
+  }));
+  return n;
+}
+function updateReadProgressLine() {
+  const el = $("read-progress");
+  if (!el) return;
+  const total = chapters.reduce((n, ch) => n + ch.lessons.length, 0);
+  el.textContent = t("read_progress",
+    { read: fmtNum(countReadLessons()), total: fmtNum(total) });
+}
+
+/* ---- scroll reading-progress bar (the lessons pane is the scroller) ---- */
+function updateScrollProgress() {
+  const bar = document.getElementById("scroll-progress");
+  if (!bar) return;
+  const main = $("main");
+  const max = main.scrollHeight - main.clientHeight;
+  bar.style.width = (max > 0 ? Math.min(100, 100 * main.scrollTop / max) : 100) + "%";
+}
+
+/* ---- fullscreen code modal (opened from the code meta-bar) ---- */
+let codeModalSource = null;
+function openCodeModal(pre, langName) {
+  const modal = document.getElementById("code-modal");
+  codeModalSource = pre;
+  $("cm-pre").textContent = pre.textContent;
+  $("cm-lang").textContent = langName;
+  modal.hidden = false;
+}
+function closeCodeModal() {
+  const modal = document.getElementById("code-modal");
+  if (modal) modal.hidden = true;
+  codeModalSource = null;
+}
+
+/* -------- swipe navigation + edge-swipe drawer (touch devices) -------- */
+function initSwipeGestures() {
+  let sx = 0, sy = 0, tracking = false, fromEdge = false;
+  document.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) { tracking = false; return; }
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY;
+    const w = document.documentElement.clientWidth;
+    fromEdge = sx <= 30 || sx >= w - 30;
+    const bad = e.target.closest("pre, textarea, select, input, .code-copy, .code-expand, .html-preview");
+    tracking = !bad;
+  }, { passive: true });
+  document.addEventListener("touchend", (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    const drawerOpen = document.body.classList.contains("drawer-open");
+    // edge-swipe opens the drawer; any inward swipe closes it
+    if (drawerOpen) {
+      if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.4) setDrawer(false);
+      return;
+    }
+    if (fromEdge && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      setDrawer(true);
+      return;
+    }
+    // horizontal swipe across the lesson navigates next / previous
+    if (!courseActive || Math.abs(dx) < 90 || Math.abs(dy) > 60) return;
+    if (e.target.closest(".tryit, .code-head")) return;
+    const rtl = document.documentElement.getAttribute("dir") === "rtl";
+    if ((dx < 0) !== rtl) nextStep(); else prevStep();
+  }, { passive: true });
+}
+
+/* live filter: hide chapters/lessons that do not match the query */
+function applyChapterFilter(q) {
+  q = q.trim().toLowerCase();
+  const heads = [...document.querySelectorAll("#chapter-list .category-head")];
+  document.querySelectorAll("#chapter-list .chapter-item").forEach((btn) => {
+    const i = +btn.dataset.ch;
+    const ch = chapters[i];
+    const sublist = btn.nextElementSibling;
+    if (!sublist) return;
+    const items = [...sublist.querySelectorAll(".sub-item")];
+    if (!q) {
+      btn.classList.remove("search-hide");
+      sublist.classList.remove("search-hide");
+      items.forEach((it) => it.classList.remove("search-hide"));
+      heads.forEach((h) => h.classList.remove("search-hide"));
+      syncSublists();
+      return;
+    }
+    const chMatch = faChapterTitle(ch).toLowerCase().includes(q);
+    let any = chMatch;
+    items.forEach((it, j) => {
+      const hit = chMatch ||
+        it.textContent.toLowerCase().includes(q) ||
+        (ch.lessons[j] && (ch.lessons[j].title || "").toLowerCase().includes(q));
+      it.classList.toggle("search-hide", !hit);
+      any = any || hit;
+    });
+    btn.classList.toggle("search-hide", !any && !chMatch);
+    sublist.classList.toggle("search-hide", !any);
+    if (any) { // searching shows every group's matches expanded
+      btn.classList.add("open");
+      btn.setAttribute("aria-expanded", "true");
+      sublist.classList.add("open");
+    }
+  });
+  heads.forEach((h) => {
+    const cat = h.textContent.trim();
+    const idx = sidebarCategories().findIndex((c) => t(c.key) === cat);
+    if (idx === -1) return;
+    const cat_ = sidebarCategories()[idx];
+    let visible = false;
+    for (let i = cat_.start - 1; i < cat_.end; i++) {
+      const b = document.querySelector('#chapter-list .chapter-item[data-ch="' + i + '"]');
+      if (b && !b.classList.contains("search-hide")) { visible = true; break; }
+    }
+    h.classList.toggle("search-hide", !visible);
+  });
+}
+
+/* focus mode: only the lesson — sidebar, buttons and hints disappear */
+function toggleZen(force) {
+  const on = force === undefined ? !document.body.classList.contains("zen") : force;
+  document.body.classList.toggle("zen", on);
+  document.body.classList.toggle("zen-exit-hint", on);
+  const fab = document.getElementById("zen-fab");
+  if (fab) fab.textContent = on ? "📖" : "📖";
+  if (on) {
+    $("main").scrollTop = 0;
+    toast(t("zen_toast"));
+  }
+}
+
 function boot() {
   setupNameUi();
   ensureLangPills();
@@ -2112,9 +2323,50 @@ function boot() {
       setDrawer(!document.body.classList.contains("drawer-open")));
     drawerBackdrop.addEventListener("click", () => setDrawer(false));
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") setDrawer(false);
+      if (e.key === "Escape") {
+        setDrawer(false);
+        closeCodeModal();
+        if (document.body.classList.contains("zen")) toggleZen(false);
+      }
     });
   }
+
+  // live search over chapters + lessons
+  const search = document.getElementById("chapter-search");
+  if (search) search.addEventListener("input", () => applyChapterFilter(search.value));
+
+  // zen (focus) mode: button + F key
+  const zen = document.getElementById("zen-fab");
+  if (zen) {
+    zen.title = t("zen_title");
+    zen.addEventListener("click", () => toggleZen());
+  }
+  document.addEventListener("keydown", (e) => {
+    if ((e.key === "f" || e.key === "F") && courseActive &&
+        !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !e.ctrlKey && !e.metaKey) {
+      toggleZen();
+    }
+  });
+
+  // reading-progress line follows the lessons pane scroll
+  $("main").addEventListener("scroll", updateScrollProgress, { passive: true });
+  window.addEventListener("resize", updateScrollProgress);
+
+  // fullscreen code modal
+  $("cm-close").addEventListener("click", closeCodeModal);
+  $("code-modal").addEventListener("click", (e) => {
+    if (e.target.id === "code-modal") closeCodeModal();
+  });
+  $("cm-copy").addEventListener("click", () => {
+    if (!codeModalSource) return;
+    const btn = $("cm-copy");
+    const done = () => { btn.textContent = "✓"; setTimeout(() => { btn.textContent = "📋"; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(codeModalSource.textContent).then(done, done);
+    } else done();
+  });
+
+  initSwipeGestures();
   if (!courseDataFor("python") && !courseDataFor("c") &&
       !courseDataFor("html") && !courseDataFor("css") &&
       !courseDataFor("js") && !courseDataFor("cpp")) {
