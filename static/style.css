@@ -570,15 +570,11 @@ input.blank.wrong { border-color: var(--red); background: #fbe4e2; }
    that sits at the sidebar footer */
 #subject-chips {
   display: flex;
+  flex-wrap: wrap; /* every language visible — no half-cut scrolling row */
   gap: 6px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding: 2px 2px 6px;
+  padding: 4px 2px 8px;
 }
-#subject-chips::-webkit-scrollbar { display: none; }
 .subject-chip {
-  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -586,13 +582,13 @@ input.blank.wrong { border-color: var(--red); background: #fbe4e2; }
   background: rgba(255, 255, 255, .07);
   color: #dce8f5;
   border-radius: 999px;
-  padding: 4px 10px 4px 5px;
-  font-size: 12.5px;
+  padding: 5px 12px 5px 6px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: border-color .2s ease, background .2s ease;
 }
-.subject-chip .chip-ic svg { width: 18px; height: 18px; display: block; border-radius: 50%; }
+.subject-chip .chip-ic svg { width: 21px; height: 21px; display: block; border-radius: 50%; }
 .subject-chip:hover { background: rgba(255, 255, 255, .13); }
 .subject-chip.active {
   border-color: var(--c, var(--yellow));

@@ -1711,27 +1711,27 @@ const SUBJECTS = [
   { id: "python", en: "Python", fa: "پایتون", emoji: "🐍",
     c1: "#3776ab", c2: "#ffd43b",
     blob: { r: [130, 124, 128, 132, 124, 128, 130, 124], rot: 0.12 },
-    inner: pyInner, soon: false },
+    grad: ["#0e1f2c", "#16364d", "#1d4d6b", "#2a5a82"], inner: pyInner, soon: false },
   { id: "c", en: "C", fa: "C", emoji: "🔷",
     c1: "#283593", c2: "#7986cb",
     blob: { r: [136, 120, 136, 120, 136, 120, 136, 120], rot: Math.PI / 8 },
-    inner: (u) => hexInner("C", "#283593", "#7986cb", u, 40), soon: false },
+    grad: ["#12154d", "#283593", "#1a237e", "#1e2670"], inner: (u) => hexInner("C", "#283593", "#7986cb", u, 40), soon: false },
   { id: "cpp", en: "C++", fa: "C++", emoji: "🔷",
     c1: "#00599c", c2: "#004482",
     blob: { r: [140, 116, 138, 118, 140, 116, 138, 118], rot: Math.PI / 8 },
-    inner: (u) => hexInner("C++", "#00599c", "#004482", u, 28), soon: false },
+    grad: ["#00305a", "#00599c", "#0077cc", "#004482"], inner: (u) => hexInner("C++", "#00599c", "#004482", u, 28), soon: false },
   { id: "html", en: "HTML", fa: "HTML", emoji: "🛡️",
     c1: "#e44d26", c2: "#f16529",
     blob: { r: [120, 126, 130, 136, 144, 130, 120, 116], rot: -Math.PI / 2 },
-    inner: (u) => shieldInner("5", "#e44d26", "#f16529", u), soon: false },
+    grad: ["#8f2f12", "#e44d26", "#f16529", "#c73c1a"], inner: (u) => shieldInner("5", "#e44d26", "#f16529", u), soon: false },
   { id: "css", en: "CSS", fa: "CSS", emoji: "🛡️",
     c1: "#1572b6", c2: "#33a9dc",
     blob: { r: [122, 126, 130, 132, 140, 130, 126, 122], rot: -Math.PI / 2 },
-    inner: (u) => shieldInner("3", "#1572b6", "#33a9dc", u), soon: false },
+    grad: ["#0a3c63", "#1572b6", "#33a9dc", "#0d5590"], inner: (u) => shieldInner("3", "#1572b6", "#33a9dc", u), soon: false },
   { id: "js", en: "JavaScript", fa: "جاوااسکریپت", emoji: "🟨",
     c1: "#f7df1e", c2: "#323330",
     blob: { r: [138, 120, 138, 120, 138, 120, 138, 120], rot: Math.PI / 4 },
-    inner: jsInner, soon: false },
+    grad: ["#1a1a12", "#323330", "#f7df1e", "#2b2b20"], inner: jsInner, soon: false },
 ];
 
 function subjectById(id) {
@@ -1941,6 +1941,11 @@ function renderChooser() {
 function chooseSubject(id) {
   const s = subjectById(id);
   chooserChosen = id;
+  // the menu itself adopts the chosen language's colors — before entering
+  const menu = $("subject");
+  menu.style.background =
+    "linear-gradient(-45deg, " + s.grad.join(", ") + ")";
+  menu.style.backgroundSize = "400% 400%";
   updateNodeActive();
   updateStartButton();
   setPreview(id, true);
