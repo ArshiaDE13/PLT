@@ -1244,17 +1244,29 @@ textarea.codebox:focus { border-color: var(--blue); }
 }
 .change-name:hover { color: #fff; text-decoration: underline; }
 
-/* the UI language toggle lives at the sidebar footer (drawer footer on
-   phones), separate from the educational-language chips up top. Sticky
-   keeps it visible even while the chapter list scrolls. */
-#lang-side {
+/* sidebar footer: theme toggle + UI language, pinned while scrolling */
+#sidebar-footer {
   position: sticky;
   bottom: 0;
   margin-top: auto;
-  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 2px;
   background: inherit;
 }
+#theme-side {
+  border: 1px solid rgba(255, 255, 255, .25);
+  background: rgba(255, 255, 255, .08);
+  color: #e6eef7;
+  border-radius: 9px;
+  width: 34px;
+  height: 30px;
+  font-size: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#theme-side:hover { background: rgba(255, 255, 255, .16); }
 
 /* quiz answered-count hint */
 .quiz-status {
@@ -2139,33 +2151,33 @@ ul.callout.callout-warning { margin-top: 0; border-radius: 0 0 10px 10px; border
 }
 
 /* ================= reader preferences: OLED true-black ================= */
-body.oled #main { background: #000; }
-body.oled .card { background: #000; border-color: #1c1c1c; color: #d6d6d6; }
-body.oled .lesson-title { color: #7aa2ff; }
-body.oled .chapter-head h2 { color: #eaeaea; }
-body.oled .breadcrumb, body.oled .read-time { color: #8a8a8a; }
-body.oled .lesson-body b { color: #f0f0f0; }
-body.oled .lesson-body code {
+html.oled #main { background: #000; }
+html.oled .card { background: #000; border-color: #1c1c1c; color: #d6d6d6; }
+html.oled .lesson-title { color: #7aa2ff; }
+html.oled .chapter-head h2 { color: #eaeaea; }
+html.oled .breadcrumb, html.oled .read-time { color: #8a8a8a; }
+html.oled .lesson-body b { color: #f0f0f0; }
+html.oled .lesson-body code {
   background: #141414;
   color: #e0e0e0;
   border-color: #262626;
 }
-body.oled .lesson-body pre.code {
+html.oled .lesson-body pre.code {
   background: #0a0a0a;
   border-color: #242424;
   color: #cfcfcf;
 }
-body.oled .code-head { background: #101010; border-color: #242424; }
-body.oled .code-lang { color: #8fa8c0; }
-body.oled textarea.codebox {
+html.oled .code-head { background: #101010; border-color: #242424; }
+html.oled .code-lang { color: #8fa8c0; }
+html.oled textarea.codebox {
   background: #0a0a0a;
   border-color: #242424;
   color: #cfcfcf;
   caret-color: #ffd43b;
 }
-body.oled .tryit { background: #000; border-color: #242424; box-shadow: none; }
-body.oled .lesson-meta .diff-badge { filter: saturate(1.4) brightness(1.15); }
-body.oled .lesson-body ::selection { background: rgba(126, 200, 227, .3); }
+html.oled .tryit { background: #000; border-color: #242424; box-shadow: none; }
+html.oled .lesson-meta .diff-badge { filter: saturate(1.4) brightness(1.15); }
+html.oled .lesson-body ::selection { background: rgba(126, 200, 227, .3); }
 
 /* ================= reader preferences modal ================= */
 #reader-modal {
@@ -2316,3 +2328,88 @@ body.oled .lesson-body ::selection { background: rgba(126, 200, 227, .3); }
   0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
   100% { transform: translateY(105vh) rotate(720deg); opacity: .6; }
 }
+
+
+/* ================= dark theme (site-wide) ================= */
+html.dark { color-scheme: dark; }
+html.dark #main { background: #0f1922; }
+html.dark .card {
+  background: #16212e;
+  border-color: rgba(255, 255, 255, .08);
+  color: #dbe7f3;
+}
+html.dark .lesson-title { color: #7ab3e8; }
+html.dark .chapter-head h2 { color: #e6eef7; }
+html.dark .breadcrumb, html.dark .read-time,
+html.dark .lesson-meta .diff-badge { color: #8fa8c0; }
+html.dark .lesson-body b { color: #ecf3fa; }
+html.dark .lesson-body code {
+  background: rgba(255, 255, 255, .07);
+  color: #cfe2f3;
+  border-color: rgba(255, 255, 255, .1);
+}
+html.dark .lesson-body pre.code {
+  background: #0d1622;
+  border-color: rgba(255, 255, 255, .1);
+  color: #d6e4f0;
+}
+html.dark .code-head { background: #182532; border-color: rgba(255, 255, 255, .08); }
+html.dark .code-lang { color: #9fc3e0; }
+html.dark .code-copy, html.dark .code-expand { color: #dce8f5; }
+html.dark .code-copy.ok { color: #b8e6c4; }
+html.dark textarea.codebox {
+  background: #0d1622;
+  border-color: rgba(255, 255, 255, .1);
+  color: #cfe2f3;
+}
+html.dark .tryit { background: #16212e; border-color: rgba(255, 255, 255, .08); }
+html.dark .btn.secondary {
+  background: #1d2b3a;
+  color: #cfe2f3;
+  border-color: rgba(255, 255, 255, .12);
+}
+html.dark .btn.secondary:hover { background: #24354a; }
+html.dark .callout-tip { background: rgba(16, 185, 129, .13); }
+html.dark .callout-warning { background: rgba(245, 158, 11, .11); }
+html.dark .callout-note { background: rgba(59, 130, 246, .1); }
+html.dark .diff-badge.beg { background: rgba(34, 197, 94, .2); color: #6ee7a0; }
+html.dark .diff-badge.int { background: rgba(245, 158, 11, .2); color: #fbbf24; }
+html.dark .diff-badge.adv { background: rgba(239, 68, 68, .2); color: #fca5a5; }
+html.dark .pal-box { background: #16212e; }
+html.dark #pal-input { background: #0f1922; color: #dbe7f3; border-color: rgba(255, 255, 255, .1); }
+html.dark .pal-item { color: #dbe7f3; }
+html.dark .pal-item.sel { background: #1d3a5f; }
+html.dark .pal-group { color: #7d93a8; }
+html.dark .rm-box { background: #16212e; }
+html.dark .rm-head { background: #101a26; color: #dbe7f3; }
+html.dark .rm-label { color: #cfe2f3; }
+html.dark .rm-stepper button, html.dark .rm-fonts button {
+  background: #101a26;
+  color: #cfe2f3;
+  border-color: rgba(255, 255, 255, .12);
+}
+html.dark .rm-stepper button:hover { background: #1a2938; }
+html.dark .rm-fonts button.sel { background: #2f81f7; color: #fff; }
+html.dark #rm-fs { color: #dbe7f3; }
+html.dark #rm-oled { background: #2a3b4c; }
+html.dark .completion-card { background: #16212e; }
+html.dark .completion-card h2 { color: #e6eef7; }
+html.dark .completion-card p { color: #a9bdd0; }
+html.dark .completion-card .stat b { color: #e6eef7; }
+html.dark .completion-actions .close { background: #1d2b3a; color: #cfe2f3; border-color: rgba(255, 255, 255, .12); }
+html.dark .skel-line, html.dark .skel-row, html.dark .skel-code {
+  background: linear-gradient(90deg, #1a2734 25%, #243447 45%, #1a2734 65%);
+  background-size: 200% 100%;
+}
+html.dark #chapter-search { background: rgba(255, 255, 255, .06); }
+html.dark .bm-item { background: rgba(255, 255, 255, .05); }
+html.dark .bm-item:hover { background: rgba(255, 255, 255, .11); }
+html.dark .sub-item .read-tick { color: #86c99a; }
+
+/* OLED true-black composes over dark mode */
+html.oled #main { background: #000; }
+html.dark.oled .card, html.oled .card { background: #000; border-color: #1c1c1c; }
+html.dark.oled .lesson-body pre.code, html.oled .lesson-body pre.code { background: #0a0a0a; }
+html.dark.oled textarea.codebox, html.oled textarea.codebox { background: #0a0a0a; }
+html.dark.oled .tryit, html.oled .tryit { background: #000; }
+html.dark.oled .code-head, html.oled .code-head { background: #0c0c0c; }

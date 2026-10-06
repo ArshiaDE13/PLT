@@ -8,6 +8,11 @@
 /* Restore the saved language + text direction before first paint (no flash). */
 (function () {
   try {
+    if ((localStorage.getItem('plt-theme-v1') || 'light') === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (e) {}
+  try {
     var l = localStorage.getItem('pytutor-lang-v1');
     if (l !== 'fa' && l !== 'en') {
       l = (navigator.language || '').toLowerCase().indexOf('fa') === 0 ? 'fa' : 'en';
@@ -39,7 +44,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261008b">
+<link rel="stylesheet" href="style.css?v=20261009a">
 </head>
 <body>
 <div id="scroll-progress" aria-hidden="true"></div>
@@ -142,7 +147,10 @@
            data-i18n-ph="search_ph" aria-label="Search lessons">
     <nav id="chapter-list"></nav>
     <button id="change-name" class="change-name" data-i18n="change_name"></button>
-    <div class="lang-switch on-dark" id="lang-side" role="group" aria-label="Language"></div>
+    <div id="sidebar-footer">
+      <button id="theme-side" type="button" data-theme-toggle title="Theme">🌓</button>
+      <div class="lang-switch on-dark" id="lang-side" role="group" aria-label="Language"></div>
+    </div>
   </aside>
   <main id="main">
     <div id="view"></div>
@@ -158,6 +166,8 @@
   <button data-nav="search">🔍<span data-i18n="bn_search">Search</span></button>
   <button data-nav="saved">⭐<span data-i18n="bn_saved">Saved</span></button>
   <button data-nav="focus">📖<span data-i18n="bn_focus">Focus</span></button>
+  <button data-nav="focus">📖<span data-i18n="bn_focus">Focus</span></button>
+  <button data-nav="theme">🌓<span data-i18n="bn_theme">Theme</span></button>
   <button data-nav="lang">🌐<span data-i18n="bn_lang">Language</span></button>
 </nav>
 <div id="palette" hidden>
@@ -230,7 +240,7 @@
 <script src="crunner.js?v=20261005c"></script>
 <script src="pyrunner.js?v=20261005c"></script>
 <script src="comparisons.js"></script>
-<script src="app.js?v=20261008b"></script>
+<script src="app.js?v=20261009a"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

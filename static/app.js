@@ -121,6 +121,7 @@ const STR = {
     bn_search: "Search",
     bn_saved: "Saved",
     bn_focus: "Focus",
+    bn_theme: "Theme",
     bn_lang: "Language",
     compare_title: "Compare across languages",
     pal_ph: "Search lessons or type a command…",
@@ -280,6 +281,7 @@ const STR = {
     bn_search: "جست‌وجو",
     bn_saved: "نشان‌شده",
     bn_focus: "تمرکز",
+    bn_theme: "پوسته",
     bn_lang: "زبان",
     compare_title: "مقایسهٔ زبان‌ها",
     pal_ph: "جست‌وجوی درس‌ها یا دستورها…",
@@ -2420,6 +2422,24 @@ function showCompletionCard() {
   overlay.querySelector(".close").addEventListener("click", () => overlay.remove());
 }
 
+/* -------- site theme: light / dark (persisted) -------- */
+const THEME_KEY = "plt-theme-v1";
+function getTheme() {
+  try { return localStorage.getItem(THEME_KEY) || "light"; } catch (e) { return "light"; }
+}
+function setTheme(t) {
+  try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  document.documentElement.classList.toggle("dark", t === "dark");
+  syncThemeButtons();
+}
+function toggleTheme() { setTheme(getTheme() === "dark" ? "light" : "dark"); }
+function syncThemeButtons() {
+  const dark = getTheme() === "dark";
+  document.querySelectorAll("[data-theme-toggle]").forEach((b) => {
+    b.textContent = dark ? "☀️" : "🌓";
+  });
+}
+
 /* -------- reader preferences: text size, code font, OLED -------- */
 const READER_KEY = "plt-reader-v1";
 const CODE_FONTS = {
@@ -2442,7 +2462,7 @@ function applyReaderPrefs() {
   const cf = CODE_FONTS[p.codeFont] ? p.codeFont : "fira";
   document.documentElement.style.setProperty("--reader-fs", fs + "px");
   document.documentElement.style.setProperty("--code-font", CODE_FONTS[cf]);
-  document.body.classList.toggle("oled", !!p.oled);
+  document.documentElement.classList.toggle("oled", !!p.oled);
   return { fs, cf, oled: !!p.oled };
 }
 function renderReaderModal() {
@@ -2656,6 +2676,11 @@ function buildPalResults(q, keepSel) {
   cmds.push({ tag: "⌘", c: "#6b7f95",
     label: lang === "fa" ? "منوی اصلی" : "Main menu",
     run: () => { const b = $("home-btn"); if (b) b.click(); } });
+  cmds.push({ tag: "⌘", c: "#6b7f95",
+    label: getTheme() === "dark"
+      ? (lang === "fa" ? "پوستهٔ روشن" : "Switch to light mode")
+      : (lang === "fa" ? "پوستهٔ تیره" : "Switch to dark mode"),
+    run: () => toggleTheme() });
 
   const cmdHits = cmds.filter((c) => c.label.toLowerCase().includes(q));
   if (cmdHits.length) {
@@ -2897,11 +2922,16 @@ function boot() {
   if (search) search.addEventListener("input", () => applyChapterFilter(search.value));
 
   // bottom navigation bar (mobile thumb bar)
+  const themeSide = document.getElementById("theme-side");
+  if (themeSide) themeSide.addEventListener("click", toggleTheme);
+  syncThemeButtons();
+
   const bn = document.getElementById("bottom-nav");
   if (bn) bn.addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
     triggerHaptic();
+    if (b.dataset.nav === "theme") { toggleTheme(); return; }
     if (b.dataset.nav === "menu") setDrawer(true);
     if (b.dataset.nav === "search") palOpen();
     if (b.dataset.nav === "saved") {
