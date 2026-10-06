@@ -102,6 +102,14 @@ const STR = {
     diff_beg: "Beginner",
     diff_int: "Intermediate",
     diff_adv: "Advanced",
+    reader_title: "Reading settings",
+    rm_text_size: "Text size",
+    rm_code_font: "Code font",
+    rm_oled: "True black (OLED)",
+    streak_line: "🔥 {n}-day streak",
+    complete_title: "Course complete!",
+    complete_body: "{name}, you finished every lesson and quiz in {subj} — {lessons} lessons, {questions} questions. Screenshot this and show it off!",
+    share_done: "I just completed the full {subj} course on PLT — {lessons} lessons, {questions} questions! 🎉",
     zen_title: "Focus mode (F)",
     zen_toast: "Focus mode — press F or ✕ to exit",
     bookmark_add: "Bookmark this lesson",
@@ -253,6 +261,14 @@ const STR = {
     diff_beg: "مبتدی",
     diff_int: "متوسط",
     diff_adv: "پیشرفته",
+    reader_title: "تنظیمات مطالعه",
+    rm_text_size: "اندازهٔ متن",
+    rm_code_font: "فونت کد",
+    rm_oled: "مشکی واقعی (OLED)",
+    streak_line: "🔥 {n} روز پیاپی",
+    complete_title: "دوره تمام شد!",
+    complete_body: "{name}، همهٔ درس‌ها و آزمون‌های {subj} را تمام کردی — {lessons} درس، {questions} سوال. ازش عکس بگیر و پز بده!",
+    share_done: "دورهٔ کامل {subj} را در PLT تمام کردم — {lessons} درس، {questions} سوال! 🎉",
     zen_title: "حالت تمرکز (F)",
     zen_toast: "حالت تمرکز — برای خروج F یا ✕ را بزن",
     bookmark_add: "نشان‌گذاری این درس",
@@ -662,7 +678,8 @@ function checkQuestion(q, answer) {
     const correct = Array.isArray(answer) &&
       answer.length === (q.lines || []).length &&
       answer.every((v, i) => v === i);
-    return { correct: !!correct, explain: q.explain || "" };
+    setTimeout(checkCourseComplete, 400);
+  return { correct: !!correct, explain: q.explain || "" };
   }
   if (q.type === "codefill") {
     const blanks = (q.code || []).filter((item) => typeof item === "object");
@@ -821,6 +838,7 @@ function renderSidebar() {
   });
   $("overall-bar").style.width = (100 * mastered / totalQ) + "%";
   updateReadProgressLine();
+  updateStreakLine();
 }
 
 /* A chapter header row plus its collapsible sub-list: one item per lesson
@@ -1081,6 +1099,14 @@ function renderLesson(ch) {
   rt.className = "read-time";
   rt.textContent = t("read_time", { min: Math.max(1, Math.round(words / 180)) });
   meta.appendChild(rt);
+  const readerBtn = document.createElement("button");
+  readerBtn.type = "button";
+  readerBtn.id = "reader-btn";
+  readerBtn.className = "reader-btn";
+  readerBtn.textContent = "Aa";
+  readerBtn.title = t("reader_title");
+  readerBtn.setAttribute("aria-label", t("reader_title"));
+  meta.appendChild(readerBtn);
   card.appendChild(meta);
 
   const h = document.createElement("h3");
@@ -1094,6 +1120,7 @@ function renderLesson(ch) {
   star.title = isBookmarked(activeSubject, ch.id, idx)
     ? t("bookmark_remove") : t("bookmark_add");
   star.textContent = isBookmarked(activeSubject, ch.id, idx) ? "★" : "☆";
+  star.setAttribute("aria-label", star.title);
   star.addEventListener("click", () => {
     triggerHaptic();
     const on = toggleBookmark(ch.id, idx);
@@ -1106,6 +1133,7 @@ function renderLesson(ch) {
   share.className = "share-btn";
   share.title = t("share_lesson");
   share.textContent = "🔗";
+  share.setAttribute("aria-label", t("share_lesson"));
   share.addEventListener("click", async () => {
     const url = location.href;
     if (navigator.share) {
@@ -1138,6 +1166,7 @@ function renderLesson(ch) {
     copy.type = "button";
     copy.className = "code-copy";
     copy.textContent = "📋 " + t("copy_code");
+    copy.setAttribute("aria-label", t("copy_code"));
     copy.addEventListener("click", () => {
       const done = () => {
         copy.textContent = "✓ " + t("copied_code");
@@ -1166,6 +1195,7 @@ function renderLesson(ch) {
     compare.className = "code-expand";
     compare.textContent = "⇄";
     compare.title = t("compare_title");
+    compare.setAttribute("aria-label", t("compare_title"));
     compare.addEventListener("click", openCompare);
     const group = document.createElement("span");
     group.className = "bar-group";
@@ -1173,6 +1203,7 @@ function renderLesson(ch) {
     expand.type = "button";
     expand.className = "code-expand";
     expand.textContent = "⛶";
+    expand.setAttribute("aria-label", "Full screen");
     expand.title = t("zen_title").indexOf("(") > -1 ? "Full screen" : "Full screen";
     expand.addEventListener("click", () => openCodeModal(pre, langName.textContent));
     group.appendChild(copy);
@@ -2298,6 +2329,148 @@ function switchSubject(id) {
 
 let pendingDeepLink = null;
 
+/* -------- streak + course-completion celebration -------- */
+const STREAK_KEY = "plt-streak-v1";
+const COMPLETED_KEY = "plt-completed-v1";
+function dayString(offset) {
+  return new Date(Date.now() - (offset || 0) * 864e5).toISOString().slice(0, 10);
+}
+function bumpStreak() {
+  let st = {};
+  try { st = JSON.parse(localStorage.getItem(STREAK_KEY) || "{}") || {}; } catch (e) {}
+  if (st.last === dayString(0)) {
+    updateStreakLine(); // counted today — still show the flame
+    return st.streak || 1;
+  }
+  st.streak = (st.last === dayString(1)) ? (st.streak || 0) + 1 : 1;
+  st.last = dayString(0);
+  try { localStorage.setItem(STREAK_KEY, JSON.stringify(st)); } catch (e) {}
+  updateStreakLine();
+  return st.streak;
+}
+function updateStreakLine() {
+  const el = $("streak-line");
+  if (!el) return;
+  let st = {};
+  try { st = JSON.parse(localStorage.getItem(STREAK_KEY) || "{}") || {}; } catch (e) {}
+  el.textContent = t("streak_line", { n: fmtNum(st.streak || 0) });
+  el.style.display = (st.streak || 0) > 0 ? "" : "none";
+}
+function courseFullyDone() {
+  const allRead = countReadLessons() >= chapters.reduce(
+    (n, ch) => n + ch.lessons.length, 0);
+  const allQ = chapters.every((ch) => quizAnsweredCount(ch) >= ch.quiz.length);
+  return allRead && allQ;
+}
+function checkCourseComplete() {
+  if (!courseFullyDone()) return;
+  let flags = {};
+  try { flags = JSON.parse(localStorage.getItem(COMPLETED_KEY) || "{}") || {}; }
+  catch (e) {}
+  if (flags[activeSubject]) return;
+  flags[activeSubject] = 1;
+  try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(flags)); } catch (e) {}
+  showCompletionCard();
+}
+function showCompletionCard() {
+  if (document.querySelector(".completion-overlay")) return;
+  const s = subjectById(activeSubject);
+  const lessons = chapters.reduce((n, ch) => n + ch.lessons.length, 0);
+  const questions = chapters.reduce((n, ch) => n + ch.quiz.length, 0);
+  const overlay = document.createElement("div");
+  overlay.className = "completion-overlay";
+  overlay.innerHTML =
+    '<div class="completion-card">' +
+    '<div class="big">🏆</div>' +
+    "<h2>" + esc(t("complete_title")) + "</h2>" +
+    "<p>" + esc(t("complete_body", { name: displayName(),
+      subj: subjName(s), lessons: fmtNum(lessons), questions: fmtNum(questions) })) + "</p>" +
+    '<div class="stats">' +
+    '<div class="stat"><b>' + esc(subjName(s)) + "</b><span>course</span></div>" +
+    '<div class="stat"><b>' + fmtNum(lessons) + "</b><span>lessons</span></div>" +
+    '<div class="stat"><b>' + fmtNum(questions) + "</b><span>questions</span></div>" +
+    "</div>" +
+    '<div class="completion-actions">' +
+    '<button class="share" type="button">📤 ' + esc(t("share_done")) + "</button>" +
+    '<button class="close" type="button">✕</button>' +
+    "</div></div>";
+  document.body.appendChild(overlay);
+  const colors = ["#ffd43b", "#2f81f7", "#22c55e", "#ef4444", "#a855f7", "#ff8a3d"];
+  for (let i = 0; i < 90; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = Math.random() * 100 + "vw";
+    piece.style.background = colors[i % colors.length];
+    piece.style.animationDuration = (2.2 + Math.random() * 1.8) + "s";
+    piece.style.animationDelay = (Math.random() * .8) + "s";
+    piece.style.transform = "rotate(" + Math.random() * 360 + "deg)";
+    overlay.appendChild(piece);
+  }
+  overlay.querySelector(".share").addEventListener("click", async () => {
+    const text = t("share_done", { subj: subjName(s),
+      lessons: fmtNum(lessons), questions: fmtNum(questions) });
+    if (navigator.share) {
+      try { await navigator.share({ title: document.title, text, url: location.origin }); }
+      catch (e) { /* cancelled */ }
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text + " " + location.origin).then(
+        () => toast(t("link_copied")), () => {});
+    }
+  });
+  overlay.querySelector(".close").addEventListener("click", () => overlay.remove());
+}
+
+/* -------- reader preferences: text size, code font, OLED -------- */
+const READER_KEY = "plt-reader-v1";
+const CODE_FONTS = {
+  fira: '"Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace',
+  jet: '"JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, Menlo, monospace',
+  cascadia: '"Cascadia Code", "JetBrains Mono", Consolas, Menlo, monospace',
+  consolas: 'Consolas, "Fira Code", Menlo, monospace',
+  courier: '"Courier New", Courier, monospace',
+};
+function loadReaderPrefs() {
+  try { return JSON.parse(localStorage.getItem(READER_KEY) || "null") || {}; }
+  catch (e) { return {}; }
+}
+function saveReaderPrefs(p) {
+  try { localStorage.setItem(READER_KEY, JSON.stringify(p)); } catch (e) {}
+}
+function applyReaderPrefs() {
+  const p = loadReaderPrefs();
+  const fs = Math.min(20, Math.max(13, p.fontSize || 16));
+  const cf = CODE_FONTS[p.codeFont] ? p.codeFont : "fira";
+  document.documentElement.style.setProperty("--reader-fs", fs + "px");
+  document.documentElement.style.setProperty("--code-font", CODE_FONTS[cf]);
+  document.body.classList.toggle("oled", !!p.oled);
+  return { fs, cf, oled: !!p.oled };
+}
+function renderReaderModal() {
+  const p = applyReaderPrefs();
+  $("rm-fs").textContent = p.fs + "px";
+  $("rm-oled").setAttribute("aria-pressed", String(p.oled));
+  document.querySelectorAll(".rm-fonts button").forEach((b) =>
+    b.classList.toggle("sel", b.dataset.font === p.cf));
+}
+function setFontSize(delta) {
+  const p = loadReaderPrefs();
+  p.fontSize = Math.min(20, Math.max(13, (p.fontSize || 16) + delta));
+  saveReaderPrefs(p);
+  renderReaderModal();
+}
+function setCodeFont(f) {
+  const p = loadReaderPrefs();
+  p.codeFont = f;
+  saveReaderPrefs(p);
+  renderReaderModal();
+}
+function setOled(on) {
+  const p = loadReaderPrefs();
+  p.oled = !!on;
+  saveReaderPrefs(p);
+  renderReaderModal();
+}
+
 /* -------- haptic feedback (native-feeling taps on mobile) -------- */
 function triggerHaptic(ms) {
   if (navigator.vibrate) {
@@ -2325,6 +2498,8 @@ function markLessonRead(chId, idx) {
   const set = store[activeSubject] || (store[activeSubject] = {});
   const key = chId + "/" + idx;
   if (set[key]) return;
+  bumpStreak();
+  setTimeout(checkCourseComplete, 80);
   set[key] = 1;
   try { localStorage.setItem(READ_KEY, JSON.stringify(store)); } catch (e) {}
   const tick = document.querySelector(
@@ -2773,6 +2948,26 @@ function boot() {
   }
   const zenExit = document.getElementById("zen-exit");
   if (zenExit) zenExit.addEventListener("click", () => toggleZen(false));
+
+  // reader preferences
+  const rm = $("reader-modal");
+  if (rm) {
+    applyReaderPrefs();
+    document.addEventListener("click", (e) => {
+      if (e.target.closest("#reader-btn")) { renderReaderModal(); rm.hidden = false; }
+    });
+    $("rm-close").addEventListener("click", () => { rm.hidden = true; });
+    rm.addEventListener("click", (e) => { if (e.target === rm) rm.hidden = true; });
+    $("rm-minus").addEventListener("click", () => setFontSize(-1));
+    $("rm-plus").addEventListener("click", () => setFontSize(1));
+    $("rm-oled").addEventListener("click", () =>
+      setOled($("rm-oled").getAttribute("aria-pressed") !== "true"));
+    document.querySelectorAll(".rm-fonts button").forEach((b) =>
+      b.addEventListener("click", () => setCodeFont(b.dataset.font)));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !rm.hidden) rm.hidden = true;
+    });
+  }
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
     if (e.code === "KeyF" && !typing && courseActive && !e.ctrlKey && !e.metaKey) {
