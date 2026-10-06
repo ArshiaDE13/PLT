@@ -99,6 +99,9 @@ const STR = {
     read_time: "⏱ {min} min read",
     read_progress: "📖 {read} of {total} lessons read",
     search_ph: "Search lessons…",
+    diff_beg: "Beginner",
+    diff_int: "Intermediate",
+    diff_adv: "Advanced",
     zen_title: "Focus mode (F)",
     zen_toast: "Focus mode — press F or ✕ to exit",
     bookmark_add: "Bookmark this lesson",
@@ -247,6 +250,9 @@ const STR = {
     read_time: "⏱ {min} دقیقه مطالعه",
     read_progress: "📖 {read} از {total} درس خوانده شد",
     search_ph: "جست‌وجوی درس‌ها…",
+    diff_beg: "مبتدی",
+    diff_int: "متوسط",
+    diff_adv: "پیشرفته",
     zen_title: "حالت تمرکز (F)",
     zen_toast: "حالت تمرکز — برای خروج F یا ✕ را بزن",
     bookmark_add: "نشان‌گذاری این درس",
@@ -972,7 +978,28 @@ function prevStep() {
 function renderView(skipAnim) {
   const view = $("view");
   view.classList.remove("anim-in");
-  void view.offsetWidth;
+  // skeleton first (one short beat) — content renders right after, so a
+  // lesson switch never shows a blank/jumping page
+  if (skipAnim) { renderViewInto(view); return; }
+  view.innerHTML =
+    '<div class="skel">' +
+    '<div class="skel-row w35"></div>' +
+    '<div class="skel-line w90"></div>' +
+    '<div class="skel-line w75"></div>' +
+    '<div class="skel-line w82"></div>' +
+    '<div class="skel-code"></div>' +
+    '<div class="skel-line w88"></div>' +
+    '<div class="skel-line w64"></div>' +
+    "</div>";
+  setTimeout(() => {
+    if (view.firstElementChild && view.firstElementChild.classList.contains("skel")) {
+      renderViewInto(view);
+    }
+  }, 130);
+}
+
+function renderViewInto(view) {
+  view.classList.remove("anim-in");
   view.innerHTML = "";
   const ch = currentChapter();
   if (state.step.kind === "lesson") {
@@ -980,7 +1007,7 @@ function renderView(skipAnim) {
   } else {
     view.appendChild(renderQuiz(ch));
   }
-  if (!skipAnim) view.classList.add("anim-in");
+  view.classList.add("anim-in");
   // a freshly opened lesson/quiz always starts at its own top — on phones
   // the sidebar sits ABOVE the content, so without this the lesson opens
   // half-hidden below it
@@ -993,7 +1020,6 @@ function renderView(skipAnim) {
   markOnLessonEnd();
   updateHash();
 }
-
 /* a lesson counts as "read" when its end becomes visible (or when it is
    too short to scroll at all) */
 let lessonEndHandler = null;
@@ -1042,12 +1068,20 @@ function renderLesson(ch) {
   bc.textContent = lessonBreadcrumb(ch, idx);
   card.appendChild(bc);
 
+  const meta = document.createElement("div");
+  meta.className = "lesson-meta";
+  const d = difficultyOf(state.chapter);
+  const badge = document.createElement("span");
+  badge.className = "diff-badge " + d.cls;
+  badge.textContent = d.dot + " " + t(d.key);
+  meta.appendChild(badge);
   const words = (lesson.html || "").replace(/<[^>]+>/g, " ").split(/\s+/)
     .filter(Boolean).length;
-  const rt = document.createElement("div");
+  const rt = document.createElement("span");
   rt.className = "read-time";
   rt.textContent = t("read_time", { min: Math.max(1, Math.round(words / 180)) });
-  card.appendChild(rt);
+  meta.appendChild(rt);
+  card.appendChild(meta);
 
   const h = document.createElement("h3");
   h.className = "lesson-title";
@@ -1061,6 +1095,7 @@ function renderLesson(ch) {
     ? t("bookmark_remove") : t("bookmark_add");
   star.textContent = isBookmarked(activeSubject, ch.id, idx) ? "★" : "☆";
   star.addEventListener("click", () => {
+    triggerHaptic();
     const on = toggleBookmark(ch.id, idx);
     star.classList.toggle("on", on);
     star.textContent = on ? "★" : "☆";
@@ -1084,6 +1119,8 @@ function renderLesson(ch) {
   card.appendChild(h);
   card.appendChild(star);
   card.appendChild(share);
+
+
 
   const body = document.createElement("div");
   body.className = "lesson-body";
@@ -1110,6 +1147,7 @@ function renderLesson(ch) {
           copy.classList.remove("ok");
         }, 2000);
       };
+      triggerHaptic();
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(pre.textContent).then(done, done);
       } else {
@@ -1143,6 +1181,27 @@ function renderLesson(ch) {
     bar.appendChild(langName);
     bar.appendChild(group);
     pre.parentNode.insertBefore(bar, pre);
+  });
+  // callout cards: gotcha/tip lists become tinted boxes so key points
+  // stand out (conservative keyword matching, EN + FA)
+  const GOTCHA_RE = /(common mistake|gotcha|beginner mistake|surprises?|watch out|caveat|trap\b|rule of thumb|undefined behaviou?r)/i;
+  const TIP_RE = /(pro tip|tip:|handy|clean way|convention)/i;
+  const FA_WARN_RE = /(اشتباه رایج|تله|هشدار|مراقب|غافلگیر|اشتباه beginners)/;
+  const FA_TIP_RE = /(قاعده|ترفند|نکته)/;
+  const kids = [...body.children];
+  kids.forEach((el, i) => {
+    if (el.tagName !== "P" || el.classList.contains("callout")) return;
+    const txt = el.textContent;
+    const next = kids[i + 1];
+    if (!next || next.tagName !== "UL") return;
+    const fa = !!lesson.__fa;
+    let kind = null;
+    if (GOTCHA_RE.test(txt) || (fa && FA_WARN_RE.test(txt))) kind = "warning";
+    else if (TIP_RE.test(txt) || (fa && FA_TIP_RE.test(txt))) kind = "tip";
+    if (kind) {
+      el.classList.add("callout", "callout-" + kind);
+      next.classList.add("callout", "callout-" + kind);
+    }
   });
   card.appendChild(body);
 
@@ -1430,6 +1489,7 @@ function renderQuestionMC(ch, q, i) {
     b.textContent = opt;
     applyDir(b, !!q.__fa);
     b.addEventListener("click", () => {
+      triggerHaptic();
       opts.forEach((x) => x.classList.remove("selected"));
       b.classList.add("selected");
       selected = oi;
@@ -2220,7 +2280,7 @@ function renderSubjectChips() {
     chip.innerHTML =
       '<span class="chip-ic">' + svgIcon(s.inner("chip-" + s.id)) + "</span>" +
       '<span class="chip-name">' + esc(subjName(s)) + "</span>";
-    chip.addEventListener("click", () => switchSubject(s.id));
+    chip.addEventListener("click", () => { triggerHaptic(); switchSubject(s.id); });
     bar.appendChild(chip);
   });
 }
@@ -2237,6 +2297,22 @@ function switchSubject(id) {
 }
 
 let pendingDeepLink = null;
+
+/* -------- haptic feedback (native-feeling taps on mobile) -------- */
+function triggerHaptic(ms) {
+  if (navigator.vibrate) {
+    try { navigator.vibrate(ms || 10); } catch (e) { /* unsupported */ }
+  }
+}
+
+/* -------- lesson difficulty: early chapters are the basics -------- */
+function difficultyOf(chapterIdx) {
+  const total = chapters.length;
+  const r = total <= 1 ? 0 : chapterIdx / (total - 1);
+  if (r <= 0.34) return { key: "diff_beg", cls: "beg", dot: "🟢" };
+  if (r <= 0.67) return { key: "diff_int", cls: "int", dot: "🟡" };
+  return { key: "diff_adv", cls: "adv", dot: "🔴" };
+}
 
 /* -------- per-lesson "read" tracking (study checklist) -------- */
 const READ_KEY = "pytutor-read-v1";
@@ -2650,6 +2726,7 @@ function boot() {
   if (bn) bn.addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
+    triggerHaptic();
     if (b.dataset.nav === "menu") setDrawer(true);
     if (b.dataset.nav === "search") palOpen();
     if (b.dataset.nav === "saved") {
